@@ -1,0 +1,102 @@
+import { Link } from 'react-router-dom'
+import { StatusSelector } from './StatusSelector'
+import { SourceSelector } from './SourceSelector'
+import { ManagerSelector } from './ManagerSelector'
+import { Button } from '@/components/ui/button'
+import { Eye, Trash2 } from 'lucide-react'
+import type { CustomerWithManager } from '@/types/customer'
+
+interface CustomerCardProps {
+    customer: CustomerWithManager
+    onDelete: (id: number) => void
+    canTransfer: boolean
+    isSelected?: boolean
+    onSelect?: (id: number, selected: boolean) => void
+}
+
+export function CustomerCard({
+    customer,
+    onDelete,
+    canTransfer,
+    isSelected,
+    onSelect,
+}: CustomerCardProps) {
+    return (
+        <div
+            className={`p-4 rounded-xl border transition-colors ${isSelected
+                    ? 'bg-primary/10 border-primary/30'
+                    : 'bg-card border-border hover:bg-secondary/30'
+                }`}
+        >
+            {/* Header: 이름 + 상태 */}
+            <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center gap-3">
+                    {canTransfer && onSelect && (
+                        <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => onSelect(customer.id, e.target.checked)}
+                            className="h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary"
+                        />
+                    )}
+                    <Link
+                        to={`/customers/${customer.id}`}
+                        className="text-base font-medium text-foreground hover:text-primary"
+                    >
+                        {customer.name}
+                    </Link>
+                </div>
+                <StatusSelector
+                    customerId={customer.id}
+                    currentStatus={customer.status}
+                />
+            </div>
+
+            {/* Body: 정보 */}
+            <div className="space-y-2 text-sm text-muted-foreground mb-3">
+                <div className="flex items-center justify-between">
+                    <span>전화번호</span>
+                    <span className="text-foreground">{customer.phone || '-'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                    <span>유입경로</span>
+                    <SourceSelector
+                        customerId={customer.id}
+                        currentSource={customer.source}
+                    />
+                </div>
+                <div className="flex items-center justify-between">
+                    <span>담당자</span>
+                    <ManagerSelector
+                        customerId={customer.id}
+                        currentManagerId={customer.managerId}
+                        currentManagerName={customer.managerName}
+                    />
+                </div>
+                <div className="flex items-center justify-between">
+                    <span>등록일</span>
+                    <span>{customer.createdAt ? new Date(customer.createdAt).toLocaleDateString('ko-KR') : '-'}</span>
+                </div>
+            </div>
+
+            {/* Footer: 액션 버튼 */}
+            <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                <Link to={`/customers/${customer.id}`}>
+                    <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4 mr-1" />
+                        상세
+                    </Button>
+                </Link>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDelete(customer.id)}
+                    className="text-red-500 hover:text-red-600"
+                >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    삭제
+                </Button>
+            </div>
+        </div>
+    )
+}

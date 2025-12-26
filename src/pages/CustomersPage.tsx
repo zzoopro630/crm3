@@ -30,6 +30,7 @@ import { ManagerSelector } from '@/components/customers/ManagerSelector'
 import { StatusSelector } from '@/components/customers/StatusSelector'
 import { SourceSelector } from '@/components/customers/SourceSelector'
 import { BulkTransferModal } from '@/components/customers/BulkTransferModal'
+import { CustomerCard } from '@/components/customers/CustomerCard'
 import type { CreateCustomerInput, CustomerListParams } from '@/types/customer'
 import { CUSTOMER_STATUSES, GENDER_OPTIONS } from '@/types/customer'
 import { cn } from '@/lib/utils'
@@ -418,7 +419,22 @@ export function CustomersPage() {
                         </div>
                     ) : (
                         <>
-                            <div className="overflow-x-auto">
+                            {/* 모바일: 카드 레이아웃 */}
+                            <div className="block md:hidden space-y-3">
+                                {response?.data.map((customer) => (
+                                    <CustomerCard
+                                        key={customer.id}
+                                        customer={customer}
+                                        onDelete={handleDelete}
+                                        canTransfer={!!canTransfer}
+                                        isSelected={selectedIds.includes(customer.id)}
+                                        onSelect={(id, selected) => handleSelectOne(id, selected, 0, {} as React.MouseEvent)}
+                                    />
+                                ))}
+                            </div>
+
+                            {/* 데스크톱: 테이블 레이아웃 */}
+                            <div className="hidden md:block overflow-x-auto">
                                 <table className="w-full">
                                     <thead>
                                         <tr className="border-b border-border bg-secondary/30">
