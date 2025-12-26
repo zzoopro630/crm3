@@ -5,7 +5,7 @@ import { Building2, Tag, UserCog, Clock, Settings as SettingsIcon } from 'lucide
 
 // Sub-pages
 import { OrganizationsPage } from './OrganizationsPage'
-import { SourcesPage } from './SourcesPage'
+import { LabelsPage } from './LabelsPage'
 import { EmployeesPage } from './EmployeesPage'
 import { PendingApprovalsPage } from './PendingApprovalsPage'
 
@@ -19,7 +19,7 @@ interface SettingsTab {
 
 const settingsTabs: SettingsTab[] = [
     { id: 'organizations', label: '조직 관리', icon: Building2, component: OrganizationsPageWrapper, adminOnly: true },
-    { id: 'sources', label: '유입경로 관리', icon: Tag, component: SourcesPageWrapper, adminOnly: true },
+    { id: 'labels', label: '라벨 관리', icon: Tag, component: LabelsPageWrapper, adminOnly: true },
     { id: 'employees', label: '사원 관리', icon: UserCog, component: EmployeesPageWrapper, adminOnly: true },
     { id: 'approvals', label: '승인 대기', icon: Clock, component: PendingApprovalsPageWrapper, adminOnly: true },
     { id: 'system', label: '시스템 설정', icon: SettingsIcon, component: SystemSettings },
@@ -30,8 +30,8 @@ function OrganizationsPageWrapper() {
     return <OrganizationsPage />
 }
 
-function SourcesPageWrapper() {
-    return <SourcesPage />
+function LabelsPageWrapper() {
+    return <LabelsPage />
 }
 
 function EmployeesPageWrapper() {
