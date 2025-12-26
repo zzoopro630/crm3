@@ -19,7 +19,7 @@ interface SettingsTab {
 
 const settingsTabs: SettingsTab[] = [
     { id: 'organizations', label: '조직 관리', icon: Building2, component: OrganizationsPageWrapper, adminOnly: true },
-    { id: 'sources', label: '소스 관리', icon: Tag, component: SourcesPageWrapper, adminOnly: true },
+    { id: 'sources', label: '유입경로 관리', icon: Tag, component: SourcesPageWrapper, adminOnly: true },
     { id: 'employees', label: '사원 관리', icon: UserCog, component: EmployeesPageWrapper, adminOnly: true },
     { id: 'approvals', label: '승인 대기', icon: Clock, component: PendingApprovalsPageWrapper, adminOnly: true },
     { id: 'system', label: '시스템 설정', icon: SettingsIcon, component: SystemSettings },

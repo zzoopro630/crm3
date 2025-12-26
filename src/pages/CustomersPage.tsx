@@ -429,6 +429,7 @@ export function CustomersPage() {
                                             )}
                                             <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">이름</th>
                                             <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">전화번호</th>
+                                            <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">유입경로</th>
                                             <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">상태</th>
                                             <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">담당자</th>
                                             <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">등록일</th>
@@ -455,7 +456,7 @@ export function CustomersPage() {
                                                                 type="checkbox"
                                                                 checked={isSelected}
                                                                 onClick={(e) => handleSelectOne(customer.id, !isSelected, index, e)}
-                                                                onChange={() => {}}
+                                                                onChange={() => { }}
                                                                 className="h-4 w-4 rounded border-zinc-300 text-primary focus:ring-primary cursor-pointer"
                                                             />
                                                         </td>
@@ -470,6 +471,9 @@ export function CustomersPage() {
                                                     </td>
                                                     <td className="py-4 px-4 text-sm text-muted-foreground">
                                                         {customer.phone || '-'}
+                                                    </td>
+                                                    <td className="py-4 px-4 text-sm text-muted-foreground">
+                                                        {customer.source || '-'}
                                                     </td>
                                                     <td className="py-3 px-4">
                                                         <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-md border ${statusBadge.color}`}>

@@ -38,7 +38,7 @@ export function SourcesPage() {
             <div className="flex items-center justify-center h-64">
                 <div className="text-center">
                     <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">접근 권한 없음</h2>
-                    <p className="text-zinc-500 mt-2">소스 관리는 관리자(F1)만 접근할 수 있습니다.</p>
+                    <p className="text-zinc-500 mt-2">유입경로 관리는 관리자(F1)만 접근할 수 있습니다.</p>
                 </div>
             </div>
         )
@@ -75,7 +75,7 @@ export function SourcesPage() {
     }
 
     const handleDelete = async (id: number) => {
-        if (window.confirm('정말 이 소스를 삭제하시겠습니까?\n\n이 소스를 사용하는 고객 데이터에 영향을 줄 수 있습니다.')) {
+        if (window.confirm('정말 이 유입경로를 삭제하시겠습니까?\n\n이 유입경로를 사용하는 고객 데이터에 영향을 줄 수 있습니다.')) {
             try {
                 await deleteSource.mutateAsync(id)
             } catch (error) {
@@ -97,12 +97,12 @@ export function SourcesPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">소스 관리</h1>
+                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">유입경로 관리</h1>
                     <p className="text-zinc-500 dark:text-zinc-400">고객 유입 채널을 관리합니다</p>
                 </div>
                 <Button onClick={() => handleOpenDialog()}>
                     <Plus className="mr-2 h-4 w-4" />
-                    소스 추가
+                    유입경로 추가
                 </Button>
             </div>
 
@@ -111,7 +111,7 @@ export function SourcesPage() {
                 <CardHeader className="border-b border-border">
                     <CardTitle className="text-foreground flex items-center gap-2">
                         <Tag className="h-5 w-5" />
-                        소스 목록
+                        유입경로 목록
                     </CardTitle>
                     <CardDescription className="text-muted-foreground">
                         총 {sources?.length || 0}개
@@ -121,8 +121,8 @@ export function SourcesPage() {
                     {sources?.length === 0 ? (
                         <div className="text-center py-12 text-zinc-500">
                             <Tag className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                            <p>등록된 소스가 없습니다</p>
-                            <p className="text-sm mt-1">소스를 추가하여 고객 유입 채널을 관리하세요</p>
+                            <p>등록된 유입경로가 없습니다</p>
+                            <p className="text-sm mt-1">유입경로를 추가하여 고객 유입 채널을 관리하세요</p>
                         </div>
                     ) : (
                         <div className="divide-y divide-border">
@@ -168,15 +168,15 @@ export function SourcesPage() {
                 <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 max-w-sm">
                     <DialogHeader>
                         <DialogTitle className="text-zinc-900 dark:text-white">
-                            {editingSource ? '소스 수정' : '소스 추가'}
+                            {editingSource ? '유입경로 수정' : '유입경로 추가'}
                         </DialogTitle>
                         <DialogDescription>
-                            {editingSource ? '소스명을 수정합니다' : '새로운 소스를 추가합니다'}
+                            {editingSource ? '이름을 수정합니다' : '새로운 유입경로를 추가합니다'}
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSubmit} className="mt-4 space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="name">소스명 *</Label>
+                            <Label htmlFor="name">이름 *</Label>
                             <Input
                                 id="name"
                                 value={sourceName}
