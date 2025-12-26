@@ -14,30 +14,29 @@ interface StatusSelectorProps {
 function getStatusStyle(status: string) {
     switch (status) {
         case 'new':
-            return {
-                label: '신규',
-                color: 'bg-blue-500/10 text-blue-500 border-blue-500/30',
-            }
+            return { label: '신규', color: 'bg-blue-500/10 text-blue-500 border-blue-500/30' }
         case 'contacted':
-            return {
-                label: '연락완료',
-                color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30',
-            }
+            return { label: '연락완료', color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30' }
         case 'consulting':
-            return {
-                label: '상담중',
-                color: 'bg-purple-500/10 text-purple-500 border-purple-500/30',
-            }
+            return { label: '상담중', color: 'bg-purple-500/10 text-purple-500 border-purple-500/30' }
         case 'closed':
-            return {
-                label: '계약완료',
-                color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30',
-            }
+            return { label: '계약완료', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' }
+        case 'called':
+            return { label: '통화완료', color: 'bg-lime-500/10 text-lime-500 border-lime-500/30' }
+        case 'texted':
+            return { label: '문자남김', color: 'bg-orange-500/10 text-orange-500 border-orange-500/30' }
+        case 'no_answer':
+            return { label: '부재', color: 'bg-zinc-400/10 text-zinc-400 border-zinc-400/30' }
+        case 'rejected':
+            return { label: '거절', color: 'bg-red-500/10 text-red-500 border-red-500/30' }
+        case 'wrong_number':
+            return { label: '결번', color: 'bg-zinc-800/10 text-zinc-800 dark:text-zinc-200 border-zinc-800/30' }
+        case 'ineligible':
+            return { label: '가입불가', color: 'bg-pink-500/10 text-pink-500 border-pink-500/30' }
+        case 'upsell':
+            return { label: '추가제안', color: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/30' }
         default:
-            return {
-                label: status,
-                color: 'bg-zinc-500/10 text-zinc-500 border-zinc-500/30',
-            }
+            return { label: status, color: 'bg-zinc-500/10 text-zinc-500 border-zinc-500/30' }
     }
 }
 

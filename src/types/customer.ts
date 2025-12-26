@@ -47,6 +47,13 @@ export const CUSTOMER_STATUSES = [
     { value: 'contacted', label: '연락완료' },
     { value: 'consulting', label: '상담중' },
     { value: 'closed', label: '계약완료' },
+    { value: 'called', label: '통화완료' },
+    { value: 'texted', label: '문자남김' },
+    { value: 'no_answer', label: '부재' },
+    { value: 'rejected', label: '거절' },
+    { value: 'wrong_number', label: '결번' },
+    { value: 'ineligible', label: '가입불가' },
+    { value: 'upsell', label: '추가제안' },
 ] as const
 
 export const GENDER_OPTIONS = [

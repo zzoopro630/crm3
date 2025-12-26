@@ -19,6 +19,13 @@ const STATUS_ITEMS = [
     { value: 'contacted', label: '연락완료', color: 'bg-yellow-500' },
     { value: 'consulting', label: '상담중', color: 'bg-purple-500' },
     { value: 'closed', label: '계약완료', color: 'bg-emerald-500' },
+    { value: 'called', label: '통화완료', color: 'bg-lime-500' },
+    { value: 'texted', label: '문자남김', color: 'bg-orange-500' },
+    { value: 'no_answer', label: '부재', color: 'bg-zinc-400' },
+    { value: 'rejected', label: '거절', color: 'bg-red-500' },
+    { value: 'wrong_number', label: '결번', color: 'bg-zinc-800' },
+    { value: 'ineligible', label: '가입불가', color: 'bg-pink-500' },
+    { value: 'upsell', label: '추가제안', color: 'bg-cyan-500' },
 ]
 
 // 인라인 편집 아이템 컴포넌트
