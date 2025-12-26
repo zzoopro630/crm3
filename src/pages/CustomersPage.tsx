@@ -350,8 +350,16 @@ export function CustomersPage() {
                         placeholder="이름 또는 전화번호로 검색..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-white dark:bg-zinc-900"
+                        className="pl-10 pr-10 bg-white dark:bg-zinc-900"
                     />
+                    {searchTerm && (
+                        <button
+                            onClick={() => setSearchTerm('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
+                    )}
                 </div>
                 <select
                     onChange={(e) => handleStatusFilter(e.target.value)}
