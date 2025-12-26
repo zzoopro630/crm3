@@ -192,11 +192,11 @@ export function EmployeesPage() {
                                 <thead>
                                     <tr className="border-b border-zinc-200 dark:border-zinc-800">
                                         <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">이름</th>
-                                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">이메일</th>
-                                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">보안등급</th>
-                                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">조직</th>
-                                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">상위자</th>
                                         <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">직급</th>
+                                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">조직</th>
+                                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">보안등급</th>
+                                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">상위자</th>
+                                        <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">이메일</th>
                                         <th className="text-right py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">작업</th>
                                     </tr>
                                 </thead>
@@ -213,7 +213,10 @@ export function EmployeesPage() {
                                                 )}
                                             </td>
                                             <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
-                                                {employee.email}
+                                                {employee.positionName || '-'}
+                                            </td>
+                                            <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
+                                                {getOrganizationName(employee.organizationId)}
                                             </td>
                                             <td className="py-3 px-4">
                                                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-md border ${getSecurityLevelBadge(employee.securityLevel)}`}>
@@ -221,13 +224,10 @@ export function EmployeesPage() {
                                                 </span>
                                             </td>
                                             <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
-                                                {getOrganizationName(employee.organizationId)}
-                                            </td>
-                                            <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
                                                 {getEmployeeName(employee.parentId)}
                                             </td>
                                             <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
-                                                {employee.positionName || '-'}
+                                                {employee.email}
                                             </td>
                                             <td className="py-3 px-4 text-right">
                                                 <div className="flex justify-end gap-2">
