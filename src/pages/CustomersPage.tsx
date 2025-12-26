@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useCustomers, useCreateCustomer, useDeleteCustomer } from '@/hooks/useCustomers'
 import { useEmployees } from '@/hooks/useEmployees'
@@ -89,29 +89,27 @@ export function CustomersPage() {
         filters: managerFilter ? { managerId: managerFilter } : {},
     })
 
-    // 검색어 로컬 상태 (디바운스용)
+    // 검색어 로컬 상태
     const [searchTerm, setSearchTerm] = useState('')
-    const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-    // 검색어 디바운스 (300ms)
-    useEffect(() => {
-        if (searchTimeoutRef.current) {
-            clearTimeout(searchTimeoutRef.current)
-        }
-        searchTimeoutRef.current = setTimeout(() => {
-            setParams(prev => ({
-                ...prev,
-                page: 1,
-                filters: { ...prev.filters, search: searchTerm || undefined },
-            }))
-        }, 300)
+    // 검색 실행 (버튼 클릭 또는 엔터)
+    const handleSearch = () => {
+        setParams(prev => ({
+            ...prev,
+            page: 1,
+            filters: { ...prev.filters, search: searchTerm || undefined },
+        }))
+    }
 
-        return () => {
-            if (searchTimeoutRef.current) {
-                clearTimeout(searchTimeoutRef.current)
-            }
-        }
-    }, [searchTerm])
+    // 검색어 초기화
+    const handleClearSearch = () => {
+        setSearchTerm('')
+        setParams(prev => ({
+            ...prev,
+            page: 1,
+            filters: { ...prev.filters, search: undefined },
+        }))
+    }
 
     // URL의 manager 파라미터가 변경되면 params 업데이트
     useEffect(() => {
@@ -345,16 +343,22 @@ export function CustomersPage() {
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-4">
                 <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                    <button
+                        onClick={handleSearch}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 hover:text-primary cursor-pointer"
+                    >
+                        <Search className="h-4 w-4" />
+                    </button>
                     <Input
                         placeholder="이름 또는 전화번호로 검색..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                         className="pl-10 pr-10 bg-white dark:bg-zinc-900"
                     />
                     {searchTerm && (
                         <button
-                            onClick={() => setSearchTerm('')}
+                            onClick={handleClearSearch}
                             className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
                         >
                             <X className="h-4 w-4" />
