@@ -2,7 +2,7 @@ import { pgTable, pgEnum, uuid, text, boolean, timestamp, integer, date } from '
 
 // ============ ENUM Types ============
 export const securityLevelEnum = pgEnum('security_level_enum', ['F1', 'F2', 'F3', 'F4', 'F5', 'F6'])
-export const customerStatusEnum = pgEnum('customer_status_enum', ['new', 'contacted', 'consulting', 'closed'])
+export const customerStatusEnum = pgEnum('customer_status_enum', ['new', 'contacted', 'consulting', 'closed', 'called', 'texted', 'no_answer', 'rejected', 'wrong_number', 'ineligible', 'upsell'])
 export const genderEnum = pgEnum('gender_enum', ['남성', '여성', '법인'])
 export const approvalStatusEnum = pgEnum('approval_status_enum', ['pending', 'approved', 'rejected'])
 

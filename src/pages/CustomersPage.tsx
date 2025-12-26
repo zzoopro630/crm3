@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useCustomers, useCreateCustomer, useDeleteCustomer } from '@/hooks/useCustomers'
 import { useEmployees } from '@/hooks/useEmployees'
@@ -88,6 +88,30 @@ export function CustomersPage() {
         filters: managerFilter ? { managerId: managerFilter } : {},
     })
 
+    // 검색어 로컬 상태 (디바운스용)
+    const [searchTerm, setSearchTerm] = useState('')
+    const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+    // 검색어 디바운스 (300ms)
+    useEffect(() => {
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current)
+        }
+        searchTimeoutRef.current = setTimeout(() => {
+            setParams(prev => ({
+                ...prev,
+                page: 1,
+                filters: { ...prev.filters, search: searchTerm || undefined },
+            }))
+        }, 300)
+
+        return () => {
+            if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current)
+            }
+        }
+    }, [searchTerm])
+
     // URL의 manager 파라미터가 변경되면 params 업데이트
     useEffect(() => {
         setParams(prev => ({
@@ -161,13 +185,7 @@ export function CustomersPage() {
 
     const { data: response, isLoading } = useCustomers(params)
 
-    const handleSearch = (value: string) => {
-        setParams(prev => ({
-            ...prev,
-            page: 1,
-            filters: { ...prev.filters, search: value || undefined },
-        }))
-    }
+
 
     const handleStatusFilter = (status: string) => {
         setParams(prev => ({
@@ -329,7 +347,8 @@ export function CustomersPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
                     <Input
                         placeholder="이름 또는 전화번호로 검색..."
-                        onChange={(e) => handleSearch(e.target.value)}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10 bg-white dark:bg-zinc-900"
                     />
                 </div>
