@@ -27,6 +27,8 @@ import { ExcelUpload } from '@/components/customers/ExcelUpload'
 import { AddressSearch } from '@/components/customers/AddressSearch'
 import { BirthdateSelector } from '@/components/customers/BirthdateSelector'
 import { ManagerSelector } from '@/components/customers/ManagerSelector'
+import { StatusSelector } from '@/components/customers/StatusSelector'
+import { SourceSelector } from '@/components/customers/SourceSelector'
 import { BulkTransferModal } from '@/components/customers/BulkTransferModal'
 import type { CreateCustomerInput, CustomerListParams } from '@/types/customer'
 import { CUSTOMER_STATUSES, GENDER_OPTIONS } from '@/types/customer'
@@ -293,22 +295,6 @@ export function CustomersPage() {
         }
     }
 
-    const getStatusBadge = (status: string) => {
-        const colors: Record<string, string> = {
-            new: 'bg-teal-500/10 text-teal-400 border-teal-500/20',
-            contacted: 'bg-lime-500/10 text-lime-400 border-lime-500/20',
-            consulting: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-            closed: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-        }
-        const labels: Record<string, string> = {
-            new: '신규',
-            contacted: '연락완료',
-            consulting: '상담중',
-            closed: '계약완료',
-        }
-        return { color: colors[status] || colors.new, label: labels[status] || status }
-    }
-
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
@@ -438,7 +424,6 @@ export function CustomersPage() {
                                     </thead>
                                     <tbody>
                                         {response?.data.map((customer, index) => {
-                                            const statusBadge = getStatusBadge(customer.status)
                                             const isSelected = selectedIds.includes(customer.id)
                                             return (
                                                 <tr
@@ -472,13 +457,17 @@ export function CustomersPage() {
                                                     <td className="py-4 px-4 text-sm text-muted-foreground">
                                                         {customer.phone || '-'}
                                                     </td>
-                                                    <td className="py-4 px-4 text-sm text-muted-foreground">
-                                                        {customer.source || '-'}
+                                                    <td className="py-4 px-4 text-sm">
+                                                        <SourceSelector
+                                                            customerId={customer.id}
+                                                            currentSource={customer.source}
+                                                        />
                                                     </td>
                                                     <td className="py-3 px-4">
-                                                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-md border ${statusBadge.color}`}>
-                                                            {statusBadge.label}
-                                                        </span>
+                                                        <StatusSelector
+                                                            customerId={customer.id}
+                                                            currentStatus={customer.status}
+                                                        />
                                                     </td>
                                                     <td className="py-4 px-4 text-sm">
                                                         <ManagerSelector

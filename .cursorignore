@@ -1,0 +1,20 @@
+# 의존성 및 빌드 파일
+node_modules/
+dist/
+build/
+.next/
+out/
+
+# 미디어 파일 (토큰 소모가 큼)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.mp4
+*.pdf
+
+# 기타 로그 및 설정
+*.log
+.DS_Store
+.env*
