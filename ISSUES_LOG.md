@@ -251,6 +251,42 @@ const managerId = isAdmin ? undefined : user?.id
 
 ---
 
+## Phase 6: 사원 관리 개선
+
+### 6.1 사원 목록 컬럼 순서 변경
+
+**요청**: 사원 목록 컬럼 순서 변경
+- 기존: 이름, 이메일, 보안등급, 조직, 상위자, 직급
+- 변경: 이름, 직급, 조직, 보안등급, 상위자, 이메일
+
+**해결**: `EmployeesPage.tsx`의 thead와 tbody 컬럼 순서 수정
+
+---
+
+### 6.2 비활성 사원 관리 기능
+
+**요청**: 삭제된 사원을 목록에서 숨기고, 별도 메뉴에서 관리 및 복원 가능하게
+
+**구현**:
+1. **서비스 레이어** (`src/services/employees.ts`)
+   - `restoreEmployee(id)` 함수 추가 - `is_active: true`로 업데이트
+
+2. **훅 레이어** (`src/hooks/useEmployees.ts`)
+   - `useRestoreEmployee` 훅 추가
+
+3. **UI 레이어** (`src/pages/EmployeesPage.tsx`)
+   - 활성/비활성 탭 버튼 추가 (개수 표시)
+   - `showInactive` 상태로 뷰 전환
+   - 활성 사원: 수정/비활성화 버튼
+   - 비활성 사원: 복원 버튼 (녹색 RotateCcw 아이콘)
+   - 빈 상태 메시지 분기 처리
+
+**결과**:
+- 활성 사원 목록에서 비활성 사원 숨김
+- "비활성 사원" 탭에서 비활성화된 사원 확인 및 복원 가능
+
+---
+
 ## 향후 개선 사항
 
 ### 미해결/추후 작업
