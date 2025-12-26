@@ -98,6 +98,18 @@ export async function deleteEmployee(id: string): Promise<void> {
     if (error) throw error
 }
 
+export async function restoreEmployee(id: string): Promise<Employee> {
+    const { data, error } = await supabase
+        .from('employees')
+        .update({ is_active: true, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single()
+
+    if (error) throw error
+    return toCamelCase<Employee>(data)
+}
+
 export async function bulkCreateEmployees(employees: CreateEmployeeInput[]): Promise<{ success: number; failed: number }> {
     let success = 0
     let failed = 0

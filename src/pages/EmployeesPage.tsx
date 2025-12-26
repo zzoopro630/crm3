@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from '@/hooks/useEmployees'
+import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee, useRestoreEmployee } from '@/hooks/useEmployees'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,7 +18,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import { Plus, Pencil, Trash2, Loader2, Search, FileSpreadsheet } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, Search, FileSpreadsheet, RotateCcw, Users, UserX } from 'lucide-react'
 import { EmployeeExcelUpload } from '@/components/employees/EmployeeExcelUpload'
 import type { Employee, CreateEmployeeInput } from '@/types/employee'
 import { SECURITY_LEVELS } from '@/types/employee'
@@ -29,11 +29,13 @@ export function EmployeesPage() {
     const createEmployee = useCreateEmployee()
     const updateEmployee = useUpdateEmployee()
     const deleteEmployee = useDeleteEmployee()
+    const restoreEmployee = useRestoreEmployee()
 
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isExcelUploadOpen, setIsExcelUploadOpen] = useState(false)
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
+    const [showInactive, setShowInactive] = useState(false)
 
     const [formData, setFormData] = useState<CreateEmployeeInput>({
         email: '',
@@ -57,7 +59,13 @@ export function EmployeesPage() {
         return employees.find(e => e.id === empId)?.fullName || '-'
     }
 
-    const filteredEmployees = employees?.filter(emp =>
+    // 활성/비활성 사원 분리
+    const activeEmployees = employees?.filter(emp => emp.isActive) || []
+    const inactiveEmployees = employees?.filter(emp => !emp.isActive) || []
+
+    // 현재 보기 모드에 따른 필터링
+    const currentList = showInactive ? inactiveEmployees : activeEmployees
+    const filteredEmployees = currentList.filter(emp =>
         emp.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         emp.email.toLowerCase().includes(searchQuery.toLowerCase())
     )
@@ -123,6 +131,16 @@ export function EmployeesPage() {
         }
     }
 
+    const handleRestore = async (id: string) => {
+        if (window.confirm('이 사원을 다시 활성화하시겠습니까?')) {
+            try {
+                await restoreEmployee.mutateAsync(id)
+            } catch (error) {
+                console.error('Failed to restore employee:', error)
+            }
+        }
+    }
+
     const getSecurityLevelBadge = (level: string) => {
         const colors: Record<string, string> = {
             F1: 'bg-red-500/10 text-red-500 border-red-500/20',
@@ -163,6 +181,32 @@ export function EmployeesPage() {
                 </div>
             </div>
 
+            {/* Tabs for Active/Inactive */}
+            <div className="flex gap-2">
+                <Button
+                    variant={!showInactive ? 'default' : 'outline'}
+                    onClick={() => setShowInactive(false)}
+                    className="gap-2"
+                >
+                    <Users className="h-4 w-4" />
+                    활성 사원
+                    <span className="ml-1 text-xs bg-white/20 dark:bg-black/20 px-2 py-0.5 rounded-full">
+                        {activeEmployees.length}
+                    </span>
+                </Button>
+                <Button
+                    variant={showInactive ? 'default' : 'outline'}
+                    onClick={() => setShowInactive(true)}
+                    className="gap-2"
+                >
+                    <UserX className="h-4 w-4" />
+                    비활성 사원
+                    <span className="ml-1 text-xs bg-white/20 dark:bg-black/20 px-2 py-0.5 rounded-full">
+                        {inactiveEmployees.length}
+                    </span>
+                </Button>
+            </div>
+
             {/* Search */}
             <div className="relative max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
@@ -177,14 +221,31 @@ export function EmployeesPage() {
             {/* Employee List */}
             <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
                 <CardHeader>
-                    <CardTitle className="text-zinc-900 dark:text-white">사원 목록</CardTitle>
-                    <CardDescription>총 {filteredEmployees?.length || 0}명</CardDescription>
+                    <CardTitle className="text-zinc-900 dark:text-white">
+                        {showInactive ? '비활성 사원 목록' : '사원 목록'}
+                    </CardTitle>
+                    <CardDescription>
+                        {showInactive
+                            ? `비활성화된 사원 ${filteredEmployees.length}명`
+                            : `총 ${filteredEmployees.length}명`
+                        }
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {filteredEmployees?.length === 0 ? (
+                    {filteredEmployees.length === 0 ? (
                         <div className="text-center py-12 text-zinc-500">
-                            <p>등록된 사원이 없습니다</p>
-                            <p className="text-sm mt-1">사원을 등록하여 시스템을 시작하세요</p>
+                            {showInactive ? (
+                                <>
+                                    <UserX className="h-12 w-12 mx-auto mb-4 text-zinc-300" />
+                                    <p>비활성화된 사원이 없습니다</p>
+                                </>
+                            ) : (
+                                <>
+                                    <Users className="h-12 w-12 mx-auto mb-4 text-zinc-300" />
+                                    <p>등록된 사원이 없습니다</p>
+                                    <p className="text-sm mt-1">사원을 등록하여 시스템을 시작하세요</p>
+                                </>
+                            )}
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
@@ -208,9 +269,6 @@ export function EmployeesPage() {
                                         >
                                             <td className="py-3 px-4 text-sm text-zinc-900 dark:text-white font-medium">
                                                 {employee.fullName}
-                                                {!employee.isActive && (
-                                                    <span className="ml-2 text-xs text-zinc-400">(비활성)</span>
-                                                )}
                                             </td>
                                             <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
                                                 {employee.positionName || '-'}
@@ -231,22 +289,38 @@ export function EmployeesPage() {
                                             </td>
                                             <td className="py-3 px-4 text-right">
                                                 <div className="flex justify-end gap-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => handleOpenSheet(employee)}
-                                                        className="h-8 w-8"
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => handleDelete(employee.id)}
-                                                        className="h-8 w-8 text-red-500 hover:text-red-600"
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
+                                                    {showInactive ? (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => handleRestore(employee.id)}
+                                                            className="h-8 w-8 text-green-500 hover:text-green-600"
+                                                            title="사원 복원"
+                                                        >
+                                                            <RotateCcw className="h-4 w-4" />
+                                                        </Button>
+                                                    ) : (
+                                                        <>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => handleOpenSheet(employee)}
+                                                                className="h-8 w-8"
+                                                                title="수정"
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => handleDelete(employee.id)}
+                                                                className="h-8 w-8 text-red-500 hover:text-red-600"
+                                                                title="비활성화"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>
