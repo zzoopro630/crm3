@@ -21,6 +21,15 @@ dist-ssr
 # Playwright
 .playwright-mcp
 
+# Reference/temp files
+sample.png
+*.sample.*
+temp/
+tmp/
+
+# Workspace files
+*.code-workspace
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
