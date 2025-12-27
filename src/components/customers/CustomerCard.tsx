@@ -24,8 +24,8 @@ export function CustomerCard({
     return (
         <div
             className={`p-4 rounded-xl border transition-colors ${isSelected
-                    ? 'bg-primary/10 border-primary/30'
-                    : 'bg-card border-border hover:bg-secondary/30'
+                ? 'bg-primary/10 border-primary/30'
+                : 'bg-card border-border hover:bg-secondary/30'
                 }`}
         >
             {/* Header: 이름 + 상태 */}
@@ -56,7 +56,16 @@ export function CustomerCard({
             <div className="space-y-2 text-sm text-muted-foreground mb-3">
                 <div className="flex items-center justify-between">
                     <span>전화번호</span>
-                    <span className="text-foreground">{customer.phone || '-'}</span>
+                    {customer.phone ? (
+                        <a
+                            href={`tel:${customer.phone}`}
+                            className="text-foreground hover:text-primary underline"
+                        >
+                            {customer.phone}
+                        </a>
+                    ) : (
+                        <span className="text-foreground">-</span>
+                    )}
                 </div>
                 <div className="flex items-center justify-between">
                     <span>유입경로</span>

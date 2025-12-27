@@ -14,6 +14,8 @@ import {
 import { ArrowLeft, Loader2, Pencil, Trash2, Save, X } from 'lucide-react'
 import type { UpdateCustomerInput } from '@/types/customer'
 import { CUSTOMER_STATUSES, GENDER_OPTIONS } from '@/types/customer'
+import { CustomerNotes } from '@/components/customers/CustomerNotes'
+import { ContractList } from '@/components/customers/ContractList'
 
 export function CustomerDetailPage() {
     const { id } = useParams<{ id: string }>()
@@ -186,7 +188,16 @@ export function CustomerDetailPage() {
                                     className="bg-white dark:bg-zinc-800"
                                 />
                             ) : (
-                                <p className="text-zinc-900 dark:text-white">{customer.phone || '-'}</p>
+                                customer.phone ? (
+                                    <a
+                                        href={`tel:${customer.phone}`}
+                                        className="text-zinc-900 dark:text-white hover:text-primary underline block"
+                                    >
+                                        {customer.phone}
+                                    </a>
+                                ) : (
+                                    <p className="text-zinc-900 dark:text-white">-</p>
+                                )
                             )}
                         </div>
                         <div className="space-y-2">
@@ -315,6 +326,12 @@ export function CustomerDetailPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* 메모 섹션 */}
+            {customerId && <CustomerNotes customerId={customerId} />}
+
+            {/* 계약 정보 섹션 */}
+            {customerId && <ContractList customerId={customerId} />}
 
             {/* Timestamps */}
             <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
