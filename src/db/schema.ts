@@ -66,6 +66,30 @@ export const sources = pgTable('sources', {
     createdAt: timestamp('created_at').defaultNow(),
 })
 
+// ============ Customer Notes Table ============
+export const customerNotes = pgTable('customer_notes', {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    customerId: integer('customer_id').notNull(),
+    content: text('content').notNull(),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+})
+
+// ============ Contracts Table ============
+export const contracts = pgTable('contracts', {
+    id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+    customerId: integer('customer_id').notNull(),
+    insuranceCompany: text('insurance_company').notNull(),
+    productName: text('product_name').notNull(),
+    premium: integer('premium'),
+    paymentPeriod: text('payment_period'),
+    memo: text('memo'),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+})
+
 // ============ Type Exports ============
 export type Organization = typeof organizations.$inferSelect
 export type NewOrganization = typeof organizations.$inferInsert
@@ -76,10 +100,13 @@ export type NewPendingApproval = typeof pendingApprovals.$inferInsert
 export type Customer = typeof customers.$inferSelect
 export type NewCustomer = typeof customers.$inferInsert
 export type Source = typeof sources.$inferSelect
+export type CustomerNote = typeof customerNotes.$inferSelect
+export type NewCustomerNote = typeof customerNotes.$inferInsert
+export type Contract = typeof contracts.$inferSelect
+export type NewContract = typeof contracts.$inferInsert
 
 // ============ ENUM Value Types ============
 export type SecurityLevel = typeof securityLevelEnum.enumValues[number]
 export type CustomerStatus = typeof customerStatusEnum.enumValues[number]
 export type Gender = typeof genderEnum.enumValues[number]
 export type ApprovalStatus = typeof approvalStatusEnum.enumValues[number]
-
