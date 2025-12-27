@@ -40,3 +40,6 @@ tmp/
 *.njsproj
 *.sln
 *.sw?
+
+# Supabase
+supabase/.temp
