@@ -399,13 +399,19 @@ $$ LANGUAGE SQL;
 
 ### 📋 Phase 6: 추후 검토 사항
 
-#### 6.1 파일 보관 저장소 검토
+#### 6.1 내 계정 페이지 (신규)
+- [ ] `/settings/profile` 페이지 구현
+- [ ] 내 정보 조회 (이름, 이메일, 보안등급, 소속)
+- [ ] 비밀번호 변경 (Supabase Auth 연동)
+- [ ] 프로필 이미지 업로드 (선택)
+
+#### 6.2 파일 보관 저장소 검토
 - [ ] Supabase Storage 활용 검토
 - [ ] Cloudflare R2 활용 검토
 - [ ] Google File Search API 사용 고려
 - [ ] 고객 서류 PDF 보관 기능 구현
 
-#### 6.2 UUID v7 마이그레이션 및 URL 보안
+#### 6.3 UUID v7 마이그레이션 및 URL 보안
 - [ ] UUID v4 → v7 마이그레이션 (employees, pendingApprovals 테이블)
 - [ ] customers 테이블 ID: Integer → UUID v7 변경 검토
   - 장점: URL에서 순번 추측 불가, 인덱스 성능 향상 (시간순 정렬)
