@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "npm run build && wrangler pages dev dist --compatibility-date=2024-12-01",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -14,6 +15,7 @@
     "db:seed": "npx tsx src/db/seed.ts"
   },
   "dependencies": {
+    "@hono/node-server": "^1.19.7",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -28,6 +30,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.1",
     "exceljs": "^4.4.0",
+    "hono": "^4.11.3",
     "kr-format": "^1.0.1",
     "lucide-react": "^0.562.0",
     "postgres": "^3.4.7",
@@ -41,6 +44,7 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251229.0",
     "@eslint/js": "^9.39.1",
     "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^24.10.1",
@@ -57,6 +61,7 @@
     "tw-animate-css": "^1.4.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "wrangler": "^4.54.0"
   }
 }

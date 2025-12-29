@@ -1,5 +1,3 @@
-import { supabase } from '@/utils/supabase'
-
 // ============ Types ============
 
 export interface Source {
@@ -12,73 +10,47 @@ export interface CreateSourceInput {
     name: string
 }
 
+// ============ API Helper ============
+
+async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
+    const response = await fetch(url, {
+        headers: {
+            'Content-Type': 'application/json',
+            ...options?.headers,
+        },
+        ...options,
+    })
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(error.error || `HTTP ${response.status}`)
+    }
+
+    return response.json()
+}
+
 // ============ Source Services ============
 
-/**
- * 모든 소스 목록 조회
- */
 export async function getSources(): Promise<Source[]> {
-    const { data, error } = await supabase
-        .from('sources')
-        .select('*')
-        .order('name', { ascending: true })
-
-    if (error) throw error
-
-    return (data || []).map(row => ({
-        id: row.id,
-        name: row.name,
-        createdAt: row.created_at,
-    }))
+    return apiRequest<Source[]>('/api/sources')
 }
 
-/**
- * 소스 생성
- */
 export async function createSource(input: CreateSourceInput): Promise<Source> {
-    const { data, error } = await supabase
-        .from('sources')
-        .insert({ name: input.name })
-        .select()
-        .single()
-
-    if (error) throw error
-
-    return {
-        id: data.id,
-        name: data.name,
-        createdAt: data.created_at,
-    }
+    return apiRequest<Source>('/api/sources', {
+        method: 'POST',
+        body: JSON.stringify(input),
+    })
 }
 
-/**
- * 소스 수정
- */
 export async function updateSource(id: number, name: string): Promise<Source> {
-    const { data, error } = await supabase
-        .from('sources')
-        .update({ name })
-        .eq('id', id)
-        .select()
-        .single()
-
-    if (error) throw error
-
-    return {
-        id: data.id,
-        name: data.name,
-        createdAt: data.created_at,
-    }
+    return apiRequest<Source>(`/api/sources/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ name }),
+    })
 }
 
-/**
- * 소스 삭제
- */
 export async function deleteSource(id: number): Promise<void> {
-    const { error } = await supabase
-        .from('sources')
-        .delete()
-        .eq('id', id)
-
-    if (error) throw error
+    await apiRequest(`/api/sources/${id}`, {
+        method: 'DELETE',
+    })
 }

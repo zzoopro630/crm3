@@ -9,8 +9,8 @@
 - **프론트엔드**: React + Vite (경량화, 빠른 개발 서버)
 - **보안 강화**: 최신 보안 패치 적용, RLS 정책 강화
 - **아키텍처 개선**: 상태 관리 체계화, API 레이어 분리
-- 백엔드 : Hono, pages functions 이용해서 배포 (절대 workers로 분리하지 말것)
-- ORM : drizzle
+- **백엔드** : Hono, pages functions 이용해서 배포 (절대 workers로 분리하지 말것)
+- **ORM** : drizzle (SQL Editor를 사용해야 하는 경우 drizzle로 변경)
 
 ---
 
@@ -394,6 +394,24 @@ $$ LANGUAGE SQL;
 - `src/services/dashboard.ts` - 대시보드 통계 서비스
 - `src/hooks/useDashboard.ts` - TanStack Query 훅
 - `src/pages/DashboardPage.tsx` - UI 컴포넌트
+
+---
+
+### 📋 Phase 6: 추후 검토 사항
+
+#### 6.1 파일 보관 저장소 검토
+- [ ] Supabase Storage 활용 검토
+- [ ] Cloudflare R2 활용 검토
+- [ ] Google File Search API 사용 고려
+- [ ] 고객 서류 PDF 보관 기능 구현
+
+#### 6.2 UUID v7 마이그레이션 및 URL 보안
+- [ ] UUID v4 → v7 마이그레이션 (employees, pendingApprovals 테이블)
+- [ ] customers 테이블 ID: Integer → UUID v7 변경 검토
+  - 장점: URL에서 순번 추측 불가, 인덱스 성능 향상 (시간순 정렬)
+  - 고려사항: 관련 FK (customerNotes, contracts) 함께 변경 필요
+- [ ] 기존 데이터 마이그레이션 전략 수립
+- [ ] PostgreSQL uuidv7 확장 또는 앱 레벨 생성 방식 결정
 
 ---
 

@@ -1,113 +1,66 @@
-import { supabase } from '@/utils/supabase'
 import type { Employee, CreateEmployeeInput, UpdateEmployeeInput, PendingApproval } from '@/types/employee'
 
-// ============ Helper Functions ============
+// ============ API Helper ============
 
-// Convert camelCase to snake_case for database
-function toSnakeCase(obj: Record<string, unknown>): Record<string, unknown> {
-    const result: Record<string, unknown> = {}
-    for (const key in obj) {
-        const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
-        result[snakeKey] = obj[key]
+async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
+    const response = await fetch(url, {
+        headers: {
+            'Content-Type': 'application/json',
+            ...options?.headers,
+        },
+        ...options,
+    })
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(error.error || `HTTP ${response.status}`)
     }
-    return result
-}
 
-// Convert snake_case to camelCase for frontend
-function toCamelCase<T>(obj: Record<string, unknown>): T {
-    const result: Record<string, unknown> = {}
-    for (const key in obj) {
-        const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
-        result[camelKey] = obj[key]
-    }
-    return result as T
-}
-
-function toCamelCaseArray<T>(arr: Record<string, unknown>[]): T[] {
-    return arr.map(item => toCamelCase<T>(item))
+    return response.json()
 }
 
 // ============ Employee Services ============
 
 export async function getEmployees(): Promise<Employee[]> {
-    const { data, error } = await supabase
-        .from('employees')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-    if (error) throw error
-    return toCamelCaseArray<Employee>(data || [])
+    return apiRequest<Employee[]>('/api/employees')
 }
 
 export async function getEmployeeByEmail(email: string): Promise<Employee | null> {
     try {
-        // is_active 조건 없이 먼저 시도
-        const { data, error } = await supabase
-            .from('employees')
-            .select('*')
-            .eq('email', email)
-            .single()
-
-        if (error && error.code !== 'PGRST116') {
-            console.error('getEmployeeByEmail error:', error)
-            throw error
+        return await apiRequest<Employee>(`/api/employees/email/${encodeURIComponent(email)}`)
+    } catch (error) {
+        if (error instanceof Error && error.message.includes('404')) {
+            return null
         }
-        return data ? toCamelCase<Employee>(data) : null
-    } catch (err) {
-        console.error('getEmployeeByEmail failed:', err)
+        console.error('getEmployeeByEmail failed:', error)
         return null
     }
 }
 
 export async function createEmployee(input: CreateEmployeeInput): Promise<Employee> {
-    const dbInput = toSnakeCase(input as unknown as Record<string, unknown>)
-
-    const { data, error } = await supabase
-        .from('employees')
-        .insert(dbInput)
-        .select()
-        .single()
-
-    if (error) throw error
-    return toCamelCase<Employee>(data)
+    return apiRequest<Employee>('/api/employees', {
+        method: 'POST',
+        body: JSON.stringify(input),
+    })
 }
 
 export async function updateEmployee(id: string, input: UpdateEmployeeInput): Promise<Employee> {
-    const dbInput = {
-        ...toSnakeCase(input as unknown as Record<string, unknown>),
-        updated_at: new Date().toISOString()
-    }
-
-    const { data, error } = await supabase
-        .from('employees')
-        .update(dbInput)
-        .eq('id', id)
-        .select()
-        .single()
-
-    if (error) throw error
-    return toCamelCase<Employee>(data)
+    return apiRequest<Employee>(`/api/employees/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(input),
+    })
 }
 
 export async function deleteEmployee(id: string): Promise<void> {
-    const { error } = await supabase
-        .from('employees')
-        .update({ is_active: false, updated_at: new Date().toISOString() })
-        .eq('id', id)
-
-    if (error) throw error
+    await apiRequest(`/api/employees/${id}`, {
+        method: 'DELETE',
+    })
 }
 
 export async function restoreEmployee(id: string): Promise<Employee> {
-    const { data, error } = await supabase
-        .from('employees')
-        .update({ is_active: true, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single()
-
-    if (error) throw error
-    return toCamelCase<Employee>(data)
+    return apiRequest<Employee>(`/api/employees/${id}/restore`, {
+        method: 'PUT',
+    })
 }
 
 export async function bulkCreateEmployees(employees: CreateEmployeeInput[]): Promise<{ success: number; failed: number }> {
@@ -130,35 +83,14 @@ export async function bulkCreateEmployees(employees: CreateEmployeeInput[]): Pro
 // ============ Pending Approvals Services ============
 
 export async function getPendingApprovals(): Promise<PendingApproval[]> {
-    const { data, error } = await supabase
-        .from('pending_approvals')
-        .select('*')
-        .eq('status', 'pending')
-        .order('requested_at', { ascending: true })
-
-    if (error) throw error
-    return toCamelCaseArray<PendingApproval>(data || [])
+    return apiRequest<PendingApproval[]>('/api/pending-approvals')
 }
 
 export async function createPendingApproval(email: string): Promise<PendingApproval> {
-    // Check if already exists
-    const { data: existing } = await supabase
-        .from('pending_approvals')
-        .select('*')
-        .eq('email', email)
-        .eq('status', 'pending')
-        .single()
-
-    if (existing) return toCamelCase<PendingApproval>(existing)
-
-    const { data, error } = await supabase
-        .from('pending_approvals')
-        .insert({ email })
-        .select()
-        .single()
-
-    if (error) throw error
-    return toCamelCase<PendingApproval>(data)
+    return apiRequest<PendingApproval>('/api/pending-approvals', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+    })
 }
 
 export async function approveUser(
@@ -166,31 +98,18 @@ export async function approveUser(
     employeeData: CreateEmployeeInput,
     approvedBy: string
 ): Promise<Employee> {
-    // Create employee
-    const employee = await createEmployee(employeeData)
-
-    // Update approval status
-    await supabase
-        .from('pending_approvals')
-        .update({
-            status: 'approved',
-            processed_by: approvedBy,
-            processed_at: new Date().toISOString()
-        })
-        .eq('id', approvalId)
-
-    return employee
+    return apiRequest<Employee>(`/api/pending-approvals/${approvalId}/approve`, {
+        method: 'PUT',
+        body: JSON.stringify({
+            ...employeeData,
+            approvedBy,
+        }),
+    })
 }
 
 export async function rejectUser(approvalId: string, rejectedBy: string): Promise<void> {
-    const { error } = await supabase
-        .from('pending_approvals')
-        .update({
-            status: 'rejected',
-            processed_by: rejectedBy,
-            processed_at: new Date().toISOString()
-        })
-        .eq('id', approvalId)
-
-    if (error) throw error
+    await apiRequest(`/api/pending-approvals/${approvalId}/reject`, {
+        method: 'PUT',
+        body: JSON.stringify({ rejectedBy }),
+    })
 }
