@@ -3,6 +3,14 @@ import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
     LayoutDashboard,
     Users,
     UsersRound,
@@ -10,7 +18,13 @@ import {
     LogOut,
     ChevronLeft,
     Menu,
+    User,
+    Moon,
+    Sun,
+    ChevronUp,
 } from 'lucide-react'
+import { useThemeStore } from '@/stores/themeStore'
+
 
 interface NavItem {
     title: string
@@ -36,6 +50,11 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
     const location = useLocation()
     const navigate = useNavigate()
     const { signOut, user, employee } = useAuthStore()
+    const { theme, setTheme } = useThemeStore()
+
+    const handleToggleTheme = () => {
+        setTheme(theme === 'dark' ? 'light' : 'dark')
+    }
 
     const isAdmin = employee?.securityLevel === 'F1'
     const isManager = employee && ['F1', 'F2', 'F3', 'F4', 'F5'].includes(employee.securityLevel)
@@ -112,32 +131,61 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                         })}
                     </nav>
 
-                    {/* User section */}
+                    {/* User section with dropdown */}
                     <div className="p-4 border-t border-border">
-                        <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-secondary/50 mb-3">
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                                <span className="text-xs font-medium text-primary-foreground">
-                                    {employee?.fullName?.charAt(0) || user?.email?.charAt(0).toUpperCase() || 'U'}
-                                </span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-foreground truncate">
-                                    {employee?.fullName || user?.email?.split('@')[0] || '사용자'}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    {employee?.securityLevel || 'FC'}
-                                    {employee?.positionName && ` · ${employee.positionName}`}
-                                </p>
-                            </div>
-                        </div>
-                        <Button
-                            variant="ghost"
-                            onClick={handleSignOut}
-                            className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-secondary"
-                        >
-                            <LogOut className="mr-2 h-4 w-4" />
-                            로그아웃
-                        </Button>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                                        <span className="text-xs font-medium text-primary-foreground">
+                                            {employee?.fullName?.charAt(0) || user?.email?.charAt(0).toUpperCase() || 'U'}
+                                        </span>
+                                    </div>
+                                    <div className="flex-1 min-w-0 text-left">
+                                        <p className="text-sm font-medium text-foreground truncate">
+                                            {employee?.fullName || user?.email?.split('@')[0] || '사용자'}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {employee?.securityLevel || 'FC'}
+                                            {employee?.positionName && ` · ${employee.positionName}`}
+                                        </p>
+                                    </div>
+                                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-56" side="top">
+                                <DropdownMenuLabel>
+                                    <div className="flex flex-col">
+                                        <span>{employee?.fullName || '사용자'}</span>
+                                        <span className="text-xs font-normal text-muted-foreground">
+                                            {user?.email}
+                                        </span>
+                                    </div>
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
+                                    <User className="mr-2 h-4 w-4" />
+                                    내 계정
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                                    <Settings className="mr-2 h-4 w-4" />
+                                    설정
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleToggleTheme}>
+                                    {theme === 'dark' ? (
+                                        <Sun className="mr-2 h-4 w-4" />
+                                    ) : (
+                                        <Moon className="mr-2 h-4 w-4" />
+                                    )}
+                                    {theme === 'dark' ? '라이트 모드' : '다크 모드'}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    로그아웃
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </div>
                 </div>
             </aside>

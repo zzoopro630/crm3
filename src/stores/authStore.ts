@@ -77,12 +77,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     checkEmployeeStatus: async (email: string) => {
+        // 최고관리자 폴백 (API 실패해도 로그인 허용)
+        const SUPER_ADMIN_EMAIL = 'imnakjoo@gmail.com'
+
         try {
             const employee = await getEmployeeByEmail(email)
 
             if (employee) {
                 set({
                     employee,
+                    isApproved: true,
+                    isLoading: false,
+                })
+            } else if (email === SUPER_ADMIN_EMAIL) {
+                // 최고관리자 폴백
+                set({
+                    employee: {
+                        id: 'fallback-admin',
+                        email: SUPER_ADMIN_EMAIL,
+                        fullName: '최고관리자',
+                        securityLevel: 'F1',
+                        organizationId: null,
+                        isActive: true,
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                    } as any,
                     isApproved: true,
                     isLoading: false,
                 })
@@ -101,11 +120,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
         } catch (error) {
             console.error('Employee status check error:', error)
-            set({
-                employee: null,
-                isApproved: false,
-                isLoading: false,
-            })
+            // 최고관리자는 에러 시에도 폴백
+            if (email === SUPER_ADMIN_EMAIL) {
+                set({
+                    employee: {
+                        id: 'fallback-admin',
+                        email: SUPER_ADMIN_EMAIL,
+                        fullName: '최고관리자',
+                        securityLevel: 'F1',
+                        organizationId: null,
+                        isActive: true,
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                    } as any,
+                    isApproved: true,
+                    isLoading: false,
+                })
+            } else {
+                set({
+                    employee: null,
+                    isApproved: false,
+                    isLoading: false,
+                })
+            }
         }
     },
 
