@@ -1093,7 +1093,11 @@ app.put('/api/customers/:id/transfer', async (c) => {
     return c.json({ success: true })
 })
 
+// Cloudflare Pages Functions export
+import { handle } from 'hono/cloudflare-pages'
+export const onRequest = handle(app)
 export default app
+
 
 
 
