@@ -60,11 +60,7 @@ export function TeamPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">팀 관리</h1>
-                <p className="text-zinc-500 dark:text-zinc-400">팀원 현황 및 고객 배정을 관리합니다</p>
-            </div>
+            {/* Header removed */}
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

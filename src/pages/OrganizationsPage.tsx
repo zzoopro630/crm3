@@ -104,12 +104,8 @@ export function OrganizationsPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">조직 관리</h1>
-                    <p className="text-zinc-500 dark:text-zinc-400">조직(팀)을 관리합니다</p>
-                </div>
+            {/* Actions (Title removed) */}
+            <div className="flex justify-end mb-4">
                 <Button onClick={() => handleOpenDialog()}>
                     <Plus className="mr-2 h-4 w-4" />
                     조직 추가

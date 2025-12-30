@@ -12,6 +12,11 @@ import { CustomersPage } from '@/pages/CustomersPage'
 import { CustomerDetailPage } from '@/pages/CustomerDetailPage'
 import { TeamPage } from '@/pages/TeamPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { OrganizationsPage } from '@/pages/OrganizationsPage'
+import { LabelsPage } from '@/pages/LabelsPage'
+import { EmployeesPage } from '@/pages/EmployeesPage'
+import { PendingApprovalsPage } from '@/pages/PendingApprovalsPage'
+import { SystemSettingsPage } from '@/pages/SystemSettingsPage'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -62,12 +67,21 @@ function AppContent() {
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/customers/:id" element={<CustomerDetailPage />} />
         <Route path="/team" element={<TeamPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        {/* 기존 개별 경로들을 /settings로 리다이렉트 */}
-        <Route path="/organizations" element={<Navigate to="/settings" replace />} />
-        <Route path="/sources" element={<Navigate to="/settings" replace />} />
-        <Route path="/employees" element={<Navigate to="/settings" replace />} />
-        <Route path="/approvals" element={<Navigate to="/settings" replace />} />
+
+        {/* Settings nested routes */}
+        <Route path="/settings" element={<SettingsPage />}>
+          <Route index element={<Navigate to="organizations" replace />} />
+          <Route path="organizations" element={<OrganizationsPage />} />
+          <Route path="labels" element={<LabelsPage />} />
+          <Route path="employees" element={<EmployeesPage />} />
+          <Route path="approvals" element={<PendingApprovalsPage />} />
+          <Route path="system" element={<SystemSettingsPage />} />
+        </Route>
+
+        {/* Legacy routes redirect */}
+        <Route path="/organizations" element={<Navigate to="/settings/organizations" replace />} />
+        <Route path="/employees" element={<Navigate to="/settings/employees" replace />} />
+        <Route path="/approvals" element={<Navigate to="/settings/approvals" replace />} />
       </Route>
     </Routes>
   )

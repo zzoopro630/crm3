@@ -107,11 +107,7 @@ export function PendingApprovalsPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">승인 대기</h1>
-                <p className="text-zinc-500 dark:text-zinc-400">가입 요청을 검토하고 승인합니다</p>
-            </div>
+            {/* Header removed */}
 
             {/* Pending List */}
             <Card className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
