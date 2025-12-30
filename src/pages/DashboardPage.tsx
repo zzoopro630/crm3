@@ -35,29 +35,29 @@ export function DashboardPage() {
             label: '전체 고객',
             value: stats?.totalCustomers || 0,
             icon: Users,
-            color: 'text-violet-600 dark:text-violet-400',
-            bgColor: 'bg-violet-100 dark:bg-violet-900/30',
+            color: 'text-primary',
+            bgColor: 'bg-primary/10',
         },
         {
             label: '신규 고객',
             value: stats?.newCustomers || 0,
             icon: UserPlus,
-            color: 'text-blue-600 dark:text-blue-400',
-            bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+            color: 'text-primary',
+            bgColor: 'bg-primary/10',
         },
         {
             label: '상담 중',
             value: stats?.consultingCustomers || 0,
             icon: MessageSquare,
-            color: 'text-amber-600 dark:text-amber-400',
-            bgColor: 'bg-amber-100 dark:bg-amber-900/30',
+            color: 'text-primary',
+            bgColor: 'bg-primary/10',
         },
         {
             label: '계약 완료',
             value: stats?.closedCustomers || 0,
             icon: CheckCircle,
-            color: 'text-emerald-600 dark:text-emerald-400',
-            bgColor: 'bg-emerald-100 dark:bg-emerald-900/30',
+            color: 'text-primary',
+            bgColor: 'bg-primary/10',
         },
     ]
 
@@ -110,11 +110,6 @@ export function DashboardPage() {
                                 className="flex items-center justify-between p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                                        <span className="text-sm font-medium text-violet-600 dark:text-violet-400">
-                                            {customer.name.charAt(0)}
-                                        </span>
-                                    </div>
                                     <div>
                                         <p className="font-medium text-zinc-900 dark:text-white">{customer.name}</p>
                                         <p className="text-sm text-zinc-500 dark:text-zinc-400">
@@ -123,15 +118,14 @@ export function DashboardPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                        customer.status === 'new'
-                                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                                            : customer.status === 'contacted'
-                                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
-                                                : customer.status === 'consulting'
-                                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                    }`}>
+                                    <span
+                                        className="px-2 py-1 text-xs font-medium rounded-full border"
+                                        style={{
+                                            backgroundColor: `var(--status-${customer.status}-bg, var(--status-new-bg))`,
+                                            color: `var(--status-${customer.status}, var(--status-new))`,
+                                            borderColor: `var(--status-${customer.status}, var(--status-new))`,
+                                        }}
+                                    >
                                         {STATUS_LABELS[customer.status] || customer.status}
                                     </span>
                                     <span className="text-sm text-zinc-400 dark:text-zinc-500">

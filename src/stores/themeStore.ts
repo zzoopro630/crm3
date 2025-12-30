@@ -23,6 +23,7 @@ export const useThemeStore = create<ThemeState>()(
 // Apply theme to document
 export function applyTheme(theme: Theme) {
     const root = window.document.documentElement
+    // 모든 테마 클래스 제거
     root.classList.remove('light', 'dark')
 
     if (theme === 'system') {
