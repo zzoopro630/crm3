@@ -1,36 +1,15 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-    DropdownMenuSub,
-    DropdownMenuSubTrigger,
-    DropdownMenuSubContent,
-    DropdownMenuPortal,
-} from '@/components/ui/dropdown-menu'
 import {
     LayoutDashboard,
     Users,
     UsersRound,
     Settings,
-    LogOut,
     ChevronLeft,
     Menu,
-    User,
-    Moon,
-    Sun,
-    ChevronUp,
-    Palette,
-    Monitor,
-    Check,
 } from 'lucide-react'
-import { useThemeStore } from '@/stores/themeStore'
 
 
 interface NavItem {
@@ -55,25 +34,10 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onToggle }: SidebarProps) {
     const location = useLocation()
-    const navigate = useNavigate()
-    const { signOut, user, employee } = useAuthStore()
-    const { theme, setTheme } = useThemeStore()
-
-    const getThemeLabel = () => {
-        switch (theme) {
-            case 'light': return '라이트'
-            case 'dark': return '다크'
-            default: return '시스템'
-        }
-    }
+    const { employee } = useAuthStore()
 
     const isAdmin = employee?.securityLevel === 'F1'
     const isManager = employee && ['F1', 'F2', 'F3', 'F4', 'F5'].includes(employee.securityLevel)
-
-    const handleSignOut = async () => {
-        await signOut()
-        navigate('/login')
-    }
 
     const visibleNavItems = navItems.filter(item => {
         if (item.adminOnly && !isAdmin) return false
@@ -141,81 +105,6 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                             )
                         })}
                     </nav>
-
-                    {/* User section with dropdown */}
-                    <div className="p-4 border-t border-border">
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                                        <span className="text-xs font-medium text-primary-foreground">
-                                            {employee?.fullName?.charAt(0) || user?.email?.charAt(0).toUpperCase() || 'U'}
-                                        </span>
-                                    </div>
-                                    <div className="flex-1 min-w-0 text-left">
-                                        <p className="text-sm font-medium text-foreground truncate">
-                                            {employee?.fullName || user?.email?.split('@')[0] || '사용자'}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {employee?.securityLevel || 'FC'}
-                                            {employee?.positionName && ` · ${employee.positionName}`}
-                                        </p>
-                                    </div>
-                                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                                </button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start" className="w-56" side="top">
-                                <DropdownMenuLabel>
-                                    <div className="flex flex-col">
-                                        <span>{employee?.fullName || '사용자'}</span>
-                                        <span className="text-xs font-normal text-muted-foreground">
-                                            {user?.email}
-                                        </span>
-                                    </div>
-                                </DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
-                                    <User className="mr-2 h-4 w-4" />
-                                    내 계정
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => navigate('/settings')}>
-                                    <Settings className="mr-2 h-4 w-4" />
-                                    설정
-                                </DropdownMenuItem>
-                                <DropdownMenuSub>
-                                    <DropdownMenuSubTrigger>
-                                        <Palette className="mr-2 h-4 w-4" />
-                                        테마: {getThemeLabel()}
-                                    </DropdownMenuSubTrigger>
-                                    <DropdownMenuPortal>
-                                        <DropdownMenuSubContent>
-                                            <DropdownMenuItem onClick={() => setTheme('light')}>
-                                                <Sun className="mr-2 h-4 w-4" />
-                                                라이트
-                                                {theme === 'light' && <Check className="ml-auto h-4 w-4" />}
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => setTheme('dark')}>
-                                                <Moon className="mr-2 h-4 w-4" />
-                                                다크
-                                                {theme === 'dark' && <Check className="ml-auto h-4 w-4" />}
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem onClick={() => setTheme('system')}>
-                                                <Monitor className="mr-2 h-4 w-4" />
-                                                시스템
-                                                {theme === 'system' && <Check className="ml-auto h-4 w-4" />}
-                                            </DropdownMenuItem>
-                                        </DropdownMenuSubContent>
-                                    </DropdownMenuPortal>
-                                </DropdownMenuSub>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
-                                    <LogOut className="mr-2 h-4 w-4" />
-                                    로그아웃
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </div>
                 </div>
             </aside>
         </>

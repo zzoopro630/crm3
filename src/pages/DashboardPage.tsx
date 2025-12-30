@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { useDashboardStats } from '@/hooks/useDashboard'
-import { useAuthStore } from '@/stores/authStore'
 import { Loader2, Users, UserPlus, MessageSquare, CheckCircle } from 'lucide-react'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -12,7 +11,6 @@ const STATUS_LABELS: Record<string, string> = {
 
 export function DashboardPage() {
     const { data: stats, isLoading, error } = useDashboardStats()
-    const employee = useAuthStore((state) => state.employee)
 
     if (isLoading) {
         return (
@@ -63,15 +61,8 @@ export function DashboardPage() {
 
     return (
         <div className="space-y-6">
-            {/* Page header */}
-            <div>
-                <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">대시보드</h1>
-                <p className="text-zinc-500 dark:text-zinc-400">
-                    {employee?.securityLevel === 'F1'
-                        ? '전체 현황을 한눈에 확인하세요'
-                        : '내 고객 현황을 한눈에 확인하세요'}
-                </p>
-            </div>
+            {/* Page header removed */}
+
 
             {/* Stats cards */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
