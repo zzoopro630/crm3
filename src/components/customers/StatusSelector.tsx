@@ -10,33 +10,27 @@ interface StatusSelectorProps {
     currentStatus: string
 }
 
-// 상태별 스타일
+// 상태별 스타일 - CSS 변수 사용
 function getStatusStyle(status: string) {
-    switch (status) {
-        case 'new':
-            return { label: '신규', color: 'bg-blue-500/10 text-blue-500 border-blue-500/30' }
-        case 'contacted':
-            return { label: '연락완료', color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/30' }
-        case 'consulting':
-            return { label: '상담중', color: 'bg-purple-500/10 text-purple-500 border-purple-500/30' }
-        case 'closed':
-            return { label: '계약완료', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' }
-        case 'called':
-            return { label: '통화완료', color: 'bg-lime-500/10 text-lime-500 border-lime-500/30' }
-        case 'texted':
-            return { label: '문자남김', color: 'bg-orange-500/10 text-orange-500 border-orange-500/30' }
-        case 'no_answer':
-            return { label: '부재', color: 'bg-zinc-400/10 text-zinc-400 border-zinc-400/30' }
-        case 'rejected':
-            return { label: '거절', color: 'bg-red-500/10 text-red-500 border-red-500/30' }
-        case 'wrong_number':
-            return { label: '결번', color: 'bg-zinc-800/10 text-zinc-800 dark:text-zinc-200 border-zinc-800/30' }
-        case 'ineligible':
-            return { label: '가입불가', color: 'bg-pink-500/10 text-pink-500 border-pink-500/30' }
-        case 'upsell':
-            return { label: '추가제안', color: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/30' }
-        default:
-            return { label: status, color: 'bg-zinc-500/10 text-zinc-500 border-zinc-500/30' }
+    // 모노톤 블루/그레이 테마 - CSS 변수 기반
+    const statusStyles: Record<string, { label: string; cssVar: string }> = {
+        new: { label: '신규', cssVar: 'new' },
+        contacted: { label: '연락완료', cssVar: 'contacted' },
+        consulting: { label: '상담중', cssVar: 'consulting' },
+        closed: { label: '계약완료', cssVar: 'closed' },
+        called: { label: '통화완료', cssVar: 'contacted' },
+        texted: { label: '문자남김', cssVar: 'texted' },
+        no_answer: { label: '부재', cssVar: 'contacted' },
+        rejected: { label: '거절', cssVar: 'rejected' },
+        wrong_number: { label: '결번', cssVar: 'rejected' },
+        ineligible: { label: '가입불가', cssVar: 'rejected' },
+        upsell: { label: '추가제안', cssVar: 'recommend' },
+    }
+
+    const style = statusStyles[status] || { label: status, cssVar: 'new' }
+    return {
+        label: style.label,
+        cssVar: style.cssVar
     }
 }
 
@@ -67,7 +61,12 @@ export function StatusSelector({ customerId, currentStatus }: StatusSelectorProp
         <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
                 <button
-                    className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border cursor-pointer hover:opacity-80 transition-opacity ${currentStyle.color}`}
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md border cursor-pointer hover:opacity-80 transition-opacity"
+                    style={{
+                        backgroundColor: `var(--status-${currentStyle.cssVar}-bg)`,
+                        color: `var(--status-${currentStyle.cssVar})`,
+                        borderColor: `var(--status-${currentStyle.cssVar})`,
+                    }}
                     disabled={updateCustomer.isPending}
                 >
                     {updateCustomer.isPending ? (
@@ -93,7 +92,14 @@ export function StatusSelector({ customerId, currentStatus }: StatusSelectorProp
                                 className={`w-full justify-start text-left ${isSelected ? 'bg-secondary' : ''}`}
                                 onClick={() => handleSelect(status.value)}
                             >
-                                <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded border ${style.color}`}>
+                                <span
+                                    className="inline-flex px-2 py-0.5 text-xs font-medium rounded border"
+                                    style={{
+                                        backgroundColor: `var(--status-${style.cssVar}-bg)`,
+                                        color: `var(--status-${style.cssVar})`,
+                                        borderColor: `var(--status-${style.cssVar})`,
+                                    }}
+                                >
                                     {style.label}
                                 </span>
                             </Button>

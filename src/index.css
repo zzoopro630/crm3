@@ -3,64 +3,130 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --radius: 0.65rem;
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: oklch(0.141 0.005 285.823);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.141 0.005 285.823);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.141 0.005 285.823);
+  --primary: oklch(0.488 0.243 264.376);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.967 0.001 286.375);
+  --muted-foreground: oklch(0.552 0.016 285.938);
+  --accent: oklch(0.967 0.001 286.375);
+  --accent-foreground: oklch(0.21 0.006 285.885);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
   --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
+  --chart-1: oklch(0.809 0.105 251.813);
+  --chart-2: oklch(0.623 0.214 259.815);
+  --chart-3: oklch(0.546 0.245 262.881);
+  --chart-4: oklch(0.488 0.243 264.376);
+  --chart-5: oklch(0.424 0.199 265.638);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.141 0.005 285.823);
+  --sidebar-primary: oklch(0.546 0.245 262.881);
+  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+  --sidebar-border: oklch(0.92 0.004 286.32);
+  --sidebar-ring: oklch(0.708 0 0);
+
+  /* 고객 상태 색상 - 모노톤 블루/그레이 */
+  --status-new: oklch(0.55 0.15 260);
+  --status-new-bg: oklch(0.95 0.02 260);
+  --status-contacted: oklch(0.5 0.1 260);
+  --status-contacted-bg: oklch(0.93 0.02 260);
+  --status-consulting: oklch(0.45 0.12 260);
+  --status-consulting-bg: oklch(0.91 0.02 260);
+  --status-closed: oklch(0.4 0.08 260);
+  --status-closed-bg: oklch(0.88 0.02 260);
+  --status-recommend: oklch(0.5 0.06 260);
+  --status-recommend-bg: oklch(0.92 0.01 260);
+  --status-texted: oklch(0.52 0.08 260);
+  --status-texted-bg: oklch(0.93 0.01 260);
+  --status-rejected: oklch(0.45 0.04 0);
+  --status-rejected-bg: oklch(0.9 0.01 0);
+
+  /* 보안 레벨 색상 - 그레이스케일 */
+  --level-f1: oklch(0.3 0 0);
+  --level-f1-bg: oklch(0.85 0 0);
+  --level-f2: oklch(0.35 0 0);
+  --level-f2-bg: oklch(0.87 0 0);
+  --level-f3: oklch(0.4 0 0);
+  --level-f3-bg: oklch(0.89 0 0);
+  --level-f4: oklch(0.45 0 0);
+  --level-f4-bg: oklch(0.91 0 0);
+  --level-f5: oklch(0.5 0 0);
+  --level-f5-bg: oklch(0.93 0 0);
 }
 
 .dark {
-  --background: oklch(0.14 0.01 160);
-  /* 진한 다크 그린 */
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.17 0.015 160);
-  /* 카드 배경 */
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.17 0.015 160);
-  --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.7 0.18 160);
-  /* Supabase 그린 메인 */
-  --primary-foreground: oklch(0.15 0 0);
-  --secondary: oklch(0.22 0.015 160);
-  --secondary-foreground: oklch(0.95 0 0);
-  --muted: oklch(0.22 0.015 160);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.6 0.15 150);
-  /* 밝은 민트 그린 */
-  --accent-foreground: oklch(0.15 0 0);
-  --destructive: oklch(0.55 0.2 25);
-  --destructive-foreground: oklch(0.95 0 0);
-  --border: oklch(0.25 0.015 160);
-  /* 테두리 */
-  --input: oklch(0.2 0.015 160);
-  --ring: oklch(0.7 0.18 160);
-  /* 포커스 링 */
-  --chart-1: oklch(0.7 0.18 160);
-  --chart-2: oklch(0.6 0.15 150);
-  --chart-3: oklch(0.75 0.12 140);
-  --chart-4: oklch(0.55 0.12 170);
-  --chart-5: oklch(0.65 0.1 180);
+  --background: oklch(0.141 0.005 285.823);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.21 0.006 285.885);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.21 0.006 285.885);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.488 0.243 264.376);
+  --primary-foreground: oklch(0.97 0.014 254.604);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.274 0.006 286.033);
+  --muted-foreground: oklch(0.705 0.015 286.067);
+  --accent: oklch(0.274 0.006 286.033);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.809 0.105 251.813);
+  --chart-2: oklch(0.623 0.214 259.815);
+  --chart-3: oklch(0.546 0.245 262.881);
+  --chart-4: oklch(0.488 0.243 264.376);
+  --chart-5: oklch(0.424 0.199 265.638);
+  --sidebar: oklch(0.21 0.006 285.885);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.623 0.214 259.815);
+  --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
+  --sidebar-accent: oklch(0.274 0.006 286.033);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.439 0 0);
+
+  /* 고객 상태 색상 - 다크 모드 */
+  --status-new: oklch(0.7 0.12 260);
+  --status-new-bg: oklch(0.25 0.03 260);
+  --status-contacted: oklch(0.65 0.08 260);
+  --status-contacted-bg: oklch(0.23 0.02 260);
+  --status-consulting: oklch(0.6 0.1 260);
+  --status-consulting-bg: oklch(0.22 0.02 260);
+  --status-closed: oklch(0.55 0.06 260);
+  --status-closed-bg: oklch(0.2 0.02 260);
+  --status-recommend: oklch(0.62 0.05 260);
+  --status-recommend-bg: oklch(0.22 0.01 260);
+  --status-texted: oklch(0.64 0.06 260);
+  --status-texted-bg: oklch(0.23 0.01 260);
+  --status-rejected: oklch(0.6 0.03 0);
+  --status-rejected-bg: oklch(0.22 0.01 0);
+
+  /* 보안 레벨 색상 - 다크 모드 */
+  --level-f1: oklch(0.8 0 0);
+  --level-f1-bg: oklch(0.25 0 0);
+  --level-f2: oklch(0.75 0 0);
+  --level-f2-bg: oklch(0.23 0 0);
+  --level-f3: oklch(0.7 0 0);
+  --level-f3-bg: oklch(0.22 0 0);
+  --level-f4: oklch(0.65 0 0);
+  --level-f4-bg: oklch(0.21 0 0);
+  --level-f5: oklch(0.6 0 0);
+  --level-f5-bg: oklch(0.2 0 0);
 }
 
 @theme inline {

@@ -9,6 +9,10 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuSubContent,
+    DropdownMenuPortal,
 } from '@/components/ui/dropdown-menu'
 import {
     LayoutDashboard,
@@ -22,6 +26,9 @@ import {
     Moon,
     Sun,
     ChevronUp,
+    Palette,
+    Monitor,
+    Check,
 } from 'lucide-react'
 import { useThemeStore } from '@/stores/themeStore'
 
@@ -52,8 +59,12 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
     const { signOut, user, employee } = useAuthStore()
     const { theme, setTheme } = useThemeStore()
 
-    const handleToggleTheme = () => {
-        setTheme(theme === 'dark' ? 'light' : 'dark')
+    const getThemeLabel = () => {
+        switch (theme) {
+            case 'light': return '라이트'
+            case 'dark': return '다크'
+            default: return '시스템'
+        }
     }
 
     const isAdmin = employee?.securityLevel === 'F1'
@@ -171,14 +182,32 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
                                     <Settings className="mr-2 h-4 w-4" />
                                     설정
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={handleToggleTheme}>
-                                    {theme === 'dark' ? (
-                                        <Sun className="mr-2 h-4 w-4" />
-                                    ) : (
-                                        <Moon className="mr-2 h-4 w-4" />
-                                    )}
-                                    {theme === 'dark' ? '라이트 모드' : '다크 모드'}
-                                </DropdownMenuItem>
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger>
+                                        <Palette className="mr-2 h-4 w-4" />
+                                        테마: {getThemeLabel()}
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuPortal>
+                                        <DropdownMenuSubContent>
+                                            <DropdownMenuItem onClick={() => setTheme('light')}>
+                                                <Sun className="mr-2 h-4 w-4" />
+                                                라이트
+                                                {theme === 'light' && <Check className="ml-auto h-4 w-4" />}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setTheme('dark')}>
+                                                <Moon className="mr-2 h-4 w-4" />
+                                                다크
+                                                {theme === 'dark' && <Check className="ml-auto h-4 w-4" />}
+                                            </DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem onClick={() => setTheme('system')}>
+                                                <Monitor className="mr-2 h-4 w-4" />
+                                                시스템
+                                                {theme === 'system' && <Check className="ml-auto h-4 w-4" />}
+                                            </DropdownMenuItem>
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuPortal>
+                                </DropdownMenuSub>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                                     <LogOut className="mr-2 h-4 w-4" />
