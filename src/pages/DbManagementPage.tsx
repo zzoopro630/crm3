@@ -1,51 +1,117 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useEmployees } from '@/hooks/useEmployees'
 import { useSources } from '@/hooks/useSources'
 import { useAuthStore } from '@/stores/authStore'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Loader2, Search, Database, Upload, User, Phone } from 'lucide-react'
-import { updateCustomer, getCustomers } from '@/services/customers'
-import type { CustomerWithManager } from '@/types/customer'
+import { Label } from '@/components/ui/label'
+import { Loader2, Search, Database, User, Phone, X, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { updateCustomer, getCustomers, createCustomer } from '@/services/customers'
+import type { CustomerWithManager, CreateCustomerInput } from '@/types/customer'
 import { CUSTOMER_STATUSES } from '@/types/customer'
+
+// 탭 타입
+type TabType = 'inProgress' | 'closed'
+
+// 페이지 사이즈 옵션
+const PAGE_SIZE_OPTIONS = [15, 30, 50, 100]
+
+// 저장된 페이지 사이즈 가져오기
+const getSavedPageSize = () => {
+    const saved = localStorage.getItem('dbManagement_pageSize')
+    return saved ? parseInt(saved) : 15
+}
 
 export default function DbManagementPage() {
     const navigate = useNavigate()
     const { employee } = useAuthStore()
     const isAdmin = employee?.securityLevel === 'F1' || employee?.securityLevel === 'F2'
+    const isF1 = employee?.securityLevel === 'F1'
+
+    // 탭 상태
+    const [activeTab, setActiveTab] = useState<TabType>('inProgress')
 
     // DB 목록 상태
     const [dbList, setDbList] = useState<CustomerWithManager[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [pageSize, setPageSize] = useState(getSavedPageSize)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [totalCount, setTotalCount] = useState(0)
+
+    // 필터 상태
     const [filters, setFilters] = useState({
-        type: 'db',
         status: '',
         managerId: '',
+        source: '',
+        search: '',
     })
+
+    // 등록 모달 상태
+    const [showAddModal, setShowAddModal] = useState(false)
+    const [formData, setFormData] = useState<CreateCustomerInput>({
+        name: '',
+        phone: '',
+        interestProduct: '',
+        source: '',
+        managerId: '',
+        status: 'new',
+        type: 'db',
+    })
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     // 직원 목록 (배정용)
     const { data: employees } = useEmployees()
-    // 유입경로 목록
     const { data: sources } = useSources()
 
+    // 담당자 필터용 직원 목록 (활성화된 직원만, F1은 전체, 그 외는 팀 소속만)
+    const filteredEmployees = useMemo(() => {
+        if (!employees) return []
+        return employees.filter(emp => {
+            // 비활성화 직원 제외
+            if (!emp.isActive) return false
+            // F1 최고관리자는 모두 볼 수 있음
+            if (isF1) return true
+            // 그 외는 같은 팀 소속만 (organizationId 같은 경우)
+            return emp.organizationId === employee?.organizationId
+        })
+    }, [employees, isF1, employee?.organizationId])
+
+    // 페이지 사이즈 저장
+    useEffect(() => {
+        localStorage.setItem('dbManagement_pageSize', String(pageSize))
+    }, [pageSize])
+
+    // 탭 변경 시 페이지 리셋
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [activeTab])
+
+    // 데이터 가져오기
     useEffect(() => {
         fetchDbList()
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [filters])
+    }, [filters, pageSize, currentPage, activeTab])
 
     const fetchDbList = async () => {
         setIsLoading(true)
         try {
             const response = await getCustomers({
-                page: 1,
-                limit: 100,
+                page: currentPage,
+                limit: pageSize,
                 filters: {
                     ...filters,
-                    type: 'db'
+                    type: 'db',
                 }
             })
-            setDbList(response.data)
+
+            // 탭에 따라 필터링
+            const filteredData = activeTab === 'inProgress'
+                ? response.data.filter(c => c.status !== 'closed')
+                : response.data.filter(c => c.status === 'closed')
+
+            setDbList(filteredData)
+            setTotalCount(response.total)
         } catch (error) {
             console.error('Failed to fetch DB list:', error)
         } finally {
@@ -58,7 +124,7 @@ export default function DbManagementPage() {
             await updateCustomer(customerId, { managerId })
             setDbList(prev => prev.map(item =>
                 item.id === customerId
-                    ? { ...item, managerId, managerName: employees?.find(e => e.id === managerId)?.fullName || '' }
+                    ? { ...item, managerId, managerName: filteredEmployees?.find(e => e.id === managerId)?.fullName || '' }
                     : item
             ))
         } catch (error) {
@@ -67,7 +133,6 @@ export default function DbManagementPage() {
         }
     }
 
-    // 메모 저장 (담당자 또는 관리자)
     const handleMemoSave = async (customerId: number, memo: string) => {
         try {
             await updateCustomer(customerId, { memo })
@@ -79,7 +144,6 @@ export default function DbManagementPage() {
         }
     }
 
-    // 관리자 코멘트 저장 (관리자만)
     const handleAdminCommentSave = async (customerId: number, adminComment: string) => {
         if (!isAdmin) return
         try {
@@ -92,7 +156,6 @@ export default function DbManagementPage() {
         }
     }
 
-    // 관심상품 저장 (관리자만)
     const handleInterestProductSave = async (customerId: number, interestProduct: string) => {
         if (!isAdmin) return
         try {
@@ -105,7 +168,6 @@ export default function DbManagementPage() {
         }
     }
 
-    // 유입경로 저장 (관리자만)
     const handleSourceChange = async (customerId: number, source: string) => {
         if (!isAdmin) return
         try {
@@ -118,31 +180,65 @@ export default function DbManagementPage() {
         }
     }
 
-    // 상태 저장 (담당자 또는 관리자)
     const handleStatusChange = async (customerId: number, status: string) => {
         const customer = dbList.find(c => c.id === customerId)
         if (!customer) return
-        // 담당자이거나 관리자만 변경 가능
         if (!isAdmin && customer.managerId !== employee?.id) return
         try {
             await updateCustomer(customerId, { status })
-            setDbList(prev => prev.map(item =>
-                item.id === customerId ? { ...item, status } : item
-            ))
+            // 상태 변경 시 탭에서 제거
+            if (status === 'closed' && activeTab === 'inProgress') {
+                setDbList(prev => prev.filter(item => item.id !== customerId))
+            } else if (status !== 'closed' && activeTab === 'closed') {
+                setDbList(prev => prev.filter(item => item.id !== customerId))
+            } else {
+                setDbList(prev => prev.map(item =>
+                    item.id === customerId ? { ...item, status } : item
+                ))
+            }
         } catch (error) {
             console.error('Failed to save status:', error)
         }
     }
 
-    // 담당자인지 확인 (메모/상태 수정 권한)
     const canEditMemo = (customer: CustomerWithManager) => {
         return isAdmin || customer.managerId === employee?.id
     }
 
-    // 고객명 클릭 → 상세보기
     const handleCustomerClick = (customerId: number) => {
         navigate(`/customers/${customerId}`)
     }
+
+    // DB 등록 핸들러
+    const handleAddSubmit = async () => {
+        if (!formData.name || !formData.phone || !formData.interestProduct) {
+            alert('필수 항목(고객명, 연락처, 관심상품)을 모두 입력해주세요.')
+            return
+        }
+        setIsSubmitting(true)
+        try {
+            await createCustomer(formData)
+            setShowAddModal(false)
+            setFormData({
+                name: '',
+                phone: '',
+                interestProduct: '',
+                source: '',
+                managerId: '',
+                status: 'new',
+                type: 'db',
+            })
+            fetchDbList()
+        } catch (error) {
+            console.error('Failed to create customer:', error)
+            alert('등록에 실패했습니다.')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    // 총 페이지 수 계산
+    const totalPages = Math.ceil(totalCount / pageSize)
 
     if (!isAdmin) {
         return (
@@ -159,7 +255,6 @@ export default function DbManagementPage() {
     // 모바일 카드 렌더링
     const renderMobileCard = (customer: CustomerWithManager) => (
         <div key={customer.id} className="bg-card border rounded-lg p-4 space-y-3">
-            {/* 헤더: 이름 + 상태 */}
             <div className="flex justify-between items-start">
                 <div>
                     <h3
@@ -168,7 +263,6 @@ export default function DbManagementPage() {
                     >
                         {customer.name}
                     </h3>
-                    {/* 모바일 전화 링크 */}
                     {customer.phone && (
                         <a
                             href={`tel:${customer.phone}`}
@@ -179,7 +273,6 @@ export default function DbManagementPage() {
                         </a>
                     )}
                 </div>
-                {/* 상태 드롭다운 */}
                 {canEditMemo(customer) ? (
                     <select
                         value={customer.status}
@@ -191,37 +284,17 @@ export default function DbManagementPage() {
                         ))}
                     </select>
                 ) : (
-                    <span className="px-2 py-1 rounded-full text-xs bg-zinc-100 dark:bg-zinc-800 capitalize">
-                        {customer.status}
+                    <span className="px-2 py-1 rounded-full text-xs bg-zinc-100 dark:bg-zinc-800">
+                        {CUSTOMER_STATUSES.find(s => s.value === customer.status)?.label || customer.status}
                     </span>
                 )}
             </div>
 
-            {/* 정보 */}
             <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
                     <span className="text-muted-foreground">등록일:</span>
                     <span className="ml-1">{customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : '-'}</span>
                 </div>
-            </div>
-
-            {/* 유입경로 드롭다운 (관리자) */}
-            <div>
-                <label className="text-xs text-muted-foreground mb-1 block">유입경로</label>
-                {isAdmin ? (
-                    <select
-                        value={customer.source || ''}
-                        onChange={(e) => handleSourceChange(customer.id, e.target.value)}
-                        className="h-8 px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm w-full"
-                    >
-                        <option value="">선택</option>
-                        {sources?.map(src => (
-                            <option key={src.id} value={src.name}>{src.name}</option>
-                        ))}
-                    </select>
-                ) : (
-                    <p className="text-sm">{customer.source || '-'}</p>
-                )}
             </div>
 
             {/* 관심상품 */}
@@ -237,7 +310,7 @@ export default function DbManagementPage() {
                         }}
                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) e.currentTarget.blur() }}
                         className="h-8 text-sm"
-                        placeholder="관심상품 입력..."
+                        placeholder="관심상품..."
                     />
                 ) : (
                     <p className="text-sm text-muted-foreground bg-muted/30 p-2 rounded">{customer.interestProduct || '-'}</p>
@@ -248,12 +321,12 @@ export default function DbManagementPage() {
             <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <select
-                    value={customer.managerId}
+                    value={customer.managerId || ''}
                     onChange={(e) => handleAssign(customer.id, e.target.value)}
                     className="h-8 px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm flex-1"
                 >
                     <option value="">담당자 선택</option>
-                    {employees?.map(emp => (
+                    {filteredEmployees?.map(emp => (
                         <option key={emp.id} value={emp.id}>{emp.fullName}</option>
                     ))}
                 </select>
@@ -261,7 +334,7 @@ export default function DbManagementPage() {
 
             {/* 메모 */}
             <div>
-                <label className="text-xs text-muted-foreground mb-1 block">메모 (담당자)</label>
+                <label className="text-xs text-muted-foreground mb-1 block">메모</label>
                 {canEditMemo(customer) ? (
                     <Input
                         defaultValue={customer.memo || ''}
@@ -272,30 +345,10 @@ export default function DbManagementPage() {
                         }}
                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) e.currentTarget.blur() }}
                         className="h-8 text-sm"
-                        placeholder="메모 입력..."
+                        placeholder="메모..."
                     />
                 ) : (
                     <p className="text-sm text-muted-foreground bg-muted/30 p-2 rounded">{customer.memo || '-'}</p>
-                )}
-            </div>
-
-            {/* 관리자 코멘트 */}
-            <div>
-                <label className="text-xs text-muted-foreground mb-1 block">관리자 코멘트</label>
-                {isAdmin ? (
-                    <Input
-                        defaultValue={customer.adminComment || ''}
-                        onBlur={(e) => {
-                            if (e.target.value !== (customer.adminComment || '')) {
-                                handleAdminCommentSave(customer.id, e.target.value)
-                            }
-                        }}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) e.currentTarget.blur() }}
-                        className="h-8 text-sm"
-                        placeholder="코멘트 입력..."
-                    />
-                ) : (
-                    <p className="text-sm text-muted-foreground bg-muted/30 p-2 rounded">{customer.adminComment || '-'}</p>
                 )}
             </div>
         </div>
@@ -303,6 +356,7 @@ export default function DbManagementPage() {
 
     return (
         <div className="space-y-6 max-w-[1800px] mx-auto p-4 md:p-8">
+            {/* 헤더 */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">DB 관리</h1>
@@ -310,40 +364,102 @@ export default function DbManagementPage() {
                         외부 DB를 등록하고 영업 담당자에게 배분합니다.
                     </p>
                 </div>
-                <Button onClick={() => { /* TODO: 등록 모달 열기 */ }}>
-                    <Upload className="mr-2 h-4 w-4" />
+                <Button onClick={() => setShowAddModal(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
                     DB 등록
                 </Button>
             </div>
 
+            {/* 탭 */}
+            <div className="flex gap-1 border-b">
+                <button
+                    onClick={() => setActiveTab('inProgress')}
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'inProgress'
+                            ? 'border-b-2 border-primary text-primary'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                >
+                    진행중
+                </button>
+                <button
+                    onClick={() => setActiveTab('closed')}
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'closed'
+                            ? 'border-b-2 border-primary text-primary'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                >
+                    청약완료
+                </button>
+            </div>
+
             {/* 필터 영역 */}
             <div className="flex flex-wrap gap-4 items-center bg-card p-4 rounded-lg border shadow-sm">
-                <Search className="h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="이름, 연락처 검색..."
-                    className="max-w-xs border-0 bg-transparent p-0 focus-visible:ring-0 placeholder:text-muted-foreground"
-                />
+                <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="이름, 연락처 검색..."
+                        value={filters.search}
+                        onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                        className="border-0 bg-transparent p-0 focus-visible:ring-0 placeholder:text-muted-foreground"
+                    />
+                </div>
+
                 <div className="h-6 w-px bg-border hidden md:block" />
+
+                {/* 상태 필터 (진행중 탭만) */}
+                {activeTab === 'inProgress' && (
+                    <select
+                        value={filters.status}
+                        onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                        className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                    >
+                        <option value="">전체 상태</option>
+                        {CUSTOMER_STATUSES.filter(s => s.value !== 'closed').map(status => (
+                            <option key={status.value} value={status.value}>{status.label}</option>
+                        ))}
+                    </select>
+                )}
+
+                {/* 유입경로 필터 */}
                 <select
-                    value={filters.status}
-                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                    className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
+                    value={filters.source}
+                    onChange={(e) => setFilters(prev => ({ ...prev, source: e.target.value }))}
+                    className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
                 >
-                    <option value="">전체 상태</option>
-                    {CUSTOMER_STATUSES.map(status => (
-                        <option key={status.value} value={status.value}>{status.label}</option>
+                    <option value="">전체 유입경로</option>
+                    {sources?.map(src => (
+                        <option key={src.id} value={src.name}>{src.name}</option>
                     ))}
                 </select>
+
+                {/* 담당자 필터 */}
                 <select
                     value={filters.managerId}
                     onChange={(e) => setFilters(prev => ({ ...prev, managerId: e.target.value }))}
-                    className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
+                    className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
                 >
                     <option value="">전체 담당자</option>
-                    {employees?.map(emp => (
+                    {filteredEmployees?.map(emp => (
                         <option key={emp.id} value={emp.id}>{emp.fullName}</option>
                     ))}
                 </select>
+
+                {/* 페이지 사이즈 */}
+                <div className="ml-auto flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground hidden md:inline">표시:</span>
+                    <select
+                        value={pageSize}
+                        onChange={(e) => {
+                            setPageSize(Number(e.target.value))
+                            setCurrentPage(1)
+                        }}
+                        className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                    >
+                        {PAGE_SIZE_OPTIONS.map(size => (
+                            <option key={size} value={size}>{size}개</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* 로딩 */}
@@ -357,7 +473,7 @@ export default function DbManagementPage() {
             {/* 빈 상태 */}
             {!isLoading && dbList.length === 0 && (
                 <div className="flex justify-center items-center h-40 text-muted-foreground">
-                    등록된 DB가 없습니다.
+                    {activeTab === 'closed' ? '청약완료된 고객이 없습니다.' : '등록된 DB가 없습니다.'}
                 </div>
             )}
 
@@ -375,14 +491,15 @@ export default function DbManagementPage() {
                         <thead className="bg-muted/50 border-b">
                             <tr>
                                 <th className="text-left p-3 font-medium whitespace-nowrap">등록일</th>
+                                <th className="text-left p-3 font-medium w-[120px]">담당자</th>
                                 <th className="text-left p-3 font-medium whitespace-nowrap">고객명</th>
                                 <th className="text-left p-3 font-medium whitespace-nowrap">연락처</th>
                                 <th className="text-left p-3 font-medium min-w-[150px]">관심상품</th>
-                                <th className="text-left p-3 font-medium min-w-[120px]">유입경로</th>
+                                {/* 유입경로는 관리자(F1/F2)만 표시 */}
+                                {isAdmin && <th className="text-left p-3 font-medium min-w-[120px]">유입경로</th>}
                                 <th className="text-left p-3 font-medium min-w-[100px]">상태</th>
-                                <th className="text-left p-3 font-medium min-w-[250px]">메모 (담당자)</th>
-                                <th className="text-left p-3 font-medium min-w-[180px]">관리자 코멘트</th>
-                                <th className="text-left p-3 font-medium w-[100px]">담당자</th>
+                                <th className="text-left p-3 font-medium min-w-[200px]">메모</th>
+                                <th className="text-left p-3 font-medium min-w-[150px]">관리자 코멘트</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -390,6 +507,18 @@ export default function DbManagementPage() {
                                 <tr key={customer.id} className="border-b hover:bg-muted/30">
                                     <td className="p-3 text-muted-foreground text-xs whitespace-nowrap">
                                         {customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : '-'}
+                                    </td>
+                                    <td className="p-3">
+                                        <select
+                                            value={customer.managerId || ''}
+                                            onChange={(e) => handleAssign(customer.id, e.target.value)}
+                                            className="h-8 px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm w-full"
+                                        >
+                                            <option value="">선택</option>
+                                            {filteredEmployees?.map(emp => (
+                                                <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                                            ))}
+                                        </select>
                                     </td>
                                     <td className="p-3 font-medium whitespace-nowrap">
                                         <span
@@ -411,14 +540,15 @@ export default function DbManagementPage() {
                                                 }}
                                                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) e.currentTarget.blur() }}
                                                 className="h-8 text-sm bg-transparent border-zinc-200 dark:border-zinc-700"
-                                                placeholder="관심상품 입력..."
+                                                placeholder="관심상품..."
                                             />
                                         ) : (
                                             <span className="text-sm text-muted-foreground">{customer.interestProduct || '-'}</span>
                                         )}
                                     </td>
-                                    <td className="p-3">
-                                        {isAdmin ? (
+                                    {/* 유입경로는 관리자만 표시 */}
+                                    {isAdmin && (
+                                        <td className="p-3">
                                             <select
                                                 value={customer.source || ''}
                                                 onChange={(e) => handleSourceChange(customer.id, e.target.value)}
@@ -429,10 +559,8 @@ export default function DbManagementPage() {
                                                     <option key={src.id} value={src.name}>{src.name}</option>
                                                 ))}
                                             </select>
-                                        ) : (
-                                            <span className="text-sm text-muted-foreground">{customer.source || '-'}</span>
-                                        )}
-                                    </td>
+                                        </td>
+                                    )}
                                     <td className="p-3">
                                         {canEditMemo(customer) ? (
                                             <select
@@ -445,8 +573,8 @@ export default function DbManagementPage() {
                                                 ))}
                                             </select>
                                         ) : (
-                                            <span className="px-2 py-1 rounded-full text-xs bg-zinc-100 dark:bg-zinc-800 capitalize">
-                                                {customer.status}
+                                            <span className="px-2 py-1 rounded-full text-xs bg-zinc-100 dark:bg-zinc-800">
+                                                {CUSTOMER_STATUSES.find(s => s.value === customer.status)?.label || customer.status}
                                             </span>
                                         )}
                                     </td>
@@ -461,7 +589,7 @@ export default function DbManagementPage() {
                                                 }}
                                                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) e.currentTarget.blur() }}
                                                 className="h-8 text-sm bg-transparent border-zinc-200 dark:border-zinc-700"
-                                                placeholder="메모 입력..."
+                                                placeholder="메모..."
                                             />
                                         ) : (
                                             <span className="text-sm text-muted-foreground">{customer.memo || '-'}</span>
@@ -478,28 +606,123 @@ export default function DbManagementPage() {
                                                 }}
                                                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) e.currentTarget.blur() }}
                                                 className="h-8 text-sm bg-transparent border-zinc-200 dark:border-zinc-700"
-                                                placeholder="코멘트 입력..."
+                                                placeholder="코멘트..."
                                             />
                                         ) : (
                                             <span className="text-sm text-muted-foreground">{customer.adminComment || '-'}</span>
                                         )}
                                     </td>
-                                    <td className="p-3">
-                                        <select
-                                            value={customer.managerId}
-                                            onChange={(e) => handleAssign(customer.id, e.target.value)}
-                                            className="h-8 px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm w-full"
-                                        >
-                                            <option value="">선택</option>
-                                            {employees?.map(emp => (
-                                                <option key={emp.id} value={emp.id}>{emp.fullName}</option>
-                                            ))}
-                                        </select>
-                                    </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* 페이지네이션 */}
+            {!isLoading && totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage(p => p - 1)}
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                        이전
+                    </Button>
+                    <span className="text-sm text-muted-foreground px-4">
+                        {currentPage} / {totalPages}
+                    </span>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage(p => p + 1)}
+                    >
+                        다음
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
+
+            {/* 등록 모달 */}
+            {showAddModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowAddModal(false)}>
+                    <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-semibold">DB 등록</h3>
+                            <Button variant="ghost" size="icon" onClick={() => setShowAddModal(false)}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <Label htmlFor="name">고객명 <span className="text-red-500">*</span></Label>
+                                <Input
+                                    id="name"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                                    placeholder="고객명 입력"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="phone">연락처 <span className="text-red-500">*</span></Label>
+                                <Input
+                                    id="phone"
+                                    value={formData.phone || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                                    placeholder="010-0000-0000"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="interestProduct">관심항목 <span className="text-red-500">*</span></Label>
+                                <Input
+                                    id="interestProduct"
+                                    value={formData.interestProduct || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, interestProduct: e.target.value }))}
+                                    placeholder="관심 상품/서비스"
+                                />
+                            </div>
+                            <div>
+                                <Label htmlFor="source">유입경로</Label>
+                                <select
+                                    id="source"
+                                    value={formData.source || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, source: e.target.value }))}
+                                    className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                                >
+                                    <option value="">선택</option>
+                                    {sources?.map(src => (
+                                        <option key={src.id} value={src.name}>{src.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <Label htmlFor="manager">담당자</Label>
+                                <select
+                                    id="manager"
+                                    value={formData.managerId || ''}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, managerId: e.target.value }))}
+                                    className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+                                >
+                                    <option value="">선택</option>
+                                    {filteredEmployees?.map(emp => (
+                                        <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="flex gap-2 pt-4">
+                                <Button variant="outline" className="flex-1" onClick={() => setShowAddModal(false)}>
+                                    취소
+                                </Button>
+                                <Button className="flex-1" onClick={handleAddSubmit} disabled={isSubmitting}>
+                                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                    등록
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

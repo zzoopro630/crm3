@@ -18,7 +18,7 @@ const STATUS_ITEMS = [
     { value: 'new', label: '신규', color: 'bg-blue-500' },
     { value: 'contacted', label: '연락완료', color: 'bg-yellow-500' },
     { value: 'consulting', label: '상담중', color: 'bg-purple-500' },
-    { value: 'closed', label: '계약완료', color: 'bg-emerald-500' },
+    { value: 'closed', label: '청약완료', color: 'bg-emerald-500' },
     { value: 'called', label: '통화완료', color: 'bg-lime-500' },
     { value: 'texted', label: '문자남김', color: 'bg-orange-500' },
     { value: 'no_answer', label: '부재', color: 'bg-zinc-400' },

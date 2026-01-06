@@ -115,7 +115,7 @@ export function CustomerDetailPage() {
             new: '신규',
             contacted: '연락완료',
             consulting: '상담중',
-            closed: '계약완료',
+            closed: '청약완료',
         }
         return { color: colors[status] || colors.new, label: labels[status] || status }
     }

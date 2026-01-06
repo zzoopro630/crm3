@@ -112,7 +112,7 @@ export function TeamPage() {
                                 <CheckCircle className="h-5 w-5 text-emerald-500" />
                             </div>
                             <div>
-                                <p className="text-sm text-zinc-500">계약완료</p>
+                                <p className="text-sm text-zinc-500">청약완료</p>
                                 <p className="text-xl font-bold text-zinc-900 dark:text-white">{stats?.byStatus.closed || 0}</p>
                             </div>
                         </div>
@@ -155,7 +155,7 @@ export function TeamPage() {
                                         <th className="text-center py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">신규</th>
                                         <th className="text-center py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">연락완료</th>
                                         <th className="text-center py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">상담중</th>
-                                        <th className="text-center py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">계약완료</th>
+                                        <th className="text-center py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">청약완료</th>
                                         <th className="text-right py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">작업</th>
                                     </tr>
                                 </thead>

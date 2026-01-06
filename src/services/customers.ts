@@ -63,13 +63,13 @@ export async function getCustomerById(id: number): Promise<CustomerWithManager |
 
 export async function createCustomer(
     input: CreateCustomerInput,
-    managerId: string
+    managerId?: string
 ): Promise<CustomerWithManager> {
     return apiRequest<CustomerWithManager>('/api/customers', {
         method: 'POST',
         body: JSON.stringify({
             ...input,
-            managerId,
+            managerId: managerId || input.managerId,
         }),
     })
 }
