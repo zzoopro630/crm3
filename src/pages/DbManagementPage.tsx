@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Loader2, Search, Database, User, Phone, X, Plus, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
+import { Loader2, Search, Database, User, Phone, X, Plus, ChevronLeft, ChevronRight, AlertCircle, ChevronDown, Filter } from 'lucide-react'
 import { updateCustomer, getCustomers, createCustomer } from '@/services/customers'
 import type { CustomerWithManager, CreateCustomerInput } from '@/types/customer'
 import { CUSTOMER_STATUSES } from '@/types/customer'
@@ -84,6 +84,14 @@ export default function DbManagementPage() {
         source: '',
         search: '',
     })
+    const [showMobileFilters, setShowMobileFilters] = useState(false)
+
+    // 활성화된 필터 개수 계산
+    const activeFilterCount = [
+        filters.status,
+        filters.managerId,
+        filters.source,
+    ].filter(Boolean).length
 
     // 등록 모달 상태
     const [showAddModal, setShowAddModal] = useState(false)
@@ -470,7 +478,7 @@ export default function DbManagementPage() {
     )
 
     return (
-        <div className="space-y-6 max-w-[1800px] mx-auto p-4 md:p-8">
+        <div className="space-y-6 max-w-[1800px] mx-auto p-4 md:p-8 overflow-x-hidden">
             {/* 헤더 */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -508,73 +516,166 @@ export default function DbManagementPage() {
             </div>
 
             {/* 필터 영역 */}
-            <div className="flex flex-wrap gap-4 items-center bg-card p-4 rounded-lg border shadow-sm">
-                <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                    <Search className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="이름, 연락처 검색..."
-                        value={filters.search}
-                        onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                        className="border-0 bg-transparent p-0 focus-visible:ring-0 placeholder:text-muted-foreground"
-                    />
+            <div className="bg-card p-4 rounded-lg border shadow-sm space-y-3">
+                {/* 검색 + 필터 토글 (모바일) / 검색 + 필터들 (데스크탑) */}
+                <div className="flex items-center gap-2">
+                    {/* 검색창 */}
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <Input
+                            placeholder="이름, 연락처 검색..."
+                            value={filters.search}
+                            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                            className="border-0 bg-transparent p-0 focus-visible:ring-0 placeholder:text-muted-foreground"
+                        />
+                    </div>
+
+                    {/* 모바일: 필터 토글 버튼 */}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="md:hidden shrink-0"
+                        onClick={() => setShowMobileFilters(!showMobileFilters)}
+                    >
+                        <Filter className="h-4 w-4 mr-1" />
+                        필터
+                        {activeFilterCount > 0 && (
+                            <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 text-xs">
+                                {activeFilterCount}
+                            </span>
+                        )}
+                        <ChevronDown className={`h-4 w-4 ml-1 transition-transform ${showMobileFilters ? 'rotate-180' : ''}`} />
+                    </Button>
+
+                    {/* 데스크탑: 인라인 필터들 */}
+                    <div className="hidden md:flex items-center gap-3">
+                        <div className="h-6 w-px bg-border" />
+
+                        {/* 상태 필터 (진행중 탭만) */}
+                        {activeTab === 'inProgress' && (
+                            <select
+                                value={filters.status}
+                                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                                className="h-9 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                            >
+                                <option value="">전체 상태</option>
+                                {CUSTOMER_STATUSES.filter(s => s.value !== 'closed').map(status => (
+                                    <option key={status.value} value={status.value}>{status.label}</option>
+                                ))}
+                            </select>
+                        )}
+
+                        {/* 유입경로 필터 */}
+                        <select
+                            value={filters.source}
+                            onChange={(e) => setFilters(prev => ({ ...prev, source: e.target.value }))}
+                            className="h-9 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                        >
+                            <option value="">전체 유입경로</option>
+                            {sources?.map(src => (
+                                <option key={src.id} value={src.name}>{src.name}</option>
+                            ))}
+                        </select>
+
+                        {/* 담당자 필터 */}
+                        <select
+                            value={filters.managerId}
+                            onChange={(e) => setFilters(prev => ({ ...prev, managerId: e.target.value }))}
+                            className="h-9 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                        >
+                            <option value="">전체 담당자</option>
+                            {filteredEmployees?.map(emp => (
+                                <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                            ))}
+                        </select>
+
+                        {/* 페이지 사이즈 */}
+                        <div className="ml-auto flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">표시:</span>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => {
+                                    setPageSize(Number(e.target.value))
+                                    setCurrentPage(1)
+                                }}
+                                className="h-9 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                            >
+                                {PAGE_SIZE_OPTIONS.map(size => (
+                                    <option key={size} value={size}>{size}개</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="h-6 w-px bg-border hidden md:block" />
+                {/* 모바일: 펼쳐지는 필터 패널 */}
+                {showMobileFilters && (
+                    <div className="md:hidden grid grid-cols-2 gap-3 pt-3 border-t">
+                        {/* 상태 필터 (진행중 탭만) */}
+                        {activeTab === 'inProgress' && (
+                            <div>
+                                <label className="text-xs text-muted-foreground mb-1 block">상태</label>
+                                <select
+                                    value={filters.status}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                                    className="w-full h-9 px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                                >
+                                    <option value="">전체</option>
+                                    {CUSTOMER_STATUSES.filter(s => s.value !== 'closed').map(status => (
+                                        <option key={status.value} value={status.value}>{status.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
-                {/* 상태 필터 (진행중 탭만) */}
-                {activeTab === 'inProgress' && (
-                    <select
-                        value={filters.status}
-                        onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                        className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
-                    >
-                        <option value="">전체 상태</option>
-                        {CUSTOMER_STATUSES.filter(s => s.value !== 'closed').map(status => (
-                            <option key={status.value} value={status.value}>{status.label}</option>
-                        ))}
-                    </select>
+                        {/* 유입경로 필터 */}
+                        <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">유입경로</label>
+                            <select
+                                value={filters.source}
+                                onChange={(e) => setFilters(prev => ({ ...prev, source: e.target.value }))}
+                                className="w-full h-9 px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                            >
+                                <option value="">전체</option>
+                                {sources?.map(src => (
+                                    <option key={src.id} value={src.name}>{src.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* 담당자 필터 */}
+                        <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">담당자</label>
+                            <select
+                                value={filters.managerId}
+                                onChange={(e) => setFilters(prev => ({ ...prev, managerId: e.target.value }))}
+                                className="w-full h-9 px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                            >
+                                <option value="">전체</option>
+                                {filteredEmployees?.map(emp => (
+                                    <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* 페이지 사이즈 */}
+                        <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">표시 개수</label>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => {
+                                    setPageSize(Number(e.target.value))
+                                    setCurrentPage(1)
+                                }}
+                                className="w-full h-9 px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                            >
+                                {PAGE_SIZE_OPTIONS.map(size => (
+                                    <option key={size} value={size}>{size}개</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                 )}
-
-                {/* 유입경로 필터 */}
-                <select
-                    value={filters.source}
-                    onChange={(e) => setFilters(prev => ({ ...prev, source: e.target.value }))}
-                    className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
-                >
-                    <option value="">전체 유입경로</option>
-                    {sources?.map(src => (
-                        <option key={src.id} value={src.name}>{src.name}</option>
-                    ))}
-                </select>
-
-                {/* 담당자 필터 */}
-                <select
-                    value={filters.managerId}
-                    onChange={(e) => setFilters(prev => ({ ...prev, managerId: e.target.value }))}
-                    className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
-                >
-                    <option value="">전체 담당자</option>
-                    {filteredEmployees?.map(emp => (
-                        <option key={emp.id} value={emp.id}>{emp.fullName}</option>
-                    ))}
-                </select>
-
-                {/* 페이지 사이즈 */}
-                <div className="ml-auto flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground hidden md:inline">표시:</span>
-                    <select
-                        value={pageSize}
-                        onChange={(e) => {
-                            setPageSize(Number(e.target.value))
-                            setCurrentPage(1)
-                        }}
-                        className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
-                    >
-                        {PAGE_SIZE_OPTIONS.map(size => (
-                            <option key={size} value={size}>{size}개</option>
-                        ))}
-                    </select>
-                </div>
             </div>
 
             {/* 로딩 */}
