@@ -17,7 +17,7 @@ function getStatusStyle(status: string) {
         new: { label: '신규', cssVar: 'new' },
         contacted: { label: '연락완료', cssVar: 'contacted' },
         consulting: { label: '상담중', cssVar: 'consulting' },
-        closed: { label: '계약완료', cssVar: 'closed' },
+        closed: { label: '청약완료', cssVar: 'closed' },
         called: { label: '통화완료', cssVar: 'contacted' },
         texted: { label: '문자남김', cssVar: 'texted' },
         no_answer: { label: '부재', cssVar: 'contacted' },

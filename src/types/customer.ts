@@ -59,7 +59,7 @@ export const CUSTOMER_STATUSES = [
     { value: 'new', label: '신규' },
     { value: 'contacted', label: '연락완료' },
     { value: 'consulting', label: '상담중' },
-    { value: 'closed', label: '계약완료' },
+    { value: 'closed', label: '청약완료' },
     { value: 'called', label: '통화완료' },
     { value: 'texted', label: '문자남김' },
     { value: 'no_answer', label: '부재' },
@@ -99,6 +99,7 @@ export interface CreateCustomerInput {
     interestProduct?: string
     memo?: string
     adminComment?: string
+    managerId?: string
 }
 
 export interface UpdateCustomerInput extends Partial<CreateCustomerInput> {
