@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useEmployees } from '@/hooks/useEmployees'
 import { useSources } from '@/hooks/useSources'
@@ -6,10 +6,60 @@ import { useAuthStore } from '@/stores/authStore'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Loader2, Search, Database, User, Phone, X, Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2, Search, Database, User, Phone, X, Plus, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
 import { updateCustomer, getCustomers, createCustomer } from '@/services/customers'
 import type { CustomerWithManager, CreateCustomerInput } from '@/types/customer'
 import { CUSTOMER_STATUSES } from '@/types/customer'
+import { pad } from 'kr-format'
+
+// 폼 에러 타입
+interface FormErrors {
+    name?: string
+    phone?: string
+    interestProduct?: string
+}
+
+// 이름 검증 함수 (한글/영문만, 최소 2글자)
+const validateName = (name: string): string | undefined => {
+    if (!name.trim()) return '고객명을 입력해주세요.'
+    if (name.trim().length < 2) return '고객명은 최소 2글자 이상이어야 합니다.'
+    // 한글, 영문, 공백만 허용
+    const nameRegex = /^[가-힣a-zA-Z\s]+$/
+    if (!nameRegex.test(name.trim())) return '고객명은 한글 또는 영문만 입력 가능합니다.'
+    return undefined
+}
+
+// 전화번호 검증 함수 (한국 전화번호 형식)
+const validatePhone = (phone: string): string | undefined => {
+    if (!phone.trim()) return '연락처를 입력해주세요.'
+    // 숫자만 추출
+    const digits = phone.replace(/\D/g, '')
+    // 한국 전화번호: 010, 011, 016, 017, 018, 019 또는 02~06X 지역번호
+    const mobileRegex = /^01[0-9]{8,9}$/
+    const seoulRegex = /^02\d{7,8}$/
+    const localRegex = /^0[3-6][1-9]\d{7,8}$/
+
+    if (!mobileRegex.test(digits) && !seoulRegex.test(digits) && !localRegex.test(digits)) {
+        return '올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)'
+    }
+    return undefined
+}
+
+// 전화번호 포맷팅 함수 (kr-format 활용)
+const formatPhoneNumber = (value: string): string => {
+    // 숫자만 추출
+    const digits = value.replace(/\D/g, '')
+    if (!digits) return ''
+
+    // kr-format의 pad.phone 사용
+    try {
+        const formatted = pad.phone(digits)
+        return formatted
+    } catch {
+        // 포맷팅 실패 시 원본 반환
+        return digits
+    }
+}
 
 // 탭 타입
 type TabType = 'inProgress' | 'closed'
@@ -58,7 +108,49 @@ export default function DbManagementPage() {
         status: 'new',
         type: 'db',
     })
+    const [formErrors, setFormErrors] = useState<FormErrors>({})
     const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // 이름 입력 핸들러 (실시간 검증)
+    const handleNameChange = useCallback((value: string) => {
+        setFormData(prev => ({ ...prev, name: value }))
+        // 입력 중에는 빈 값 에러만 체크하지 않음 (blur 시 전체 검증)
+        if (formErrors.name && value.trim()) {
+            const error = validateName(value)
+            setFormErrors(prev => ({ ...prev, name: error }))
+        }
+    }, [formErrors.name])
+
+    // 이름 blur 핸들러 (전체 검증)
+    const handleNameBlur = useCallback(() => {
+        const error = validateName(formData.name)
+        setFormErrors(prev => ({ ...prev, name: error }))
+    }, [formData.name])
+
+    // 전화번호 입력 핸들러 (자동 포맷팅)
+    const handlePhoneChange = useCallback((value: string) => {
+        const formatted = formatPhoneNumber(value)
+        setFormData(prev => ({ ...prev, phone: formatted }))
+        // 입력 중에는 에러 클리어
+        if (formErrors.phone && formatted) {
+            setFormErrors(prev => ({ ...prev, phone: undefined }))
+        }
+    }, [formErrors.phone])
+
+    // 전화번호 blur 핸들러 (전체 검증)
+    const handlePhoneBlur = useCallback(() => {
+        const error = validatePhone(formData.phone || '')
+        setFormErrors(prev => ({ ...prev, phone: error }))
+    }, [formData.phone])
+
+    // 관심항목 blur 핸들러
+    const handleInterestProductBlur = useCallback(() => {
+        if (!formData.interestProduct?.trim()) {
+            setFormErrors(prev => ({ ...prev, interestProduct: '관심항목을 입력해주세요.' }))
+        } else {
+            setFormErrors(prev => ({ ...prev, interestProduct: undefined }))
+        }
+    }, [formData.interestProduct])
 
     // 직원 목록 (배정용)
     const { data: employees } = useEmployees()
@@ -211,10 +303,26 @@ export default function DbManagementPage() {
 
     // DB 등록 핸들러
     const handleAddSubmit = async () => {
-        if (!formData.name || !formData.phone || !formData.interestProduct) {
-            alert('필수 항목(고객명, 연락처, 관심상품)을 모두 입력해주세요.')
+        // 전체 필드 검증
+        const nameError = validateName(formData.name)
+        const phoneError = validatePhone(formData.phone || '')
+        const interestProductError = !formData.interestProduct?.trim()
+            ? '관심항목을 입력해주세요.'
+            : undefined
+
+        const errors: FormErrors = {
+            name: nameError,
+            phone: phoneError,
+            interestProduct: interestProductError,
+        }
+
+        setFormErrors(errors)
+
+        // 에러가 있으면 중단
+        if (nameError || phoneError || interestProductError) {
             return
         }
+
         setIsSubmitting(true)
         try {
             await createCustomer(formData)
@@ -228,6 +336,7 @@ export default function DbManagementPage() {
                 status: 'new',
                 type: 'db',
             })
+            setFormErrors({})
             fetchDbList()
         } catch (error) {
             console.error('Failed to create customer:', error)
@@ -236,6 +345,21 @@ export default function DbManagementPage() {
             setIsSubmitting(false)
         }
     }
+
+    // 모달 닫기 핸들러 (폼 리셋 포함)
+    const handleCloseModal = useCallback(() => {
+        setShowAddModal(false)
+        setFormData({
+            name: '',
+            phone: '',
+            interestProduct: '',
+            source: '',
+            managerId: '',
+            status: 'new',
+            type: 'db',
+        })
+        setFormErrors({})
+    }, [])
 
     // 총 페이지 수 계산
     const totalPages = Math.ceil(totalCount / pageSize)
@@ -648,11 +772,11 @@ export default function DbManagementPage() {
 
             {/* 등록 모달 */}
             {showAddModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowAddModal(false)}>
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleCloseModal}>
                     <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-semibold">DB 등록</h3>
-                            <Button variant="ghost" size="icon" onClick={() => setShowAddModal(false)}>
+                            <Button variant="ghost" size="icon" onClick={handleCloseModal}>
                                 <X className="h-4 w-4" />
                             </Button>
                         </div>
@@ -662,27 +786,57 @@ export default function DbManagementPage() {
                                 <Input
                                     id="name"
                                     value={formData.name}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                                    placeholder="고객명 입력"
+                                    onChange={(e) => handleNameChange(e.target.value)}
+                                    onBlur={handleNameBlur}
+                                    placeholder="고객명 입력 (한글/영문)"
+                                    className={formErrors.name ? 'border-red-500 focus-visible:ring-red-500' : ''}
                                 />
+                                {formErrors.name && (
+                                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                        <AlertCircle className="h-3 w-3" />
+                                        {formErrors.name}
+                                    </p>
+                                )}
                             </div>
                             <div>
                                 <Label htmlFor="phone">연락처 <span className="text-red-500">*</span></Label>
                                 <Input
                                     id="phone"
                                     value={formData.phone || ''}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                                    placeholder="010-0000-0000"
+                                    onChange={(e) => handlePhoneChange(e.target.value)}
+                                    onBlur={handlePhoneBlur}
+                                    placeholder="010-1234-5678"
+                                    className={formErrors.phone ? 'border-red-500 focus-visible:ring-red-500' : ''}
                                 />
+                                {formErrors.phone && (
+                                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                        <AlertCircle className="h-3 w-3" />
+                                        {formErrors.phone}
+                                    </p>
+                                )}
+                                <p className="text-muted-foreground text-xs mt-1">숫자만 입력하면 자동으로 형식이 적용됩니다.</p>
                             </div>
                             <div>
                                 <Label htmlFor="interestProduct">관심항목 <span className="text-red-500">*</span></Label>
                                 <Input
                                     id="interestProduct"
                                     value={formData.interestProduct || ''}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, interestProduct: e.target.value }))}
+                                    onChange={(e) => {
+                                        setFormData(prev => ({ ...prev, interestProduct: e.target.value }))
+                                        if (formErrors.interestProduct && e.target.value.trim()) {
+                                            setFormErrors(prev => ({ ...prev, interestProduct: undefined }))
+                                        }
+                                    }}
+                                    onBlur={handleInterestProductBlur}
                                     placeholder="관심 상품/서비스"
+                                    className={formErrors.interestProduct ? 'border-red-500 focus-visible:ring-red-500' : ''}
                                 />
+                                {formErrors.interestProduct && (
+                                    <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                                        <AlertCircle className="h-3 w-3" />
+                                        {formErrors.interestProduct}
+                                    </p>
+                                )}
                             </div>
                             <div>
                                 <Label htmlFor="source">유입경로</Label>
@@ -713,7 +867,7 @@ export default function DbManagementPage() {
                                 </select>
                             </div>
                             <div className="flex gap-2 pt-4">
-                                <Button variant="outline" className="flex-1" onClick={() => setShowAddModal(false)}>
+                                <Button variant="outline" className="flex-1" onClick={handleCloseModal}>
                                     취소
                                 </Button>
                                 <Button className="flex-1" onClick={handleAddSubmit} disabled={isSubmitting}>
