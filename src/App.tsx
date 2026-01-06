@@ -17,6 +17,7 @@ import { LabelsPage } from '@/pages/LabelsPage'
 import { EmployeesPage } from '@/pages/EmployeesPage'
 import { PendingApprovalsPage } from '@/pages/PendingApprovalsPage'
 import { SystemSettingsPage } from '@/pages/SystemSettingsPage'
+import DbManagementPage from '@/pages/DbManagementPage'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -66,6 +67,7 @@ function AppContent() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/customers/:id" element={<CustomerDetailPage />} />
+        <Route path="/db-management" element={<DbManagementPage />} />
         <Route path="/team" element={<TeamPage />} />
 
         {/* Settings nested routes */}

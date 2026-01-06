@@ -36,7 +36,7 @@ export function PendingApprovalsPage() {
     const [formData, setFormData] = useState<CreateEmployeeInput>({
         email: '',
         fullName: '',
-        securityLevel: 'F6',
+        securityLevel: 'F5',
         parentId: null,
         organizationId: null,
         positionName: '',
@@ -48,7 +48,7 @@ export function PendingApprovalsPage() {
         setFormData({
             email: approval.email,
             fullName: '',
-            securityLevel: 'F6',
+            securityLevel: 'F5',
             parentId: null,
             organizationId: null,
             positionName: '',

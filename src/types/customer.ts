@@ -1,10 +1,11 @@
 // Re-export from Drizzle schema
-export type { Customer, NewCustomer, CustomerStatus, Gender } from '@/db/schema'
+export type { Customer, NewCustomer, CustomerStatus, Gender, CustomerType } from '@/db/schema'
 
 export interface CustomerFilters {
     search?: string
     status?: string
     managerId?: string
+    type?: string
 }
 
 export interface CustomerListParams {
@@ -31,12 +32,24 @@ export interface CustomerWithManager {
     phone: string | null
     email: string | null
     address: string | null
+    addressDetail: string | null
     gender: string | null
     birthdate: string | null
     company: string | null
     jobTitle: string | null
     source: string | null
     status: string
+    type: string
+    interestProduct: string | null
+    memo: string | null
+    adminComment: string | null
+    // 추가 정보
+    nationality: string | null
+    existingInsurance: string | null
+    insuranceType: string | null
+    annualIncome: string | null
+    maritalStatus: string | null
+    notes: string | null
     createdAt: Date | null
     updatedAt: Date | null
 }
@@ -62,6 +75,11 @@ export const GENDER_OPTIONS = [
     { value: '법인', label: '법인' },
 ] as const
 
+export const CUSTOMER_TYPES = [
+    { value: 'personal', label: '고객 관리 (Personal)' },
+    { value: 'db', label: 'DB 관리 (Assigned)' },
+] as const
+
 export type CustomerStatusValue = typeof CUSTOMER_STATUSES[number]['value']
 export type GenderValue = typeof GENDER_OPTIONS[number]['value']
 
@@ -77,6 +95,10 @@ export interface CreateCustomerInput {
     jobTitle?: string
     source?: string
     status?: string  // 폼에서는 string 허용
+    type?: string
+    interestProduct?: string
+    memo?: string
+    adminComment?: string
 }
 
 export interface UpdateCustomerInput extends Partial<CreateCustomerInput> {

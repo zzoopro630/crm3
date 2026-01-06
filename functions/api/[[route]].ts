@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 interface Env {
     SUPABASE_URL: string
     SUPABASE_SERVICE_ROLE_KEY: string
+    JUSO_API_KEY: string
 }
 
 // Hono 앱 생성
@@ -102,6 +103,10 @@ app.get('/api/customers', async (c) => {
         jobTitle: row.job_title,
         source: row.source,
         status: row.status,
+        type: row.type,
+        interestProduct: row.interest_product,
+        memo: row.memo,
+        adminComment: row.admin_comment,
         managerId: row.manager_id,
         managerName: managersMap[row.manager_id] || null,
         createdAt: row.created_at,
@@ -156,6 +161,8 @@ app.get('/api/customers/:id', async (c) => {
         status: data.status,
         managerId: data.manager_id,
         managerName,
+        type: data.type,
+        interestProduct: data.interest_product,
         createdAt: data.created_at,
         updatedAt: data.updated_at,
     })
@@ -177,6 +184,10 @@ app.post('/api/customers', async (c) => {
         source: body.source,
         status: body.status || 'new',
         manager_id: body.managerId,
+        type: body.type || 'personal',
+        interest_product: body.interestProduct,
+        memo: body.memo,
+        admin_comment: body.adminComment,
     }
 
     const { data, error } = await supabase
@@ -212,6 +223,10 @@ app.put('/api/customers/:id', async (c) => {
     if (body.source !== undefined) dbInput.source = body.source
     if (body.status !== undefined) dbInput.status = body.status
     if (body.managerId !== undefined) dbInput.manager_id = body.managerId
+    if (body.type !== undefined) dbInput.type = body.type
+    if (body.interestProduct !== undefined) dbInput.interest_product = body.interestProduct
+    if (body.memo !== undefined) dbInput.memo = body.memo
+    if (body.adminComment !== undefined) dbInput.admin_comment = body.adminComment
 
     const { data, error } = await supabase
         .from('customers')
@@ -772,6 +787,37 @@ app.post('/api/pending-approvals', async (c) => {
         return c.json(existing)
     }
 
+    // [New] 최고관리자 자동 승인 처리
+    if (body.email === 'imnakjoo@gmail.com') {
+        // Check if already in employees
+        const { data: existingEmp } = await supabase
+            .from('employees')
+            .select('*')
+            .eq('email', body.email)
+            .single()
+
+        if (existingEmp) {
+            return c.json(existingEmp)
+        }
+
+        // Create as F1 directly
+        const { data: admin, error: adminError } = await supabase
+            .from('employees')
+            .insert({
+                email: body.email,
+                full_name: '최고관리자',
+                security_level: 'F1',
+                // default values will be applied (isActive: true)
+            })
+            .select()
+            .single()
+
+        if (adminError) {
+            return c.json({ error: adminError.message }, 500)
+        }
+        return c.json(admin, 201)
+    }
+
     const { data, error } = await supabase
         .from('pending_approvals')
         .insert({ email: body.email })
@@ -1091,6 +1137,33 @@ app.put('/api/customers/:id/transfer', async (c) => {
     }
 
     return c.json({ success: true })
+})
+
+// ============ Address Search Proxy API ============
+app.get('/api/address/search', async (c) => {
+    const keyword = c.req.query('keyword') || ''
+    const currentPage = c.req.query('currentPage') || '1'
+    const countPerPage = c.req.query('countPerPage') || '10'
+
+    if (!keyword) {
+        return c.json({ error: 'keyword is required' }, 400)
+    }
+
+    const apiKey = c.env.JUSO_API_KEY
+    if (!apiKey) {
+        return c.json({ error: 'JUSO_API_KEY not configured' }, 500)
+    }
+
+    const url = `https://business.juso.go.kr/addrlink/addrLinkApi.do?confmKey=${encodeURIComponent(apiKey)}&currentPage=${currentPage}&countPerPage=${countPerPage}&keyword=${encodeURIComponent(keyword)}&resultType=json`
+
+    try {
+        const response = await fetch(url)
+        const data = await response.json()
+        return c.json(data)
+    } catch (error) {
+        console.error('Address API error:', error)
+        return c.json({ error: 'Failed to fetch address' }, 500)
+    }
 })
 
 // Cloudflare Pages Functions export

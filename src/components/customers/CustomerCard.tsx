@@ -3,7 +3,7 @@ import { StatusSelector } from './StatusSelector'
 import { SourceSelector } from './SourceSelector'
 import { ManagerSelector } from './ManagerSelector'
 import { Button } from '@/components/ui/button'
-import { Eye, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import type { CustomerWithManager } from '@/types/customer'
 
 interface CustomerCardProps {
@@ -89,13 +89,7 @@ export function CustomerCard({
             </div>
 
             {/* Footer: 액션 버튼 */}
-            <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                <Link to={`/customers/${customer.id}`}>
-                    <Button variant="ghost" size="sm">
-                        <Eye className="h-4 w-4 mr-1" />
-                        상세
-                    </Button>
-                </Link>
+            <div className="flex justify-end pt-2 border-t border-border">
                 <Button
                     variant="ghost"
                     size="sm"
