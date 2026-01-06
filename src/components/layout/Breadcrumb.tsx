@@ -5,6 +5,7 @@ import { ChevronRight, Home } from 'lucide-react'
 const ROUTE_TITLES: Record<string, string> = {
     '/': '대시보드',
     '/customers': '고객 관리',
+    '/db-management': 'DB 관리',
     '/team': '팀 관리',
     '/settings': '설정',
     '/settings/organizations': '조직 관리',

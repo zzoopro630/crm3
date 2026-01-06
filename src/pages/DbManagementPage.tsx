@@ -481,12 +481,9 @@ export default function DbManagementPage() {
         <div className="space-y-6 max-w-[1800px] mx-auto p-4 md:p-8 overflow-x-hidden">
             {/* 헤더 */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">DB 관리</h1>
-                    <p className="text-muted-foreground mt-1">
-                        외부 DB를 등록하고 영업 담당자에게 배분합니다.
-                    </p>
-                </div>
+                <p className="text-muted-foreground">
+                    외부 DB를 등록하고 영업 담당자에게 배분합니다.
+                </p>
                 <Button onClick={() => setShowAddModal(true)}>
                     <Plus className="mr-2 h-4 w-4" />
                     DB 등록
