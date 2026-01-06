@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Loader2, Search, Database, User, Phone, X, Plus, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react'
+import { Loader2, Search, Database, User, Phone, X, Plus, ChevronLeft, ChevronRight, AlertCircle, ChevronDown, Filter } from 'lucide-react'
 import { updateCustomer, getCustomers, createCustomer } from '@/services/customers'
 import type { CustomerWithManager, CreateCustomerInput } from '@/types/customer'
 import { CUSTOMER_STATUSES } from '@/types/customer'
@@ -29,35 +29,23 @@ const validateName = (name: string): string | undefined => {
     return undefined
 }
 
-// 전화번호 검증 함수 (한국 전화번호 형식)
-const validatePhone = (phone: string): string | undefined => {
-    if (!phone.trim()) return '연락처를 입력해주세요.'
-    // 숫자만 추출
-    const digits = phone.replace(/\D/g, '')
-    // 한국 전화번호: 010, 011, 016, 017, 018, 019 또는 02~06X 지역번호
-    const mobileRegex = /^01[0-9]{8,9}$/
-    const seoulRegex = /^02\d{7,8}$/
-    const localRegex = /^0[3-6][1-9]\d{7,8}$/
-
-    if (!mobileRegex.test(digits) && !seoulRegex.test(digits) && !localRegex.test(digits)) {
-        return '올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)'
-    }
+// 전화번호 검증 함수 (8자리 숫자)
+const validatePhone = (phoneDigits: string): string | undefined => {
+    if (!phoneDigits) return '연락처를 입력해주세요.'
+    const digits = phoneDigits.replace(/\D/g, '')
+    if (digits.length !== 8) return '전화번호 8자리를 입력해주세요.'
     return undefined
 }
 
-// 전화번호 포맷팅 함수 (kr-format 활용)
-const formatPhoneNumber = (value: string): string => {
-    // 숫자만 추출
-    const digits = value.replace(/\D/g, '')
-    if (!digits) return ''
-
-    // kr-format의 pad.phone 사용
+// 전화번호 포맷팅 함수 (8자리 → 010-XXXX-XXXX)
+const formatPhoneForSave = (digits: string): string => {
+    if (!digits || digits.length !== 8) return ''
+    // 010 + 8자리를 kr-format으로 포맷팅
+    const fullNumber = '010' + digits
     try {
-        const formatted = pad.phone(digits)
-        return formatted
+        return pad.phone(fullNumber)
     } catch {
-        // 포맷팅 실패 시 원본 반환
-        return digits
+        return `010-${digits.slice(0, 4)}-${digits.slice(4)}`
     }
 }
 
@@ -96,6 +84,14 @@ export default function DbManagementPage() {
         source: '',
         search: '',
     })
+    const [showMobileFilters, setShowMobileFilters] = useState(false)
+
+    // 활성화된 필터 개수 계산
+    const activeFilterCount = [
+        filters.status,
+        filters.managerId,
+        filters.source,
+    ].filter(Boolean).length
 
     // 등록 모달 상태
     const [showAddModal, setShowAddModal] = useState(false)
@@ -127,12 +123,13 @@ export default function DbManagementPage() {
         setFormErrors(prev => ({ ...prev, name: error }))
     }, [formData.name])
 
-    // 전화번호 입력 핸들러 (자동 포맷팅)
+    // 전화번호 입력 핸들러 (숫자 8자리만)
     const handlePhoneChange = useCallback((value: string) => {
-        const formatted = formatPhoneNumber(value)
-        setFormData(prev => ({ ...prev, phone: formatted }))
+        // 숫자만 추출하고 8자리로 제한
+        const digits = value.replace(/\D/g, '').slice(0, 8)
+        setFormData(prev => ({ ...prev, phone: digits }))
         // 입력 중에는 에러 클리어
-        if (formErrors.phone && formatted) {
+        if (formErrors.phone && digits) {
             setFormErrors(prev => ({ ...prev, phone: undefined }))
         }
     }, [formErrors.phone])
@@ -325,7 +322,9 @@ export default function DbManagementPage() {
 
         setIsSubmitting(true)
         try {
-            await createCustomer(formData)
+            // 전화번호를 010-XXXX-XXXX 형식으로 변환하여 저장
+            const formattedPhone = formatPhoneForSave(formData.phone || '')
+            await createCustomer({ ...formData, phone: formattedPhone })
             setShowAddModal(false)
             setFormData({
                 name: '',
@@ -479,7 +478,7 @@ export default function DbManagementPage() {
     )
 
     return (
-        <div className="space-y-6 max-w-[1800px] mx-auto p-4 md:p-8">
+        <div className="space-y-6 max-w-[1800px] mx-auto p-4 md:p-8 overflow-x-hidden">
             {/* 헤더 */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -517,73 +516,166 @@ export default function DbManagementPage() {
             </div>
 
             {/* 필터 영역 */}
-            <div className="flex flex-wrap gap-4 items-center bg-card p-4 rounded-lg border shadow-sm">
-                <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                    <Search className="h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="이름, 연락처 검색..."
-                        value={filters.search}
-                        onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                        className="border-0 bg-transparent p-0 focus-visible:ring-0 placeholder:text-muted-foreground"
-                    />
+            <div className="bg-card p-4 rounded-lg border shadow-sm space-y-3">
+                {/* 검색 + 필터 토글 (모바일) / 검색 + 필터들 (데스크탑) */}
+                <div className="flex items-center gap-2">
+                    {/* 검색창 */}
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <Input
+                            placeholder="이름, 연락처 검색..."
+                            value={filters.search}
+                            onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                            className="border-0 bg-transparent p-0 focus-visible:ring-0 placeholder:text-muted-foreground"
+                        />
+                    </div>
+
+                    {/* 모바일: 필터 토글 버튼 */}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="md:hidden shrink-0"
+                        onClick={() => setShowMobileFilters(!showMobileFilters)}
+                    >
+                        <Filter className="h-4 w-4 mr-1" />
+                        필터
+                        {activeFilterCount > 0 && (
+                            <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1.5 text-xs">
+                                {activeFilterCount}
+                            </span>
+                        )}
+                        <ChevronDown className={`h-4 w-4 ml-1 transition-transform ${showMobileFilters ? 'rotate-180' : ''}`} />
+                    </Button>
+
+                    {/* 데스크탑: 인라인 필터들 */}
+                    <div className="hidden md:flex items-center gap-3">
+                        <div className="h-6 w-px bg-border" />
+
+                        {/* 상태 필터 (진행중 탭만) */}
+                        {activeTab === 'inProgress' && (
+                            <select
+                                value={filters.status}
+                                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                                className="h-9 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                            >
+                                <option value="">전체 상태</option>
+                                {CUSTOMER_STATUSES.filter(s => s.value !== 'closed').map(status => (
+                                    <option key={status.value} value={status.value}>{status.label}</option>
+                                ))}
+                            </select>
+                        )}
+
+                        {/* 유입경로 필터 */}
+                        <select
+                            value={filters.source}
+                            onChange={(e) => setFilters(prev => ({ ...prev, source: e.target.value }))}
+                            className="h-9 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                        >
+                            <option value="">전체 유입경로</option>
+                            {sources?.map(src => (
+                                <option key={src.id} value={src.name}>{src.name}</option>
+                            ))}
+                        </select>
+
+                        {/* 담당자 필터 */}
+                        <select
+                            value={filters.managerId}
+                            onChange={(e) => setFilters(prev => ({ ...prev, managerId: e.target.value }))}
+                            className="h-9 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                        >
+                            <option value="">전체 담당자</option>
+                            {filteredEmployees?.map(emp => (
+                                <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                            ))}
+                        </select>
+
+                        {/* 페이지 사이즈 */}
+                        <div className="ml-auto flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">표시:</span>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => {
+                                    setPageSize(Number(e.target.value))
+                                    setCurrentPage(1)
+                                }}
+                                className="h-9 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                            >
+                                {PAGE_SIZE_OPTIONS.map(size => (
+                                    <option key={size} value={size}>{size}개</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
-                <div className="h-6 w-px bg-border hidden md:block" />
+                {/* 모바일: 펼쳐지는 필터 패널 */}
+                {showMobileFilters && (
+                    <div className="md:hidden grid grid-cols-2 gap-3 pt-3 border-t">
+                        {/* 상태 필터 (진행중 탭만) */}
+                        {activeTab === 'inProgress' && (
+                            <div>
+                                <label className="text-xs text-muted-foreground mb-1 block">상태</label>
+                                <select
+                                    value={filters.status}
+                                    onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                                    className="w-full h-9 px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                                >
+                                    <option value="">전체</option>
+                                    {CUSTOMER_STATUSES.filter(s => s.value !== 'closed').map(status => (
+                                        <option key={status.value} value={status.value}>{status.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
 
-                {/* 상태 필터 (진행중 탭만) */}
-                {activeTab === 'inProgress' && (
-                    <select
-                        value={filters.status}
-                        onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                        className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
-                    >
-                        <option value="">전체 상태</option>
-                        {CUSTOMER_STATUSES.filter(s => s.value !== 'closed').map(status => (
-                            <option key={status.value} value={status.value}>{status.label}</option>
-                        ))}
-                    </select>
+                        {/* 유입경로 필터 */}
+                        <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">유입경로</label>
+                            <select
+                                value={filters.source}
+                                onChange={(e) => setFilters(prev => ({ ...prev, source: e.target.value }))}
+                                className="w-full h-9 px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                            >
+                                <option value="">전체</option>
+                                {sources?.map(src => (
+                                    <option key={src.id} value={src.name}>{src.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* 담당자 필터 */}
+                        <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">담당자</label>
+                            <select
+                                value={filters.managerId}
+                                onChange={(e) => setFilters(prev => ({ ...prev, managerId: e.target.value }))}
+                                className="w-full h-9 px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                            >
+                                <option value="">전체</option>
+                                {filteredEmployees?.map(emp => (
+                                    <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* 페이지 사이즈 */}
+                        <div>
+                            <label className="text-xs text-muted-foreground mb-1 block">표시 개수</label>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => {
+                                    setPageSize(Number(e.target.value))
+                                    setCurrentPage(1)
+                                }}
+                                className="w-full h-9 px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
+                            >
+                                {PAGE_SIZE_OPTIONS.map(size => (
+                                    <option key={size} value={size}>{size}개</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
                 )}
-
-                {/* 유입경로 필터 */}
-                <select
-                    value={filters.source}
-                    onChange={(e) => setFilters(prev => ({ ...prev, source: e.target.value }))}
-                    className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
-                >
-                    <option value="">전체 유입경로</option>
-                    {sources?.map(src => (
-                        <option key={src.id} value={src.name}>{src.name}</option>
-                    ))}
-                </select>
-
-                {/* 담당자 필터 */}
-                <select
-                    value={filters.managerId}
-                    onChange={(e) => setFilters(prev => ({ ...prev, managerId: e.target.value }))}
-                    className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
-                >
-                    <option value="">전체 담당자</option>
-                    {filteredEmployees?.map(emp => (
-                        <option key={emp.id} value={emp.id}>{emp.fullName}</option>
-                    ))}
-                </select>
-
-                {/* 페이지 사이즈 */}
-                <div className="ml-auto flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground hidden md:inline">표시:</span>
-                    <select
-                        value={pageSize}
-                        onChange={(e) => {
-                            setPageSize(Number(e.target.value))
-                            setCurrentPage(1)
-                        }}
-                        className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
-                    >
-                        {PAGE_SIZE_OPTIONS.map(size => (
-                            <option key={size} value={size}>{size}개</option>
-                        ))}
-                    </select>
-                </div>
             </div>
 
             {/* 로딩 */}
@@ -614,16 +706,16 @@ export default function DbManagementPage() {
                     <table className="w-full text-sm">
                         <thead className="bg-muted/50 border-b">
                             <tr>
-                                <th className="text-left p-3 font-medium whitespace-nowrap">등록일</th>
-                                <th className="text-left p-3 font-medium w-[120px]">담당자</th>
-                                <th className="text-left p-3 font-medium whitespace-nowrap">고객명</th>
-                                <th className="text-left p-3 font-medium whitespace-nowrap">연락처</th>
-                                <th className="text-left p-3 font-medium min-w-[150px]">관심상품</th>
+                                <th className="text-left p-3 font-medium whitespace-nowrap w-[80px]">등록일</th>
+                                <th className="text-left p-3 font-medium w-[90px]">담당자</th>
+                                <th className="text-left p-3 font-medium whitespace-nowrap w-[70px]">고객명</th>
+                                <th className="text-left p-3 font-medium whitespace-nowrap w-[110px]">연락처</th>
+                                <th className="text-left p-3 font-medium w-[100px]">관심상품</th>
                                 {/* 유입경로는 관리자(F1/F2)만 표시 */}
-                                {isAdmin && <th className="text-left p-3 font-medium min-w-[120px]">유입경로</th>}
-                                <th className="text-left p-3 font-medium min-w-[100px]">상태</th>
+                                {isAdmin && <th className="text-left p-3 font-medium w-[100px]">유입경로</th>}
+                                <th className="text-left p-3 font-medium w-[80px]">상태</th>
                                 <th className="text-left p-3 font-medium min-w-[200px]">메모</th>
-                                <th className="text-left p-3 font-medium min-w-[150px]">관리자 코멘트</th>
+                                <th className="text-left p-3 font-medium w-[120px]">관리자 코멘트</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -800,21 +892,26 @@ export default function DbManagementPage() {
                             </div>
                             <div>
                                 <Label htmlFor="phone">연락처 <span className="text-red-500">*</span></Label>
-                                <Input
-                                    id="phone"
-                                    value={formData.phone || ''}
-                                    onChange={(e) => handlePhoneChange(e.target.value)}
-                                    onBlur={handlePhoneBlur}
-                                    placeholder="010-1234-5678"
-                                    className={formErrors.phone ? 'border-red-500 focus-visible:ring-red-500' : ''}
-                                />
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">010-</span>
+                                    <Input
+                                        id="phone"
+                                        value={formData.phone || ''}
+                                        onChange={(e) => handlePhoneChange(e.target.value)}
+                                        onBlur={handlePhoneBlur}
+                                        placeholder="12345678"
+                                        maxLength={8}
+                                        inputMode="numeric"
+                                        className={`flex-1 ${formErrors.phone ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                    />
+                                </div>
                                 {formErrors.phone && (
                                     <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                                         <AlertCircle className="h-3 w-3" />
                                         {formErrors.phone}
                                     </p>
                                 )}
-                                <p className="text-muted-foreground text-xs mt-1">숫자만 입력하면 자동으로 형식이 적용됩니다.</p>
+                                <p className="text-muted-foreground text-xs mt-1">숫자 8자리만 입력해주세요.</p>
                             </div>
                             <div>
                                 <Label htmlFor="interestProduct">관심항목 <span className="text-red-500">*</span></Label>
