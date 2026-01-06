@@ -33,22 +33,11 @@ export function TeamPage() {
             F3: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
             F4: 'bg-green-500/10 text-green-500 border-green-500/20',
             F5: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-            F6: 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20',
         }
-        return colors[level] || colors.F6
+        return colors[level] || colors.F5
     }
 
-    // F6 사용자는 팀 관리 접근 불가
-    if (employee?.securityLevel === 'F6') {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="text-center">
-                    <Users className="h-12 w-12 text-zinc-400 mx-auto mb-4" />
-                    <p className="text-zinc-500">팀 관리 권한이 없습니다</p>
-                </div>
-            </div>
-        )
-    }
+
 
     if (isLoading) {
         return (

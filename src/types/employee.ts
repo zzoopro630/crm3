@@ -18,7 +18,6 @@ export const SECURITY_LEVELS = [
     { value: 'F3', label: 'F3 - 사업단장' },
     { value: 'F4', label: 'F4 - 지점장' },
     { value: 'F5', label: 'F5 - 팀장' },
-    { value: 'F6', label: 'F6 - FC' },
 ] as const
 
 export type SecurityLevelValue = typeof SECURITY_LEVELS[number]['value']

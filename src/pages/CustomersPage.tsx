@@ -21,17 +21,17 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import { Plus, Search, Loader2, ChevronLeft, ChevronRight, Trash2, Eye, FileSpreadsheet, X, Users } from 'lucide-react'
+import { Plus, Search, Loader2, ChevronLeft, ChevronRight, Trash2, FileSpreadsheet, X, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { ExcelUpload } from '@/components/customers/ExcelUpload'
-import { AddressSearch } from '@/components/customers/AddressSearch'
+import { AddressInput } from '@/components/customers/AddressInput'
 import { BirthdateSelector } from '@/components/customers/BirthdateSelector'
 import { ManagerSelector } from '@/components/customers/ManagerSelector'
 import { StatusSelector } from '@/components/customers/StatusSelector'
 import { SourceSelector } from '@/components/customers/SourceSelector'
 import { BulkTransferModal } from '@/components/customers/BulkTransferModal'
 import { CustomerCard } from '@/components/customers/CustomerCard'
-import type { CreateCustomerInput, CustomerListParams } from '@/types/customer'
+import type { CreateCustomerInput, CustomerListParams, CustomerWithManager } from '@/types/customer'
 import { CUSTOMER_STATUSES, GENDER_OPTIONS } from '@/types/customer'
 import { cn } from '@/lib/utils'
 
@@ -88,6 +88,19 @@ export function CustomersPage() {
         limit: 20,
         filters: managerFilter ? { managerId: managerFilter } : {},
     })
+
+    // 정렬 상태
+    const [sortConfig, setSortConfig] = useState<{ key: keyof CustomerWithManager; direction: 'asc' | 'desc' }>({
+        key: 'createdAt',
+        direction: 'desc'
+    })
+
+    const handleSort = (key: keyof CustomerWithManager) => {
+        setSortConfig(current => ({
+            key,
+            direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
+        }))
+    }
 
     // 검색어 로컬 상태
     const [searchTerm, setSearchTerm] = useState('')
@@ -182,7 +195,45 @@ export function CustomersPage() {
         setFormErrors(newErrors)
     }
 
+    // 기간 필터 상태
+    const [dateRange, setDateRange] = useState<'all' | 'this_month' | 'last_month'>('all')
+
     const { data: response, isLoading } = useCustomers(params)
+
+    // 날짜 필터링 (클라이언트 사이드)
+    const filteredByDate = response?.data?.filter(customer => {
+        if (dateRange === 'all') return true
+        if (!customer.createdAt) return false
+
+        const created = new Date(customer.createdAt)
+        const now = new Date()
+        const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+        const thisMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0)
+
+        if (dateRange === 'this_month') {
+            return created >= thisMonthStart && created <= thisMonthEnd
+        }
+        if (dateRange === 'last_month') {
+            return created >= lastMonthStart && created <= lastMonthEnd
+        }
+        return true
+    }) || []
+
+    // 클라이언트 사이드 정렬 (날짜 필터링된 데이터 기준)
+    const sortedData = filteredByDate.sort((a, b) => {
+        const aValue = a[sortConfig.key]
+        const bValue = b[sortConfig.key]
+
+        if (!aValue && !bValue) return 0
+        if (!aValue) return 1
+        if (!bValue) return -1
+
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1
+        return 0
+    })
 
 
 
@@ -360,15 +411,39 @@ export function CustomersPage() {
                         </button>
                     )}
                 </div>
-                <select
-                    onChange={(e) => handleStatusFilter(e.target.value)}
-                    className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white"
-                >
-                    <option value="">전체 상태</option>
-                    {CUSTOMER_STATUSES.map(status => (
-                        <option key={status.value} value={status.value}>{status.label}</option>
-                    ))}
-                </select>
+
+                <div className="flex gap-2">
+                    {/* 기간 필터 */}
+                    <select
+                        value={dateRange}
+                        onChange={(e) => setDateRange(e.target.value as any)}
+                        className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
+                    >
+                        <option value="all">전체 기간</option>
+                        <option value="this_month">당월</option>
+                        <option value="last_month">전월</option>
+                    </select>
+
+                    <select
+                        onChange={(e) => handleStatusFilter(e.target.value)}
+                        className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
+                    >
+                        <option value="">전체 상태</option>
+                        {CUSTOMER_STATUSES.map(status => (
+                            <option key={status.value} value={status.value}>{status.label}</option>
+                        ))}
+                    </select>
+
+                    {/* 유입경로 필터 */}
+                    <select
+                        className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm max-w-[120px]"
+                    >
+                        <option value="">전체 경로</option>
+                        {sources?.map(source => (
+                            <option key={source.id} value={source.name}>{source.name}</option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* Manager Filter Badge */}
@@ -428,7 +503,7 @@ export function CustomersPage() {
                         <>
                             {/* 모바일: 카드 레이아웃 */}
                             <div className="block md:hidden space-y-3">
-                                {response?.data.map((customer) => (
+                                {sortedData.map((customer) => (
                                     <CustomerCard
                                         key={customer.id}
                                         customer={customer}
@@ -455,17 +530,27 @@ export function CustomersPage() {
                                                     />
                                                 </th>
                                             )}
-                                            <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">이름</th>
+                                            <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('name')}>
+                                                이름 {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                            </th>
                                             <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">전화번호</th>
-                                            <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">유입경로</th>
-                                            <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">상태</th>
-                                            <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">담당자</th>
-                                            <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">등록일</th>
+                                            <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('source')}>
+                                                유입경로 {sortConfig.key === 'source' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                            </th>
+                                            <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('status')}>
+                                                상태 {sortConfig.key === 'status' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                            </th>
+                                            <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('managerName')}>
+                                                담당자 {sortConfig.key === 'managerName' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                            </th>
+                                            <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground" onClick={() => handleSort('createdAt')}>
+                                                등록일 {sortConfig.key === 'createdAt' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                                            </th>
                                             <th className="text-right py-4 px-4 text-sm font-medium text-muted-foreground">작업</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {response?.data.map((customer, index) => {
+                                        {sortedData.map((customer, index) => {
                                             const isSelected = selectedIds.includes(customer.id)
                                             return (
                                                 <tr
@@ -523,11 +608,6 @@ export function CustomersPage() {
                                                     </td>
                                                     <td className="py-3 px-4 text-right">
                                                         <div className="flex justify-end gap-2">
-                                                            <Link to={`/customers/${customer.id}`}>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                    <Eye className="h-4 w-4" />
-                                                                </Button>
-                                                            </Link>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="icon"
@@ -663,7 +743,7 @@ export function CustomersPage() {
                         />
                         <div className="space-y-2">
                             <Label>주소</Label>
-                            <AddressSearch
+                            <AddressInput
                                 value={formData.address || ''}
                                 onChange={(address: string) => setFormData({ ...formData, address })}
                                 placeholder="주소 검색"

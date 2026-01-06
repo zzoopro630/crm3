@@ -40,7 +40,7 @@ export function EmployeesPage() {
     const [formData, setFormData] = useState<CreateEmployeeInput>({
         email: '',
         fullName: '',
-        securityLevel: 'F6',
+        securityLevel: 'F5',
         parentId: null,
         organizationId: null,
         positionName: '',
@@ -87,7 +87,7 @@ export function EmployeesPage() {
             setFormData({
                 email: '',
                 fullName: '',
-                securityLevel: 'F6',
+                securityLevel: 'F5',
                 parentId: null,
                 organizationId: null,
                 positionName: '',
@@ -148,9 +148,8 @@ export function EmployeesPage() {
             F3: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
             F4: 'bg-green-500/10 text-green-500 border-green-500/20',
             F5: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-            F6: 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20',
         }
-        return colors[level] || colors.F6
+        return colors[level] || colors.F5
     }
 
     if (isLoading) {

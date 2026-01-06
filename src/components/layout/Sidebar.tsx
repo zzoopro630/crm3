@@ -9,21 +9,23 @@ import {
     Settings,
     ChevronLeft,
     Menu,
+    Database,
 } from 'lucide-react'
+import type { SecurityLevel } from '@/types/employee'
 
 
 interface NavItem {
     title: string
     href: string
     icon: React.ComponentType<{ className?: string }>
-    adminOnly?: boolean // F1 전용
-    managerOnly?: boolean // F1~F5 전용 (F6 제외)
+    allowedLevels?: SecurityLevel[]
 }
 
 const navItems: NavItem[] = [
     { title: '대시보드', href: '/', icon: LayoutDashboard },
     { title: '고객 관리', href: '/customers', icon: Users },
-    { title: '팀 관리', href: '/team', icon: UsersRound, managerOnly: true },
+    { title: 'DB 관리', href: '/db-management', icon: Database, allowedLevels: ['F1', 'F2'] },
+    { title: '팀 관리', href: '/team', icon: UsersRound, allowedLevels: ['F1', 'F2', 'F3', 'F4', 'F5'] },
     { title: '설정', href: '/settings', icon: Settings },
 ]
 
@@ -36,12 +38,9 @@ export function Sidebar({ isOpen, onToggle }: SidebarProps) {
     const location = useLocation()
     const { employee } = useAuthStore()
 
-    const isAdmin = employee?.securityLevel === 'F1'
-    const isManager = employee && ['F1', 'F2', 'F3', 'F4', 'F5'].includes(employee.securityLevel)
-
     const visibleNavItems = navItems.filter(item => {
-        if (item.adminOnly && !isAdmin) return false
-        if (item.managerOnly && !isManager) return false
+        if (!employee) return false
+        if (item.allowedLevels && !item.allowedLevels.includes(employee.securityLevel)) return false
         return true
     })
 
