@@ -90,6 +90,26 @@ export const customerNotes = pgTable('customer_notes', {
     updatedAt: timestamp('updated_at').defaultNow(),
 })
 
+// ============ Labels Table ============
+export const labels = pgTable('labels', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    color: text('color').notNull().default('#6B7280'), // 기본 회색
+    description: text('description'),
+    createdBy: uuid('created_by').notNull(), // FK to employees.id (via DB constraint)
+    createdAt: timestamp('created_at').defaultNow(),
+    updatedAt: timestamp('updated_at').defaultNow(),
+})
+
+// ============ Customer Labels Junction Table ============
+export const customerLabels = pgTable('customer_labels', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    customerId: integer('customer_id').notNull(), // FK to customers.id (via DB constraint)
+    labelId: uuid('label_id').notNull(), // FK to labels.id (via DB constraint)
+    createdBy: uuid('created_by').notNull(), // FK to employees.id (via DB constraint)
+    createdAt: timestamp('created_at').defaultNow(),
+})
+
 // ============ Contracts Table ============
 export const contracts = pgTable('contracts', {
     id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
@@ -116,6 +136,10 @@ export type NewCustomer = typeof customers.$inferInsert
 export type Source = typeof sources.$inferSelect
 export type CustomerNote = typeof customerNotes.$inferSelect
 export type NewCustomerNote = typeof customerNotes.$inferInsert
+export type Label = typeof labels.$inferSelect
+export type NewLabel = typeof labels.$inferInsert
+export type CustomerLabel = typeof customerLabels.$inferSelect
+export type NewCustomerLabel = typeof customerLabels.$inferInsert
 export type Contract = typeof contracts.$inferSelect
 export type NewContract = typeof contracts.$inferInsert
 

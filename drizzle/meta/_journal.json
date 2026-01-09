@@ -22,6 +22,13 @@
       "when": 1766812768693,
       "tag": "0002_common_darwin",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1767957141340,
+      "tag": "0003_round_magneto",
+      "breakpoints": true
     }
   ]
 }
