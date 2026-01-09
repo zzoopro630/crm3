@@ -80,7 +80,7 @@ export async function getCustomerLabels(customerId: number): Promise<Label[]> {
         .eq('customer_id', customerId)
 
     if (error) throw new Error(`고객 라벨 조회 실패: ${error.message}`)
-    return data?        .map((item: any) => item.labels).filter(Boolean) as Label[]
+    return data?.map((item: any) => item.labels).filter(Boolean) as Label[]
 }
 
 // 고객에 라벨 추가

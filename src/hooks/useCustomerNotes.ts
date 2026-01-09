@@ -59,11 +59,10 @@ export function useDeleteCustomerNote() {
     const queryClient = useQueryClient()
 
     return useMutation({
-        mutationFn: ({ id, customerId }: { id: number; customerId: number }) =>
+        mutationFn: ({ id }: { id: number; customerId: number }) =>
             deleteCustomerNote(id),
-        onSuccess: () => {
-            // customerId가 없으므로 모든 쿼리 무효화
-            queryClient.invalidateQueries({ queryKey: ['customerNotes'] })
+        onSuccess: (_data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['customerNotes', variables.customerId] })
         },
         onError: (error) => {
             console.error('메모 삭제 실패:', error)
