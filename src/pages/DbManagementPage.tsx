@@ -6,8 +6,9 @@ import { useAuthStore } from '@/stores/authStore'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Loader2, Search, Database, User, Phone, X, Plus, ChevronLeft, ChevronRight, AlertCircle, ChevronDown, Filter } from 'lucide-react'
+import { Loader2, Search, Database, User, Phone, X, Plus, ChevronLeft, ChevronRight, AlertCircle, ChevronDown, Filter, MessageSquare } from 'lucide-react'
 import { updateCustomer, getCustomers, createCustomer } from '@/services/customers'
+import { CustomerNotesModal } from '@/components/customers/CustomerNotesModal'
 import type { CustomerWithManager, CreateCustomerInput } from '@/types/customer'
 import { CUSTOMER_STATUSES } from '@/types/customer'
 import { pad } from 'kr-format'
@@ -93,8 +94,9 @@ export default function DbManagementPage() {
         filters.source,
     ].filter(Boolean).length
 
-    // 등록 모달 상태
+    // 모달 상태
     const [showAddModal, setShowAddModal] = useState(false)
+    const [notesCustomerId, setNotesCustomerId] = useState<number | null>(null)
     const [formData, setFormData] = useState<CreateCustomerInput>({
         name: '',
         phone: '',
@@ -298,6 +300,10 @@ export default function DbManagementPage() {
         navigate(`/customers/${customerId}`)
     }
 
+    const handleNotesClick = (customerId: number) => {
+        setNotesCustomerId(customerId)
+    }
+
     // DB 등록 핸들러
     const handleAddSubmit = async () => {
         // 전체 필드 검증
@@ -461,24 +467,20 @@ export default function DbManagementPage() {
 
             {/* 메모 */}
             <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">메모</label>
-                {canEditMemo(customer) ? (
-                    <Input
-                        defaultValue={customer.memo || ''}
-                        onBlur={(e) => {
-                            if (e.target.value !== (customer.memo || '')) {
-                                handleMemoSave(customer.id, e.target.value)
-                            }
-                        }}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) e.currentTarget.blur() }}
-                        className="h-9 text-sm"
-                        placeholder="메모..."
-                    />
-                ) : (
-                    <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded border min-h-[36px] flex items-center">
-                        {customer.memo || '-'}
-                    </div>
-                )}
+                <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-muted-foreground">메모</label>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleNotesClick(customer.id)}
+                        className="h-6 w-6 p-0 text-xs"
+                    >
+                        <MessageSquare className="h-3 w-3" />
+                    </Button>
+                </div>
+                <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded border min-h-[36px] flex items-center">
+                    {customer.memo || '메모 없음'}
+                </div>
             </div>
         </div>
     )
@@ -814,21 +816,22 @@ export default function DbManagementPage() {
                                         )}
                                     </td>
                                     <td className="p-3">
-                                        {canEditMemo(customer) ? (
-                                            <Input
-                                                defaultValue={customer.memo || ''}
-                                                onBlur={(e) => {
-                                                    if (e.target.value !== (customer.memo || '')) {
-                                                        handleMemoSave(customer.id, e.target.value)
-                                                    }
-                                                }}
-                                                onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) e.currentTarget.blur() }}
-                                                className="h-8 text-sm bg-transparent border-zinc-200 dark:border-zinc-700"
-                                                placeholder="메모..."
-                                            />
-                                        ) : (
-                                            <span className="text-sm text-muted-foreground">{customer.memo || '-'}</span>
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-sm text-muted-foreground truncate" title={customer.memo || ''}>
+                                                    {customer.memo || '메모 없음'}
+                                                </div>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => handleNotesClick(customer.id)}
+                                                className="h-6 w-6 p-0 shrink-0"
+                                                title="메모 보기"
+                                            >
+                                                <MessageSquare className="h-3 w-3" />
+                                            </Button>
+                                        </div>
                                     </td>
                                     <td className="p-3">
                                         {isAdmin ? (
@@ -999,6 +1002,15 @@ export default function DbManagementPage() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* 메모 상세보기 모달 */}
+            {notesCustomerId && (
+                <CustomerNotesModal
+                    customer={dbList.find(c => c.id === notesCustomerId)!}
+                    isOpen={!!notesCustomerId}
+                    onClose={() => setNotesCustomerId(null)}
+                />
             )}
         </div>
     )
