@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { MessageSquare, Plus, Edit2, Trash2, Send, X } from 'lucide-react'
+import { MessageSquare, Edit2, Trash2, Send, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import type { CustomerWithManager } from '@/types/customer'
@@ -142,10 +142,10 @@ export function CustomerNotesModal({ customer, isOpen, onClose }: CustomerNotesM
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <span className="font-medium text-sm">
-                                                {note.employees?.fullName || '알 수 없음'}
+                                                {(note as any).employees?.fullName || '알 수 없음'}
                                             </span>
                                             <Badge variant="secondary" className="text-xs">
-                                                {format(new Date(note.createdAt), 'MM/dd HH:mm', { locale: ko })}
+                                                {format(note.createdAt || new Date(), 'MM/dd HH:mm', { locale: ko })}
                                             </Badge>
                                         </div>
                                         

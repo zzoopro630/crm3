@@ -224,16 +224,7 @@ export default function DbManagementPage() {
         }
     }
 
-    const handleMemoSave = async (customerId: number, memo: string) => {
-        try {
-            await updateCustomer(customerId, { memo })
-            setDbList(prev => prev.map(item =>
-                item.id === customerId ? { ...item, memo } : item
-            ))
-        } catch (error) {
-            console.error('Failed to save memo:', error)
-        }
-    }
+    // handleMemoSave 함수는 CustomerNotesModal이 대체하므로 제거
 
     const handleAdminCommentSave = async (customerId: number, adminComment: string) => {
         if (!isAdmin) return

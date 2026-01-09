@@ -1,9 +1,9 @@
-import { createClient } from '@/utils/supabase'
+import { createSupabaseClient } from '@/utils/supabase'
 import type { CustomerNote, NewCustomerNote } from '@/db/schema'
 
 // 고객 메모 목록 조회
 export async function getCustomerNotes(customerId: number): Promise<CustomerNote[]> {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     const { data, error } = await supabase
         .from('customer_notes')
         .select(`
@@ -21,7 +21,7 @@ export async function getCustomerNotes(customerId: number): Promise<CustomerNote
 
 // 고객 메모 생성
 export async function createCustomerNote(note: NewCustomerNote): Promise<CustomerNote> {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     const { data, error } = await supabase
         .from('customer_notes')
         .insert(note)
@@ -34,7 +34,7 @@ export async function createCustomerNote(note: NewCustomerNote): Promise<Custome
 
 // 고객 메모 수정
 export async function updateCustomerNote(id: number, content: string): Promise<CustomerNote> {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     const { data, error } = await supabase
         .from('customer_notes')
         .update({ 
@@ -51,7 +51,7 @@ export async function updateCustomerNote(id: number, content: string): Promise<C
 
 // 고객 메모 삭제
 export async function deleteCustomerNote(id: number): Promise<void> {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     const { error } = await supabase
         .from('customer_notes')
         .delete()

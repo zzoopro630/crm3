@@ -5,7 +5,6 @@ import {
     removeCustomerLabel, 
     updateCustomerLabels 
 } from '@/services/labels'
-import type { Label } from '@/db/schema'
 import { useAuthStore } from '@/stores/authStore'
 
 // 고객 라벨 목록 조회

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getLabels, createLabel, updateLabel, deleteLabel } from '@/services/labels'
-import type { Label, NewLabel } from '@/db/schema'
+import type { NewLabel } from '@/db/schema'
 import { useAuthStore } from '@/stores/authStore'
 
 // 라벨 목록 조회

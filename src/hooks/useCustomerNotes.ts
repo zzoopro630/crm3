@@ -5,7 +5,7 @@ import {
     updateCustomerNote, 
     deleteCustomerNote 
 } from '@/services/customerNotes'
-import type { CustomerNote, NewCustomerNote } from '@/db/schema'
+import type { NewCustomerNote } from '@/db/schema'
 import { useAuthStore } from '@/stores/authStore'
 
 // 고객 메모 목록 조회
@@ -44,8 +44,9 @@ export function useUpdateCustomerNote() {
     return useMutation({
         mutationFn: ({ id, content }: { id: number; content: string }) =>
             updateCustomerNote(id, content),
-        onSuccess: (_, { customerId }) => {
-            queryClient.invalidateQueries({ queryKey: ['customerNotes', customerId] })
+        onSuccess: () => {
+            // customerId가 없으므로 모든 쿼리 무효화
+            queryClient.invalidateQueries({ queryKey: ['customerNotes'] })
         },
         onError: (error) => {
             console.error('메모 수정 실패:', error)
@@ -60,8 +61,9 @@ export function useDeleteCustomerNote() {
     return useMutation({
         mutationFn: ({ id, customerId }: { id: number; customerId: number }) =>
             deleteCustomerNote(id),
-        onSuccess: (_, { customerId }) => {
-            queryClient.invalidateQueries({ queryKey: ['customerNotes', customerId] })
+        onSuccess: () => {
+            // customerId가 없으므로 모든 쿼리 무효화
+            queryClient.invalidateQueries({ queryKey: ['customerNotes'] })
         },
         onError: (error) => {
             console.error('메모 삭제 실패:', error)

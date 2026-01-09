@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, Edit2, Trash2, X, Tag } from 'lucide-react'
-import { toast } from 'sonner'
+import { Plus, Edit2, Trash2, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Label as LabelType, NewLabel } from '@/db/schema'
 
@@ -58,27 +57,23 @@ export default function LabelsPage() {
         e.preventDefault()
         
         if (!formData.name.trim()) {
-            alert('라벨 이름을 입력해주세요.')
             return
         }
 
         try {
             if (editingLabel) {
-                await updateLabelMutation.mutateAsync({
-                    id: editingLabel.id,
-                    updates: formData,
-                })
-                alert('라벨이 수정되었습니다.')
-            } else {
-                await createLabelMutation.mutateAsync(formData)
-                alert('라벨이 생성되었습니다.')
-            }
+            await updateLabelMutation.mutateAsync({
+                id: editingLabel.id,
+                updates: formData,
+            })
+        } else {
+            await createLabelMutation.mutateAsync(formData)
+        }
             
             setIsCreateDialogOpen(false)
             resetForm()
         } catch (error) {
             console.error('라벨 저장 실패:', error)
-            alert('라벨 저장에 실패했습니다.')
         }
     }
 
@@ -101,10 +96,8 @@ export default function LabelsPage() {
 
         try {
             await deleteLabelMutation.mutateAsync(id)
-            alert('라벨이 삭제되었습니다.')
         } catch (error) {
             console.error('라벨 삭제 실패:', error)
-            alert('라벨 삭제에 실패했습니다.')
         }
     }
 
@@ -180,7 +173,7 @@ export default function LabelsPage() {
                                 <UiLabel htmlFor="description">설명 (선택사항)</UiLabel>
                                 <Textarea
                                     id="description"
-                                    value={formData.description}
+                                    value={formData.description || ''}
                                     onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                                     placeholder="라벨에 대한 설명을 입력하세요"
                                     rows={3}

@@ -1,11 +1,11 @@
-import { createClient } from '@/utils/supabase'
+import { createSupabaseClient } from '@/utils/supabase'
 import type { Label, NewLabel, CustomerLabel, NewCustomerLabel } from '@/db/schema'
 
 // ============ 라벨 관리 ============
 
 // 라벨 목록 조회
 export async function getLabels(): Promise<Label[]> {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     const { data, error } = await supabase
         .from('labels')
         .select('*')
@@ -17,7 +17,7 @@ export async function getLabels(): Promise<Label[]> {
 
 // 라벨 생성
 export async function createLabel(label: NewLabel): Promise<Label> {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     const { data, error } = await supabase
         .from('labels')
         .insert(label)
@@ -30,7 +30,7 @@ export async function createLabel(label: NewLabel): Promise<Label> {
 
 // 라벨 수정
 export async function updateLabel(id: string, updates: Partial<NewLabel>): Promise<Label> {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     const { data, error } = await supabase
         .from('labels')
         .update({ ...updates, updated_at: new Date().toISOString() })
@@ -44,7 +44,7 @@ export async function updateLabel(id: string, updates: Partial<NewLabel>): Promi
 
 // 라벨 삭제
 export async function deleteLabel(id: string): Promise<void> {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     
     // 먼저 관련된 고객-라벨 연결 삭제
     await supabase
@@ -65,7 +65,7 @@ export async function deleteLabel(id: string): Promise<void> {
 
 // 고객의 라벨 목록 조회
 export async function getCustomerLabels(customerId: number): Promise<Label[]> {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     const { data, error } = await supabase
         .from('customer_labels')
         .select(`
@@ -80,12 +80,12 @@ export async function getCustomerLabels(customerId: number): Promise<Label[]> {
         .eq('customer_id', customerId)
 
     if (error) throw new Error(`고객 라벨 조회 실패: ${error.message}`)
-    return data?.map(item => item.labels).filter(Boolean) as Label[]
+    return data?        .map((item: any) => item.labels).filter(Boolean) as Label[]
 }
 
 // 고객에 라벨 추가
 export async function addCustomerLabel(customerId: number, labelId: string, createdBy: string): Promise<CustomerLabel> {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     const customerLabel: NewCustomerLabel = {
         customerId,
         labelId,
@@ -104,7 +104,7 @@ export async function addCustomerLabel(customerId: number, labelId: string, crea
 
 // 고객에서 라벨 제거
 export async function removeCustomerLabel(customerId: number, labelId: string): Promise<void> {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     const { error } = await supabase
         .from('customer_labels')
         .delete()
@@ -116,7 +116,7 @@ export async function removeCustomerLabel(customerId: number, labelId: string): 
 
 // 고객 라벨 일괄 업데이트
 export async function updateCustomerLabels(customerId: number, labelIds: string[], createdBy: string): Promise<void> {
-    const supabase = createClient()
+    const supabase = createSupabaseClient()
     
     // 기존 라벨 모두 제거
     await supabase
