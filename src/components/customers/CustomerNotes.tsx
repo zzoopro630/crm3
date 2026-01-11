@@ -138,6 +138,12 @@ export function CustomerNotes({ customerId }: CustomerNotesProps) {
                                         <span className="text-xs text-zinc-400 whitespace-nowrap">
                                             {note.createdAt ? new Date(note.createdAt).toLocaleDateString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit' }).replace(/\. /g, '-').replace('.', '') : ''}
                                         </span>
+                                        {/* 작성자 */}
+                                        {note.authorName && (
+                                            <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium whitespace-nowrap">
+                                                {note.authorName}
+                                            </span>
+                                        )}
                                         {/* 내용 */}
                                         <span className="flex-1 text-zinc-700 dark:text-zinc-300 truncate">
                                             {note.content}
