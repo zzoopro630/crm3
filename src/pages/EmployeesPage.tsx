@@ -7,6 +7,7 @@ import {
   useRestoreEmployee,
 } from "@/hooks/useEmployees";
 import { useOrganizations } from "@/hooks/useOrganizations";
+import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,6 +42,9 @@ import type { Employee, CreateEmployeeInput } from "@/types/employee";
 import { SECURITY_LEVELS } from "@/types/employee";
 
 export function EmployeesPage() {
+  const { employee: currentEmployee } = useAuthStore();
+  const isF1 = currentEmployee?.securityLevel === "F1";
+
   const { data: employees, isLoading } = useEmployees();
   const { data: organizations } = useOrganizations();
   const createEmployee = useCreateEmployee();
@@ -129,6 +133,10 @@ export function EmployeesPage() {
         await updateEmployee.mutateAsync({
           id: editingEmployee.id,
           input: {
+            // F1만 이메일 수정 가능
+            ...(isF1 && formData.email !== editingEmployee.email
+              ? { email: formData.email }
+              : {}),
             fullName: formData.fullName,
             securityLevel: formData.securityLevel,
             parentId: formData.parentId || null,
@@ -452,7 +460,9 @@ export function EmployeesPage() {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">이메일 *</Label>
+              <Label htmlFor="email">
+                이메일 *{editingEmployee && !isF1 && " (수정불가)"}
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -461,6 +471,7 @@ export function EmployeesPage() {
                   setFormData({ ...formData, email: e.target.value })
                 }
                 required
+                disabled={!!editingEmployee && !isF1}
                 className="bg-white dark:bg-zinc-800"
               />
             </div>
