@@ -49,7 +49,7 @@ const navItems: NavItem[] = [
         title: "조직 관리",
         href: "/settings/organizations",
         icon: Settings,
-        allowedLevels: ["F1"],
+        allowedLevels: ["F1", "F2", "F3", "F4", "F5"],
       },
       {
         title: "라벨 관리",
