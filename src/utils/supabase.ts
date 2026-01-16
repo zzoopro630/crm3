@@ -1,5 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 
+// Declare global variables injected by Vite define
+declare const __SUPABASE_URL__: string | undefined;
+declare const __SUPABASE_ANON_KEY__: string | undefined;
+
 // Fallback for Cloudflare Pages Preview deployments
 const DEFAULT_SUPABASE_URL = "https://tawhqrixlhovysmrtgag.supabase.co";
 
