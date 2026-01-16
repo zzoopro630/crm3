@@ -18,7 +18,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import { Plus, Pencil, Trash2, Loader2, Search, FileSpreadsheet, RotateCcw, Users, UserX } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, Search, FileSpreadsheet, RotateCcw, Users, UserX, Settings2 } from 'lucide-react'
 import { EmployeeExcelUpload } from '@/components/employees/EmployeeExcelUpload'
 import type { Employee, CreateEmployeeInput } from '@/types/employee'
 import { SECURITY_LEVELS } from '@/types/employee'
@@ -33,9 +33,15 @@ export function EmployeesPage() {
 
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isExcelUploadOpen, setIsExcelUploadOpen] = useState(false)
+    const [isBulkEditOpen, setIsBulkEditOpen] = useState(false)
     const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
     const [searchQuery, setSearchQuery] = useState('')
     const [showInactive, setShowInactive] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<string[]>([])
+    const [bulkEditData, setBulkEditData] = useState({
+        securityLevel: '',
+        organizationId: '',
+    })
 
     const [formData, setFormData] = useState<CreateEmployeeInput>({
         email: '',
@@ -104,6 +110,7 @@ export function EmployeesPage() {
                 await updateEmployee.mutateAsync({
                     id: editingEmployee.id,
                     input: {
+                        email: formData.email,
                         fullName: formData.fullName,
                         securityLevel: formData.securityLevel,
                         parentId: formData.parentId || null,
@@ -141,6 +148,46 @@ export function EmployeesPage() {
         }
     }
 
+    const handleSelectAll = (checked: boolean) => {
+        if (checked) {
+            setSelectedIds(filteredEmployees.map(e => e.id))
+        } else {
+            setSelectedIds([])
+        }
+    }
+
+    const handleSelectOne = (id: string, checked: boolean) => {
+        if (checked) {
+            setSelectedIds(prev => [...prev, id])
+        } else {
+            setSelectedIds(prev => prev.filter(i => i !== id))
+        }
+    }
+
+    const handleBulkEdit = async () => {
+        if (selectedIds.length === 0) return
+
+        try {
+            for (const id of selectedIds) {
+                const input: Record<string, unknown> = {}
+                if (bulkEditData.securityLevel) {
+                    input.securityLevel = bulkEditData.securityLevel
+                }
+                if (bulkEditData.organizationId) {
+                    input.organizationId = parseInt(bulkEditData.organizationId)
+                }
+                if (Object.keys(input).length > 0) {
+                    await updateEmployee.mutateAsync({ id, input })
+                }
+            }
+            setIsBulkEditOpen(false)
+            setSelectedIds([])
+            setBulkEditData({ securityLevel: '', organizationId: '' })
+        } catch (error) {
+            console.error('Failed to bulk edit:', error)
+        }
+    }
+
     const getSecurityLevelBadge = (level: string) => {
         const colors: Record<string, string> = {
             F1: 'bg-red-500/10 text-red-500 border-red-500/20',
@@ -165,6 +212,12 @@ export function EmployeesPage() {
             {/* Header */}
             {/* Actions (Title removed) */}
             <div className="flex justify-end gap-2 mb-4">
+                {selectedIds.length > 0 && (
+                    <Button variant="outline" onClick={() => setIsBulkEditOpen(true)}>
+                        <Settings2 className="mr-2 h-4 w-4" />
+                        일괄 수정 ({selectedIds.length}명)
+                    </Button>
+                )}
                 <Button variant="outline" onClick={() => setIsExcelUploadOpen(true)}>
                     <FileSpreadsheet className="mr-2 h-4 w-4" />
                     Excel 업로드
@@ -246,6 +299,14 @@ export function EmployeesPage() {
                             <table className="w-full">
                                 <thead>
                                     <tr className="border-b border-zinc-200 dark:border-zinc-800">
+                                        <th className="py-3 px-4 w-10">
+                                            <input
+                                                type="checkbox"
+                                                checked={filteredEmployees.length > 0 && selectedIds.length === filteredEmployees.length}
+                                                onChange={(e) => handleSelectAll(e.target.checked)}
+                                                className="rounded border-zinc-300"
+                                            />
+                                        </th>
                                         <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">이름</th>
                                         <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">직급</th>
                                         <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">조직</th>
@@ -261,6 +322,14 @@ export function EmployeesPage() {
                                             key={employee.id}
                                             className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
                                         >
+                                            <td className="py-3 px-4">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedIds.includes(employee.id)}
+                                                    onChange={(e) => handleSelectOne(employee.id, e.target.checked)}
+                                                    className="rounded border-zinc-300"
+                                                />
+                                            </td>
                                             <td className="py-3 px-4 text-sm text-zinc-900 dark:text-white font-medium">
                                                 {employee.fullName}
                                             </td>
@@ -345,7 +414,6 @@ export function EmployeesPage() {
                                 type="email"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                disabled={!!editingEmployee}
                                 required
                                 className="bg-white dark:bg-zinc-800"
                             />
@@ -440,6 +508,69 @@ export function EmployeesPage() {
                 isOpen={isExcelUploadOpen}
                 onClose={() => setIsExcelUploadOpen(false)}
             />
+
+            {/* Bulk Edit Dialog */}
+            <Dialog open={isBulkEditOpen} onOpenChange={setIsBulkEditOpen}>
+                <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-zinc-900 dark:text-white">
+                            일괄 수정 ({selectedIds.length}명)
+                        </DialogTitle>
+                        <DialogDescription>
+                            선택한 사원들의 정보를 일괄 변경합니다. 변경할 항목만 선택하세요.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-4 space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="bulkSecurityLevel">보안등급</Label>
+                            <select
+                                id="bulkSecurityLevel"
+                                value={bulkEditData.securityLevel}
+                                onChange={(e) => setBulkEditData({ ...bulkEditData, securityLevel: e.target.value })}
+                                className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                            >
+                                <option value="">변경 안함</option>
+                                {SECURITY_LEVELS.map((level) => (
+                                    <option key={level.value} value={level.value}>
+                                        {level.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="bulkOrganizationId">조직</Label>
+                            <select
+                                id="bulkOrganizationId"
+                                value={bulkEditData.organizationId}
+                                onChange={(e) => setBulkEditData({ ...bulkEditData, organizationId: e.target.value })}
+                                className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                            >
+                                <option value="">변경 안함</option>
+                                {organizations?.map((org) => (
+                                    <option key={org.id} value={org.id}>
+                                        {org.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex gap-2 pt-4">
+                            <Button type="button" variant="outline" onClick={() => setIsBulkEditOpen(false)} className="flex-1">
+                                취소
+                            </Button>
+                            <Button
+                                onClick={handleBulkEdit}
+                                className="flex-1"
+                                disabled={updateEmployee.isPending || (!bulkEditData.securityLevel && !bulkEditData.organizationId)}
+                            >
+                                {updateEmployee.isPending && (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                )}
+                                일괄 적용
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
