@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "./database.types";
 
 // 환경 변수 타입 정의
 interface Env {
@@ -25,7 +26,7 @@ app.use(
 
 // Supabase 클라이언트 미들웨어
 app.use("*", async (c, next) => {
-  const supabase = createClient(
+  const supabase = createClient<Database>(
     c.env.SUPABASE_URL,
     c.env.SUPABASE_SERVICE_ROLE_KEY
   );
@@ -40,9 +41,7 @@ app.get("/api/health", (c) => {
 
 // ============ Customers API ============
 app.get("/api/customers", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const page = parseInt(c.req.query("page") || "1");
   const limit = parseInt(c.req.query("limit") || "20");
@@ -142,9 +141,7 @@ app.get("/api/customers", async (c) => {
 });
 
 app.get("/api/customers/:id", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
   const { data, error } = await supabase
@@ -193,9 +190,7 @@ app.get("/api/customers/:id", async (c) => {
 });
 
 app.post("/api/customers", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
   const dbInput = {
@@ -230,9 +225,7 @@ app.post("/api/customers", async (c) => {
 });
 
 app.put("/api/customers/:id", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
 
@@ -273,9 +266,7 @@ app.put("/api/customers/:id", async (c) => {
 });
 
 app.delete("/api/customers/:id", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
   const { error } = await supabase.from("customers").delete().eq("id", id);
@@ -289,9 +280,7 @@ app.delete("/api/customers/:id", async (c) => {
 
 // ============ Contracts API ============
 app.get("/api/contracts/:customerId", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const customerId = c.req.param("customerId");
 
   const { data, error } = await supabase
@@ -323,9 +312,7 @@ app.get("/api/contracts/:customerId", async (c) => {
 });
 
 app.post("/api/contracts", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
   const { data, error } = await supabase
@@ -350,9 +337,7 @@ app.post("/api/contracts", async (c) => {
 });
 
 app.put("/api/contracts/:id", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
 
@@ -384,9 +369,7 @@ app.put("/api/contracts/:id", async (c) => {
 });
 
 app.delete("/api/contracts/:id", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
   const { error } = await supabase.from("contracts").delete().eq("id", id);
@@ -400,9 +383,7 @@ app.delete("/api/contracts/:id", async (c) => {
 
 // ============ Notes API ============
 app.get("/api/notes/:customerId", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const customerId = c.req.param("customerId");
 
   const { data, error } = await supabase
@@ -430,9 +411,7 @@ app.get("/api/notes/:customerId", async (c) => {
 });
 
 app.post("/api/notes", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
   const { data, error } = await supabase
@@ -453,9 +432,7 @@ app.post("/api/notes", async (c) => {
 });
 
 app.put("/api/notes/:id", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
 
@@ -477,9 +454,7 @@ app.put("/api/notes/:id", async (c) => {
 });
 
 app.delete("/api/notes/:id", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
   const { error } = await supabase.from("customer_notes").delete().eq("id", id);
@@ -493,9 +468,7 @@ app.delete("/api/notes/:id", async (c) => {
 
 // ============ Employees API ============
 app.get("/api/employees", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { data, error } = await supabase
     .from("employees")
@@ -525,9 +498,7 @@ app.get("/api/employees", async (c) => {
 });
 
 app.get("/api/employees/email/:email", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const email = c.req.param("email");
 
   const { data, error } = await supabase
@@ -556,9 +527,7 @@ app.get("/api/employees/email/:email", async (c) => {
 });
 
 app.post("/api/employees", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
   // 이메일 중복 체크
@@ -593,9 +562,7 @@ app.post("/api/employees", async (c) => {
 });
 
 app.put("/api/employees/:id", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
 
@@ -644,9 +611,7 @@ app.put("/api/employees/:id", async (c) => {
 });
 
 app.delete("/api/employees/:id", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
   // Soft delete
@@ -663,9 +628,7 @@ app.delete("/api/employees/:id", async (c) => {
 });
 
 app.put("/api/employees/:id/restore", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
   const { data, error } = await supabase
@@ -684,9 +647,7 @@ app.put("/api/employees/:id/restore", async (c) => {
 
 // ============ Sources API ============
 app.get("/api/sources", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { data, error } = await supabase
     .from("sources")
@@ -708,9 +669,7 @@ app.get("/api/sources", async (c) => {
 });
 
 app.post("/api/sources", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
   const { data, error } = await supabase
@@ -730,9 +689,7 @@ app.post("/api/sources", async (c) => {
 });
 
 app.put("/api/sources/:id", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
 
@@ -751,9 +708,7 @@ app.put("/api/sources/:id", async (c) => {
 });
 
 app.delete("/api/sources/:id", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
   const { error } = await supabase.from("sources").delete().eq("id", id);
@@ -767,9 +722,7 @@ app.delete("/api/sources/:id", async (c) => {
 
 // ============ Dashboard API ============
 app.get("/api/dashboard", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const managerId = c.req.query("managerId") || "";
 
   let query = supabase
@@ -855,9 +808,7 @@ app.get("/api/dashboard", async (c) => {
 
 // ============ Pending Approvals API ============
 app.get("/api/pending-approvals", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { data, error } = await supabase
     .from("pending_approvals")
@@ -883,9 +834,7 @@ app.get("/api/pending-approvals", async (c) => {
 });
 
 app.post("/api/pending-approvals", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
   // Check if already exists
@@ -945,9 +894,7 @@ app.post("/api/pending-approvals", async (c) => {
 });
 
 app.put("/api/pending-approvals/:id/approve", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
 
@@ -993,9 +940,7 @@ app.put("/api/pending-approvals/:id/approve", async (c) => {
 });
 
 app.put("/api/pending-approvals/:id/reject", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
 
@@ -1017,9 +962,7 @@ app.put("/api/pending-approvals/:id/reject", async (c) => {
 
 // ============ Organizations API ============
 app.get("/api/organizations", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { data, error } = await supabase
     .from("organizations")
@@ -1065,9 +1008,7 @@ app.get("/api/organizations", async (c) => {
 });
 
 app.get("/api/organizations/:id", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
   const { data, error } = await supabase
@@ -1105,9 +1046,7 @@ app.get("/api/organizations/:id", async (c) => {
 });
 
 app.post("/api/organizations", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
   const { data, error } = await supabase
@@ -1128,9 +1067,7 @@ app.post("/api/organizations", async (c) => {
 });
 
 app.put("/api/organizations/:id", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
 
@@ -1157,9 +1094,7 @@ app.put("/api/organizations/:id", async (c) => {
 });
 
 app.delete("/api/organizations/:id", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
   const { error } = await supabase.from("organizations").delete().eq("id", id);
@@ -1173,9 +1108,7 @@ app.delete("/api/organizations/:id", async (c) => {
 
 // ============ Team API ============
 app.post("/api/team/members", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
   const { employeeId, securityLevel } = body;
 
@@ -1240,9 +1173,7 @@ app.post("/api/team/members", async (c) => {
 });
 
 app.post("/api/team/stats", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
   const { memberIds } = body;
 
@@ -1271,9 +1202,7 @@ app.post("/api/team/stats", async (c) => {
 });
 
 app.put("/api/customers/:id/transfer", async (c) => {
-  const supabase = c.get("supabase" as never) as ReturnType<
-    typeof createClient
-  >;
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
 
