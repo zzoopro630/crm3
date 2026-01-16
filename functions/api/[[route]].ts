@@ -456,7 +456,7 @@ app.get('/api/employees', async (c) => {
     const { data, error } = await supabase
         .from('employees')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('full_name', { ascending: true })
 
     if (error) {
         return c.json({ error: error.message }, 500)
@@ -469,6 +469,9 @@ app.get('/api/employees', async (c) => {
         fullName: row.full_name,
         securityLevel: row.security_level,
         organizationId: row.organization_id,
+        parentId: row.parent_id,
+        positionName: row.position_name,
+        department: row.department,
         isActive: row.is_active,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
@@ -507,6 +510,17 @@ app.post('/api/employees', async (c) => {
     const supabase = c.get('supabase' as never) as ReturnType<typeof createClient>
     const body = await c.req.json()
 
+    // 이메일 중복 체크
+    const { data: existing } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('email', body.email)
+        .single()
+
+    if (existing) {
+        return c.json({ error: '이미 등록된 이메일입니다.' }, 409)
+    }
+
     const { data, error } = await supabase
         .from('employees')
         .insert({
@@ -532,12 +546,31 @@ app.put('/api/employees/:id', async (c) => {
     const id = c.req.param('id')
     const body = await c.req.json()
 
+    // 이메일 변경 시 중복 체크
+    if (body.email !== undefined) {
+        const { data: existing } = await supabase
+            .from('employees')
+            .select('id')
+            .eq('email', body.email)
+            .neq('id', id)
+            .single()
+
+        if (existing) {
+            return c.json({ error: '이미 등록된 이메일입니다.' }, 409)
+        }
+    }
+
     const updateData: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
     }
 
+    if (body.email !== undefined) updateData.email = body.email
     if (body.fullName !== undefined) updateData.full_name = body.fullName
     if (body.securityLevel !== undefined) updateData.security_level = body.securityLevel
+    if (body.organizationId !== undefined) updateData.organization_id = body.organizationId
+    if (body.parentId !== undefined) updateData.parent_id = body.parentId
+    if (body.positionName !== undefined) updateData.position_name = body.positionName
+    if (body.department !== undefined) updateData.department = body.department
     if (body.isActive !== undefined) updateData.is_active = body.isActive
 
     const { data, error } = await supabase
@@ -835,6 +868,17 @@ app.put('/api/pending-approvals/:id/approve', async (c) => {
     const supabase = c.get('supabase' as never) as ReturnType<typeof createClient>
     const id = c.req.param('id')
     const body = await c.req.json()
+
+    // 이메일 중복 체크
+    const { data: existing } = await supabase
+        .from('employees')
+        .select('id')
+        .eq('email', body.email)
+        .single()
+
+    if (existing) {
+        return c.json({ error: '이미 등록된 이메일입니다.' }, 409)
+    }
 
     // Create employee first
     const { data: employee, error: empError } = await supabase
