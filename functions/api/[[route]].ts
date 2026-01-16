@@ -61,7 +61,11 @@ app.get("/api/customers", async (c) => {
     query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
   }
   if (status) {
-    query = query.eq("status", status);
+    if (status.startsWith("!")) {
+      query = query.neq("status", status.slice(1));
+    } else {
+      query = query.eq("status", status);
+    }
   }
   if (managerId) {
     query = query.eq("manager_id", managerId);
