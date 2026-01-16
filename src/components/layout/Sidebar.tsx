@@ -120,29 +120,34 @@ export function Sidebar({
     return null;
   };
 
-  const visibleNavItems = navItems.filter((item) => {
-    if (!employee) return false;
-    if (
-      item.allowedLevels &&
-      !item.allowedLevels.includes(employee.securityLevel)
-    )
-      return false;
-
-    // 하위 메뉴 아이템 필터링
-    if (item.submenuItems) {
-      item.submenuItems = item.submenuItems.filter((subItem) => {
-        if (!employee) return false;
-        if (
-          subItem.allowedLevels &&
-          !subItem.allowedLevels.includes(employee.securityLevel)
-        )
-          return false;
-        return true;
-      });
-    }
-
-    return true;
-  });
+  const visibleNavItems = navItems
+    .filter((item) => {
+      if (!employee) return false;
+      if (
+        item.allowedLevels &&
+        !item.allowedLevels.includes(employee.securityLevel)
+      )
+        return false;
+      return true;
+    })
+    .map((item) => {
+      // Create a copy of the item and its submenuItems to avoid mutating the global navItems
+      if (item.submenuItems) {
+        return {
+          ...item,
+          submenuItems: item.submenuItems.filter((subItem) => {
+            if (!employee) return false;
+            if (
+              subItem.allowedLevels &&
+              !subItem.allowedLevels.includes(employee.securityLevel)
+            )
+              return false;
+            return true;
+          }),
+        };
+      }
+      return item;
+    });
 
   const activeItem = getActiveItem();
 
