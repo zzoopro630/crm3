@@ -44,3 +44,10 @@ tmp/
 # Supabase
 supabase/.temp
 docs/inquiry-system-plan.md
+
+# Google Service Account Keys
+*.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+!drizzle.config.json

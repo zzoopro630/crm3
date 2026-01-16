@@ -83,10 +83,14 @@ export function CustomersPage() {
     const canAssignToOthers = employee && ['F1', 'F2', 'F3', 'F4'].includes(employee.securityLevel)
     const activeEmployees = allEmployees?.filter(emp => emp.isActive) || []
 
+    // F5 사용자는 자신의 고객만 볼 수 있음
+    const isF5Only = employee?.securityLevel === 'F5'
+    const defaultManagerId = isF5Only ? employee?.id : managerFilter || undefined
+
     const [params, setParams] = useState<CustomerListParams>({
         page: 1,
         limit: 20,
-        filters: managerFilter ? { managerId: managerFilter } : {},
+        filters: defaultManagerId ? { managerId: defaultManagerId } : {},
     })
 
     // 정렬 상태
@@ -124,13 +128,21 @@ export function CustomersPage() {
         }))
     }
 
-    // URL의 manager 파라미터가 변경되면 params 업데이트
+    // URL의 manager 파라미터가 변경되면 params 업데이트 (F5는 항상 자신만)
     useEffect(() => {
-        setParams(prev => ({
-            ...prev,
-            filters: managerFilter ? { ...prev.filters, managerId: managerFilter } : { ...prev.filters, managerId: undefined },
-        }))
-    }, [managerFilter])
+        if (isF5Only) {
+            // F5 사용자는 항상 자신의 고객만 볼 수 있음
+            setParams(prev => ({
+                ...prev,
+                filters: { ...prev.filters, managerId: employee?.id },
+            }))
+        } else {
+            setParams(prev => ({
+                ...prev,
+                filters: managerFilter ? { ...prev.filters, managerId: managerFilter } : { ...prev.filters, managerId: undefined },
+            }))
+        }
+    }, [managerFilter, isF5Only, employee?.id])
 
     // 담당자 필터 해제
     const clearManagerFilter = () => {
@@ -446,8 +458,8 @@ export function CustomersPage() {
                 </div>
             </div>
 
-            {/* Manager Filter Badge */}
-            {filteredManagerName && (
+            {/* Manager Filter Badge (F5 사용자에게는 숨김) */}
+            {filteredManagerName && !isF5Only && (
                 <div className="flex items-center gap-2">
                     <span className="text-sm text-zinc-500">담당자 필터:</span>
                     <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-sm font-medium">
