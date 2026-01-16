@@ -221,6 +221,14 @@ export default function DbManagementPage() {
       // F3~F5는 자기 배정 고객만 조회
       const managedFilter =
         !isAdmin && employee?.id ? { managerId: employee.id } : {};
+      // 탭에 따른 상태 필터 설정
+      let statusFilter = filters.status;
+      if (activeTab === "closed") {
+        statusFilter = "closed";
+      } else if (activeTab === "inProgress" && !statusFilter) {
+        statusFilter = "!closed";
+      }
+
       const response = await getCustomers({
         page: currentPage,
         limit: pageSize,
@@ -228,16 +236,11 @@ export default function DbManagementPage() {
           ...filters,
           ...managedFilter,
           type: "db",
+          status: statusFilter,
         },
       });
 
-      // 탭에 따라 필터링
-      const filteredData =
-        activeTab === "inProgress"
-          ? response.data.filter((c) => c.status !== "closed")
-          : response.data.filter((c) => c.status === "closed");
-
-      setDbList(filteredData);
+      setDbList(response.data);
       setTotalCount(response.total);
     } catch (error) {
       console.error("Failed to fetch DB list:", error);

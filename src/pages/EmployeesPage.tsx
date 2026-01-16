@@ -62,6 +62,8 @@ export function EmployeesPage() {
   const [bulkEditData, setBulkEditData] = useState({
     securityLevel: "",
     organizationId: "",
+    positionName: "",
+    parentId: "",
   });
 
   const [formData, setFormData] = useState<CreateEmployeeInput>({
@@ -75,7 +77,7 @@ export function EmployeesPage() {
   });
 
   // 조직 ID로 조직명 찾기
-  const getOrganizationName = (orgId: number | null) => {
+  const getOrganizationName = (orgId: number | null | undefined) => {
     if (!orgId || !organizations) return "-";
     return organizations.find((o) => o.id === orgId)?.name || "-";
   };
@@ -202,13 +204,24 @@ export function EmployeesPage() {
         if (bulkEditData.organizationId) {
           input.organizationId = parseInt(bulkEditData.organizationId);
         }
+        if (bulkEditData.positionName) {
+          input.positionName = bulkEditData.positionName;
+        }
+        if (bulkEditData.parentId) {
+          input.parentId = bulkEditData.parentId;
+        }
         if (Object.keys(input).length > 0) {
           await updateEmployee.mutateAsync({ id, input });
         }
       }
       setIsBulkEditOpen(false);
       setSelectedIds([]);
-      setBulkEditData({ securityLevel: "", organizationId: "" });
+      setBulkEditData({
+        securityLevel: "",
+        organizationId: "",
+        positionName: "",
+        parentId: "",
+      });
     } catch (error) {
       console.error("Failed to bulk edit:", error);
     }
@@ -377,7 +390,12 @@ export function EmployeesPage() {
                         />
                       </td>
                       <td className="py-3 px-4 text-sm text-zinc-900 dark:text-white font-medium">
-                        {employee.fullName}
+                        <span
+                          className="cursor-pointer hover:underline text-primary"
+                          onClick={() => handleOpenSheet(employee)}
+                        >
+                          {employee.fullName}
+                        </span>
                       </td>
                       <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
                         {employee.positionName || "-"}
@@ -543,7 +561,13 @@ export function EmployeesPage() {
               >
                 <option value="">선택 안함</option>
                 {employees
-                  ?.filter((e) => e.id !== editingEmployee?.id && e.isActive)
+                  ?.filter(
+                    (e) =>
+                      e.id !== editingEmployee?.id &&
+                      e.isActive &&
+                      (!formData.organizationId ||
+                        e.organizationId === formData.organizationId)
+                  )
                   .map((emp) => (
                     <option key={emp.id} value={emp.id}>
                       {emp.fullName} ({emp.securityLevel})
@@ -553,14 +577,34 @@ export function EmployeesPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="positionName">직급</Label>
-              <Input
+              <select
                 id="positionName"
                 value={formData.positionName || ""}
                 onChange={(e) =>
                   setFormData({ ...formData, positionName: e.target.value })
                 }
-                className="bg-white dark:bg-zinc-800"
-              />
+                className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+              >
+                <option value="">선택 안함</option>
+                {getOrganizationName(formData.organizationId) === "영업지원팀"
+                  ? ["실장", "과장", "대리", "주임", "사원"].map((pos) => (
+                      <option key={pos} value={pos}>
+                        {pos}
+                      </option>
+                    ))
+                  : [
+                      "대표",
+                      "총괄이사",
+                      "사업단장",
+                      "지점장",
+                      "팀장",
+                      "FC",
+                    ].map((pos) => (
+                      <option key={pos} value={pos}>
+                        {pos}
+                      </option>
+                    ))}
+              </select>
             </div>
             <div className="flex gap-2 pt-4">
               <Button
@@ -634,6 +678,8 @@ export function EmployeesPage() {
                   setBulkEditData({
                     ...bulkEditData,
                     organizationId: e.target.value,
+                    // 조직 변경 시 상위자 초기화 (선택 사항)
+                    parentId: "",
                   })
                 }
                 className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
@@ -644,6 +690,74 @@ export function EmployeesPage() {
                     {org.name}
                   </option>
                 ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bulkPositionName">직급</Label>
+              <select
+                id="bulkPositionName"
+                value={bulkEditData.positionName}
+                onChange={(e) =>
+                  setBulkEditData({
+                    ...bulkEditData,
+                    positionName: e.target.value,
+                  })
+                }
+                className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+              >
+                <option value="">변경 안함</option>
+                {getOrganizationName(
+                  bulkEditData.organizationId
+                    ? parseInt(bulkEditData.organizationId)
+                    : null
+                ) === "영업지원팀"
+                  ? ["실장", "과장", "대리", "주임", "사원"].map((pos) => (
+                      <option key={pos} value={pos}>
+                        {pos}
+                      </option>
+                    ))
+                  : [
+                      "대표",
+                      "총괄이사",
+                      "사업단장",
+                      "지점장",
+                      "팀장",
+                      "FC",
+                    ].map((pos) => (
+                      <option key={pos} value={pos}>
+                        {pos}
+                      </option>
+                    ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bulkParentId">상위자</Label>
+              <select
+                id="bulkParentId"
+                value={bulkEditData.parentId}
+                onChange={(e) =>
+                  setBulkEditData({
+                    ...bulkEditData,
+                    parentId: e.target.value,
+                  })
+                }
+                className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+              >
+                <option value="">변경 안함</option>
+                {employees
+                  ?.filter(
+                    (e) =>
+                      e.isActive &&
+                      (!bulkEditData.organizationId ||
+                        e.organizationId ===
+                          parseInt(bulkEditData.organizationId)) &&
+                      !selectedIds.includes(e.id)
+                  )
+                  .map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.fullName} ({emp.securityLevel})
+                    </option>
+                  ))}
               </select>
             </div>
             <div className="flex gap-2 pt-4">
