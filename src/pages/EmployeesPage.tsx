@@ -110,22 +110,68 @@ export function EmployeesPage() {
     return priorities[position || ""] || 99;
   };
 
+  // 계층 레벨 계산 (상위자 기반)
+  const getHierarchyLevel = (empId: string, empList: Employee[]): number => {
+    const emp = empList.find((e) => e.id === empId);
+    if (!emp || !emp.parentId) return 0;
+    return 1 + getHierarchyLevel(emp.parentId, empList);
+  };
+
+  // 트리 구조로 정렬 (상위자-하위자 관계 기반)
+  const buildHierarchicalList = (empList: Employee[]): Employee[] => {
+    const result: Employee[] = [];
+    const visited = new Set<string>();
+
+    const addWithChildren = (emp: Employee, level: number = 0) => {
+      if (visited.has(emp.id)) return;
+      visited.add(emp.id);
+      result.push(emp);
+
+      // 이 사원의 하위자들 찾아서 추가 (직급 순 정렬)
+      const children = empList
+        .filter((e) => e.parentId === emp.id && !visited.has(e.id))
+        .sort((a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName));
+      children.forEach((child) => addWithChildren(child, level + 1));
+    };
+
+    // 조직별로 그룹핑
+    const byOrg = new Map<number | null, Employee[]>();
+    empList.forEach((emp) => {
+      const orgId = emp.organizationId || null;
+      if (!byOrg.has(orgId)) byOrg.set(orgId, []);
+      byOrg.get(orgId)!.push(emp);
+    });
+
+    // 조직 ID 순으로 정렬
+    const sortedOrgIds = Array.from(byOrg.keys()).sort((a, b) => (a || 9999) - (b || 9999));
+
+    for (const orgId of sortedOrgIds) {
+      const orgMembers = byOrg.get(orgId)!;
+      // 루트 사원 찾기 (상위자가 없거나 다른 조직에 있는 경우)
+      const roots = orgMembers
+        .filter((emp) => !emp.parentId || !orgMembers.some((m) => m.id === emp.parentId))
+        .sort((a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName));
+
+      roots.forEach((root) => addWithChildren(root));
+
+      // 남은 사원 추가 (순환 참조 방지)
+      orgMembers
+        .filter((emp) => !visited.has(emp.id))
+        .sort((a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName))
+        .forEach((emp) => addWithChildren(emp));
+    }
+
+    return result;
+  };
+
   // 현재 보기 모드에 따른 필터링
   const currentList = showInactive ? inactiveEmployees : activeEmployees;
-  const filteredEmployees = currentList
-    .filter(
-      (emp) =>
-        emp.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        emp.email.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => {
-      // 1. 조직별 정렬 (조직 없는 경우 마지막)
-      const orgA = a.organizationId || 9999;
-      const orgB = b.organizationId || 9999;
-      if (orgA !== orgB) return orgA - orgB;
-      // 2. 직급별 정렬
-      return getPositionPriority(a.positionName) - getPositionPriority(b.positionName);
-    });
+  const searchFiltered = currentList.filter(
+    (emp) =>
+      emp.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      emp.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const filteredEmployees = buildHierarchicalList(searchFiltered);
 
   const handleOpenSheet = (employee?: Employee) => {
     if (employee) {
@@ -416,6 +462,7 @@ export function EmployeesPage() {
                       <td className="py-2 px-2 text-zinc-900 dark:text-white font-medium whitespace-nowrap">
                         <span
                           className="cursor-pointer hover:underline text-primary"
+                          style={{ paddingLeft: `${getHierarchyLevel(employee.id, searchFiltered) * 16}px` }}
                           onClick={() => handleOpenSheet(employee)}
                         >
                           {employee.fullName}
