@@ -851,17 +851,17 @@ export default function DbManagementPage() {
           <table className="w-full text-sm table-fixed">
             <thead className="bg-muted/50 border-b">
               <tr>
-                <th className="text-left p-3 font-medium w-[85px]">등록일</th>
-                <th className="text-left p-3 font-medium w-[90px]">담당자</th>
-                <th className="text-left p-3 font-medium w-[70px]">고객명</th>
-                <th className="text-left p-3 font-medium w-[110px]">연락처</th>
-                <th className="text-left p-3 font-medium w-[100px]">관심상품</th>
+                <th className="text-left px-2 py-3 font-medium w-[75px]">등록일</th>
+                <th className="text-left px-2 py-3 font-medium w-[90px]">담당자</th>
+                <th className="text-left px-2 py-3 font-medium w-[65px]">고객명</th>
+                <th className="text-left px-2 py-3 font-medium w-[105px]">연락처</th>
+                <th className="text-left px-2 py-3 font-medium w-[90px]">관심상품</th>
                 {isAdmin && (
-                  <th className="text-left p-3 font-medium w-[90px]">유입경로</th>
+                  <th className="text-left px-2 py-3 font-medium w-[90px]">유입경로</th>
                 )}
-                <th className="text-left p-3 font-medium w-[85px]">상태</th>
-                <th className="text-left p-3 font-medium">메모</th>
-                <th className="text-left p-3 font-medium w-[180px]">관리자 코멘트</th>
+                <th className="text-left px-2 py-3 font-medium w-[90px]">상태</th>
+                <th className="text-left px-2 py-3 font-medium">메모</th>
+                <th className="text-left px-2 py-3 font-medium w-[150px]">관리자 코멘트</th>
               </tr>
             </thead>
             <tbody>
@@ -870,18 +870,18 @@ export default function DbManagementPage() {
                   key={customer.id}
                   className="border-b hover:bg-muted/40 odd:bg-muted/20"
                 >
-                  <td className="p-3 text-muted-foreground text-xs">
+                  <td className="px-2 py-3 text-muted-foreground text-xs whitespace-nowrap">
                     {customer.createdAt
                       ? new Date(customer.createdAt).toLocaleDateString()
                       : "-"}
                   </td>
-                  <td className="p-3">
+                  <td className="px-2 py-3">
                     <select
                       value={customer.managerId || ""}
                       onChange={(e) =>
                         handleAssign(customer.id, e.target.value)
                       }
-                      className="h-8 px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm"
+                      className="h-7 px-1 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm w-full"
                     >
                       <option value="">선택</option>
                       {filteredEmployees?.map((emp) => (
@@ -891,7 +891,7 @@ export default function DbManagementPage() {
                       ))}
                     </select>
                   </td>
-                  <td className="p-3 font-medium">
+                  <td className="px-2 py-3 font-medium whitespace-nowrap">
                     <span
                       className="cursor-pointer hover:text-primary hover:underline"
                       onClick={() => handleCustomerClick(customer.id)}
@@ -899,8 +899,8 @@ export default function DbManagementPage() {
                       {customer.name}
                     </span>
                   </td>
-                  <td className="p-3">{customer.phone}</td>
-                  <td className="p-3">
+                  <td className="px-2 py-3 whitespace-nowrap">{customer.phone}</td>
+                  <td className="px-2 py-3">
                     {isAdmin ? (
                       <Input
                         defaultValue={customer.interestProduct || ""}
@@ -918,7 +918,7 @@ export default function DbManagementPage() {
                           if (e.key === "Enter" && !e.nativeEvent.isComposing)
                             e.currentTarget.blur();
                         }}
-                        className="h-8 text-sm bg-transparent border-zinc-200 dark:border-zinc-700"
+                        className="h-7 text-sm bg-transparent border-zinc-200 dark:border-zinc-700 w-full"
                         placeholder="관심상품..."
                       />
                     ) : (
@@ -928,13 +928,13 @@ export default function DbManagementPage() {
                     )}
                   </td>
                   {isAdmin && (
-                    <td className="p-3">
+                    <td className="px-2 py-3">
                       <select
                         value={customer.source || ""}
                         onChange={(e) =>
                           handleSourceChange(customer.id, e.target.value)
                         }
-                        className="h-8 px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm"
+                        className="h-7 px-1 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm w-full"
                       >
                         <option value="">선택</option>
                         {sources?.map((src) => (
@@ -945,14 +945,14 @@ export default function DbManagementPage() {
                       </select>
                     </td>
                   )}
-                  <td className="p-3">
+                  <td className="px-2 py-3">
                     {canEditMemo(customer) ? (
                       <select
                         value={customer.status}
                         onChange={(e) =>
                           handleStatusChange(customer.id, e.target.value)
                         }
-                        className="h-8 px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm"
+                        className="h-7 px-1 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm w-full"
                       >
                         {CUSTOMER_STATUSES.map((status) => (
                           <option key={status.value} value={status.value}>
@@ -961,18 +961,18 @@ export default function DbManagementPage() {
                         ))}
                       </select>
                     ) : (
-                      <span className="px-2 py-1 rounded-full text-xs bg-zinc-100 dark:bg-zinc-800">
+                      <span className="px-2 py-1 rounded-full text-xs bg-zinc-100 dark:bg-zinc-800 whitespace-nowrap">
                         {CUSTOMER_STATUSES.find(
                           (s) => s.value === customer.status
                         )?.label || customer.status}
                       </span>
                     )}
                   </td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-2">
+                  <td className="px-2 py-3">
+                    <div className="flex items-center gap-1">
                       <div className="flex-1 min-w-0">
                         <div
-                          className="text-sm text-muted-foreground"
+                          className="text-sm text-muted-foreground truncate"
                           title={customer.memo || ""}
                         >
                           {customer.memo || "-"}
@@ -989,7 +989,7 @@ export default function DbManagementPage() {
                       </Button>
                     </div>
                   </td>
-                  <td className="p-3">
+                  <td className="px-2 py-3">
                     {isAdmin ? (
                       <Input
                         defaultValue={customer.adminComment || ""}
