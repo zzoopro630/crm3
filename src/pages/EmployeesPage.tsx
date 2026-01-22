@@ -336,10 +336,10 @@ export function EmployeesPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                    <th className="py-3 px-4 w-10">
+              <table className="w-full text-sm table-fixed">
+                <thead className="bg-muted/50 border-b">
+                  <tr>
+                    <th className="py-2 px-2 w-10">
                       <input
                         type="checkbox"
                         checked={
@@ -350,25 +350,22 @@ export function EmployeesPage() {
                         className="rounded border-zinc-300"
                       />
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">
                       이름
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">
                       직급
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                      조직
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                      보안등급
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">
                       상위자
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[70px]">
+                      보안등급
+                    </th>
+                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400">
                       이메일
                     </th>
-                    <th className="text-right py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <th className="text-right py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">
                       작업
                     </th>
                   </tr>
@@ -377,9 +374,9 @@ export function EmployeesPage() {
                   {filteredEmployees?.map((employee) => (
                     <tr
                       key={employee.id}
-                      className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                      className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-muted/40 odd:bg-muted/20"
                     >
-                      <td className="py-3 px-4">
+                      <td className="py-2 px-2">
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(employee.id)}
@@ -389,7 +386,7 @@ export function EmployeesPage() {
                           className="rounded border-zinc-300"
                         />
                       </td>
-                      <td className="py-3 px-4 text-sm text-zinc-900 dark:text-white font-medium">
+                      <td className="py-2 px-2 text-zinc-900 dark:text-white font-medium whitespace-nowrap">
                         <span
                           className="cursor-pointer hover:underline text-primary"
                           onClick={() => handleOpenSheet(employee)}
@@ -397,28 +394,25 @@ export function EmployeesPage() {
                           {employee.fullName}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
+                      <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
                         {employee.positionName || "-"}
                       </td>
-                      <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
-                        {getOrganizationName(employee.organizationId)}
+                      <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
+                        {getEmployeeName(employee.parentId)}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2 px-2">
                         <span
-                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-md border ${getSecurityLevelBadge(
+                          className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-md border ${getSecurityLevelBadge(
                             employee.securityLevel
                           )}`}
                         >
                           {employee.securityLevel}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
-                        {getEmployeeName(employee.parentId)}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
+                      <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 truncate">
                         {employee.email}
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-2 px-2 text-right">
                         <div className="flex justify-end gap-2">
                           {showInactive ? (
                             <Button
