@@ -83,12 +83,6 @@ export function EmployeesPage() {
     return organizations.find((o) => o.id === orgId)?.name || "-";
   };
 
-  // 사원 ID로 사원명 찾기 (상위자)
-  const getEmployeeName = (empId: string | null) => {
-    if (!empId || !employees) return "-";
-    return employees.find((e) => e.id === empId)?.fullName || "-";
-  };
-
   // 활성/비활성 사원 분리
   const activeEmployees = employees?.filter((emp) => emp.isActive) || [];
   const inactiveEmployees = employees?.filter((emp) => !emp.isActive) || [];
@@ -139,9 +133,24 @@ export function EmployeesPage() {
   // 나머지 사원 (대표 제외)
   const nonCeoList = searchFiltered.filter((emp) => emp.positionName !== "대표");
 
-  // 조직별 그룹핑
-  const groupByOrganization = () => {
-    const groups: { orgName: string; orgId: number | null; members: Employee[] }[] = [];
+  // 상위자별 그룹 타입
+  type LeaderGroup = {
+    leader: Employee | null;
+    leaderName: string;
+    leaderPosition: string;
+    members: Employee[];
+  };
+
+  type OrgGroup = {
+    orgName: string;
+    orgId: number | null;
+    leaderGroups: LeaderGroup[];
+    totalCount: number;
+  };
+
+  // 조직별 + 상위자별 그룹핑
+  const groupByOrganization = (): OrgGroup[] => {
+    const groups: OrgGroup[] = [];
     const byOrg = new Map<number | null, Employee[]>();
 
     nonCeoList.forEach((emp) => {
@@ -150,15 +159,52 @@ export function EmployeesPage() {
       byOrg.get(orgId)!.push(emp);
     });
 
-    // 조직명으로 정렬하여 그룹 생성
     Array.from(byOrg.entries()).forEach(([orgId, members]) => {
       const orgName = getOrganizationName(orgId);
+
+      // 상위자별로 그룹핑
+      const byLeader = new Map<string | null, Employee[]>();
+      const leaderMap = new Map<string, Employee>();
+
+      members.forEach((emp) => {
+        const leaderId = emp.parentId || null;
+        if (!byLeader.has(leaderId)) byLeader.set(leaderId, []);
+        byLeader.get(leaderId)!.push(emp);
+
+        // 상위자 정보 저장
+        if (leaderId && !leaderMap.has(leaderId)) {
+          const leader = employees?.find((e) => e.id === leaderId);
+          if (leader) leaderMap.set(leaderId, leader);
+        }
+      });
+
+      // 상위자 그룹 생성
+      const leaderGroups: LeaderGroup[] = [];
+
+      Array.from(byLeader.entries()).forEach(([leaderId, groupMembers]) => {
+        const leader = leaderId ? leaderMap.get(leaderId) || null : null;
+        leaderGroups.push({
+          leader,
+          leaderName: leader?.fullName || "직속",
+          leaderPosition: leader?.positionName || "",
+          members: groupMembers.sort(
+            (a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName)
+          ),
+        });
+      });
+
+      // 상위자 직급 우선순위로 정렬
+      leaderGroups.sort((a, b) => {
+        if (!a.leader && b.leader) return -1;
+        if (a.leader && !b.leader) return 1;
+        return getPositionPriority(a.leaderPosition) - getPositionPriority(b.leaderPosition);
+      });
+
       groups.push({
         orgName,
         orgId,
-        members: members.sort(
-          (a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName)
-        ),
+        leaderGroups,
+        totalCount: members.length,
       });
     });
 
@@ -531,67 +577,84 @@ export function EmployeesPage() {
                         <span className="text-sm text-muted-foreground">(대표 직속)</span>
                       )}
                     </div>
-                    <span className="text-sm text-muted-foreground">{group.members.length}명</span>
+                    <span className="text-sm text-muted-foreground">{group.totalCount}명</span>
                   </button>
                   {!collapsedOrgs.has(group.orgName) && (
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted/30 border-b">
-                        <tr>
-                          <th className="py-2 px-2 w-10">
-                            <input
-                              type="checkbox"
-                              checked={group.members.every((e) => selectedIds.includes(e.id))}
-                              onChange={(e) => handleSelectAll(e.target.checked, group.members)}
-                              className="rounded border-zinc-300"
-                            />
-                          </th>
-                          <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[100px]">이름</th>
-                          <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">직급</th>
-                          <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">상위자</th>
-                          <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[70px]">보안등급</th>
-                          <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400">이메일</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {group.members.map((employee) => (
-                          <tr
-                            key={employee.id}
-                            className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-muted/40"
-                          >
-                            <td className="py-2 px-2">
-                              <input
-                                type="checkbox"
-                                checked={selectedIds.includes(employee.id)}
-                                onChange={(e) => handleSelectOne(employee.id, e.target.checked)}
-                                className="rounded border-zinc-300"
-                              />
-                            </td>
-                            <td className="py-2 px-2 text-zinc-900 dark:text-white font-medium">
-                              <span
-                                className="cursor-pointer hover:underline text-primary"
-                                onClick={() => handleOpenSheet(employee)}
-                              >
-                                {employee.fullName}
-                              </span>
-                            </td>
-                            <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400">
-                              {employee.positionName || "-"}
-                            </td>
-                            <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400">
-                              {getEmployeeName(employee.parentId)}
-                            </td>
-                            <td className="py-2 px-2">
-                              <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-md border ${getSecurityLevelBadge(employee.securityLevel)}`}>
-                                {employee.securityLevel}
-                              </span>
-                            </td>
-                            <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 truncate">
-                              {employee.email}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <div className="divide-y">
+                      {group.leaderGroups.map((leaderGroup, idx) => (
+                        <div key={leaderGroup.leader?.id || `direct-${idx}`}>
+                          {/* 상위자 헤더 */}
+                          <div className="bg-muted/20 px-4 py-2 flex items-center gap-2 border-b">
+                            <span className="font-medium text-sm">
+                              {leaderGroup.leaderName}
+                              {leaderGroup.leaderPosition && (
+                                <span className="text-muted-foreground ml-1">
+                                  ({leaderGroup.leaderPosition})
+                                </span>
+                              )}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              담당 {leaderGroup.members.length}명
+                            </span>
+                          </div>
+                          {/* 하위자 테이블 */}
+                          <table className="w-full text-sm">
+                            <thead className="bg-muted/10 border-b">
+                              <tr>
+                                <th className="py-2 px-2 w-10">
+                                  <input
+                                    type="checkbox"
+                                    checked={leaderGroup.members.every((e) => selectedIds.includes(e.id))}
+                                    onChange={(e) => handleSelectAll(e.target.checked, leaderGroup.members)}
+                                    className="rounded border-zinc-300"
+                                  />
+                                </th>
+                                <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[100px]">이름</th>
+                                <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">직급</th>
+                                <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[70px]">보안등급</th>
+                                <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400">이메일</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {leaderGroup.members.map((employee) => (
+                                <tr
+                                  key={employee.id}
+                                  className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-muted/40"
+                                >
+                                  <td className="py-2 px-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedIds.includes(employee.id)}
+                                      onChange={(e) => handleSelectOne(employee.id, e.target.checked)}
+                                      className="rounded border-zinc-300"
+                                    />
+                                  </td>
+                                  <td className="py-2 px-2 text-zinc-900 dark:text-white font-medium">
+                                    <span
+                                      className="cursor-pointer hover:underline text-primary"
+                                      onClick={() => handleOpenSheet(employee)}
+                                    >
+                                      {employee.fullName}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400">
+                                    {employee.positionName || "-"}
+                                  </td>
+                                  <td className="py-2 px-2">
+                                    <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-md border ${getSecurityLevelBadge(employee.securityLevel)}`}>
+                                      {employee.securityLevel}
+                                    </span>
+                                  </td>
+                                  <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 truncate">
+                                    {employee.email}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               ))}
