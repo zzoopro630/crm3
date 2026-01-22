@@ -204,18 +204,9 @@ export default function DbManagementPage() {
     localStorage.setItem("dbManagement_pageSize", String(pageSize));
   }, [pageSize]);
 
-  // 탭 변경 시 페이지 리셋
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab]);
-
-  // 데이터 가져오기
-  useEffect(() => {
-    fetchDbList();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, pageSize, currentPage, activeTab]);
-
-  const fetchDbList = async () => {
+  // 데이터 가져오기 함수
+  const fetchDbList = async (pageOverride?: number) => {
+    const page = pageOverride ?? currentPage;
     setIsLoading(true);
     try {
       // F3~F5는 자기 배정 고객만 조회
@@ -230,7 +221,7 @@ export default function DbManagementPage() {
       }
 
       const response = await getCustomers({
-        page: currentPage,
+        page,
         limit: pageSize,
         filters: {
           ...filters,
@@ -248,6 +239,19 @@ export default function DbManagementPage() {
       setIsLoading(false);
     }
   };
+
+  // 탭 변경 시 페이지 리셋 및 데이터 fetch
+  useEffect(() => {
+    setCurrentPage(1);
+    fetchDbList(1); // 명시적으로 page=1로 호출
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  // 필터, 페이지 사이즈, 페이지 변경 시 데이터 fetch
+  useEffect(() => {
+    fetchDbList();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, pageSize, currentPage]);
 
   const handleAssign = async (customerId: number, managerId: string) => {
     try {
