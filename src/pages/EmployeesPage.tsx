@@ -92,13 +92,40 @@ export function EmployeesPage() {
   const activeEmployees = employees?.filter((emp) => emp.isActive) || [];
   const inactiveEmployees = employees?.filter((emp) => !emp.isActive) || [];
 
+  // 직급 우선순위 (낮을수록 상단)
+  const getPositionPriority = (position: string | null): number => {
+    const priorities: Record<string, number> = {
+      대표: 1,
+      총괄이사: 2,
+      사업단장: 3,
+      지점장: 4,
+      팀장: 5,
+      FC: 6,
+      실장: 10,
+      과장: 11,
+      대리: 12,
+      주임: 13,
+      사원: 14,
+    };
+    return priorities[position || ""] || 99;
+  };
+
   // 현재 보기 모드에 따른 필터링
   const currentList = showInactive ? inactiveEmployees : activeEmployees;
-  const filteredEmployees = currentList.filter(
-    (emp) =>
-      emp.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      emp.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredEmployees = currentList
+    .filter(
+      (emp) =>
+        emp.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        emp.email.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => {
+      // 1. 조직별 정렬 (조직 없는 경우 마지막)
+      const orgA = a.organizationId || 9999;
+      const orgB = b.organizationId || 9999;
+      if (orgA !== orgB) return orgA - orgB;
+      // 2. 직급별 정렬
+      return getPositionPriority(a.positionName) - getPositionPriority(b.positionName);
+    });
 
   const handleOpenSheet = (employee?: Employee) => {
     if (employee) {
