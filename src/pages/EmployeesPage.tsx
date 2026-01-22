@@ -842,7 +842,10 @@ export function EmployeesPage() {
                 className="flex-1"
                 disabled={
                   updateEmployee.isPending ||
-                  (!bulkEditData.securityLevel && !bulkEditData.organizationId)
+                  (!bulkEditData.securityLevel &&
+                    !bulkEditData.organizationId &&
+                    !bulkEditData.positionName &&
+                    !bulkEditData.parentId)
                 }
               >
                 {updateEmployee.isPending && (
