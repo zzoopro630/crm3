@@ -848,7 +848,7 @@ export default function DbManagementPage() {
       {/* 데스크탑: 테이블 레이아웃 */}
       {!isLoading && dbList.length > 0 && (
         <div className="hidden md:block rounded-md border bg-card shadow-sm overflow-x-auto">
-          <table className="w-full text-sm border-separate border-spacing-0">
+          <table className="text-sm border-separate border-spacing-0 min-w-[1000px] w-max">
             <thead className="bg-muted/50">
               <tr>
                 {/* 고정 열들: 등록일 ~ 상태 */}
@@ -999,7 +999,7 @@ export default function DbManagementPage() {
                     )}
                   </td>
                   {/* 스크롤 가능한 열들 */}
-                  <td className="p-3 border-b">
+                  <td className="p-3 border-b min-w-[200px]">
                     <div className="flex items-center gap-2">
                       <div className="flex-1 min-w-0">
                         <div
@@ -1020,7 +1020,7 @@ export default function DbManagementPage() {
                       </Button>
                     </div>
                   </td>
-                  <td className="p-3 border-b">
+                  <td className="p-3 border-b min-w-[150px]">
                     {isAdmin ? (
                       <Input
                         defaultValue={customer.adminComment || ""}
