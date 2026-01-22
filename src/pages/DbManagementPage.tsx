@@ -848,63 +848,42 @@ export default function DbManagementPage() {
       {/* 데스크탑: 테이블 레이아웃 */}
       {!isLoading && dbList.length > 0 && (
         <div className="hidden md:block rounded-md border bg-card shadow-sm overflow-x-auto">
-          <table className="text-sm border-separate border-spacing-0 min-w-[1000px] w-max">
-            <thead className="bg-muted/50">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 border-b">
               <tr>
-                {/* 고정 열들: 등록일 ~ 상태 */}
-                <th className="text-left p-3 font-medium whitespace-nowrap w-[80px] sticky left-0 z-20 bg-muted/50 border-b">
-                  등록일
-                </th>
-                <th className="text-left p-3 font-medium whitespace-nowrap w-[90px] sticky left-[80px] z-20 bg-muted/50 border-b">
-                  담당자
-                </th>
-                <th className="text-left p-3 font-medium whitespace-nowrap w-[70px] sticky left-[170px] z-20 bg-muted/50 border-b">
-                  고객명
-                </th>
-                <th className="text-left p-3 font-medium whitespace-nowrap w-[120px] sticky left-[240px] z-20 bg-muted/50 border-b">
-                  연락처
-                </th>
-                <th className="text-left p-3 font-medium whitespace-nowrap w-[100px] sticky left-[360px] z-20 bg-muted/50 border-b">
-                  관심상품
-                </th>
-                {/* 유입경로는 관리자(F1/F2)만 표시 */}
+                <th className="text-left p-3 font-medium">등록일</th>
+                <th className="text-left p-3 font-medium">담당자</th>
+                <th className="text-left p-3 font-medium">고객명</th>
+                <th className="text-left p-3 font-medium">연락처</th>
+                <th className="text-left p-3 font-medium">관심상품</th>
                 {isAdmin && (
-                  <th className="text-left p-3 font-medium whitespace-nowrap w-[90px] sticky left-[460px] z-20 bg-muted/50 border-b">
-                    유입경로
-                  </th>
+                  <th className="text-left p-3 font-medium">유입경로</th>
                 )}
-                <th
-                  className={`text-left p-3 font-medium whitespace-nowrap w-[100px] sticky z-20 bg-muted/50 border-b shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${
-                    isAdmin ? "left-[550px]" : "left-[460px]"
-                  }`}
-                >
-                  상태
-                </th>
-                {/* 스크롤 가능한 열들 */}
-                <th className="text-left p-3 font-medium min-w-[200px] border-b">
-                  메모
-                </th>
-                <th className="text-left p-3 font-medium whitespace-nowrap min-w-[150px] border-b">
-                  관리자 코멘트
-                </th>
+                <th className="text-left p-3 font-medium">상태</th>
+                <th className="text-left p-3 font-medium">메모</th>
+                <th className="text-left p-3 font-medium">관리자 코멘트</th>
               </tr>
             </thead>
             <tbody>
-              {dbList.map((customer) => (
-                <tr key={customer.id} className="group">
-                  {/* 고정 열들 */}
-                  <td className="p-3 text-muted-foreground text-xs whitespace-nowrap sticky left-0 z-10 bg-card group-hover:bg-muted/30 border-b">
+              {dbList.map((customer, index) => (
+                <tr
+                  key={customer.id}
+                  className={`border-b hover:bg-muted/40 ${
+                    index % 2 === 1 ? "bg-muted/20" : ""
+                  }`}
+                >
+                  <td className="p-3 text-muted-foreground text-xs">
                     {customer.createdAt
                       ? new Date(customer.createdAt).toLocaleDateString()
                       : "-"}
                   </td>
-                  <td className="p-3 sticky left-[80px] z-10 bg-card group-hover:bg-muted/30 border-b">
+                  <td className="p-3">
                     <select
                       value={customer.managerId || ""}
                       onChange={(e) =>
                         handleAssign(customer.id, e.target.value)
                       }
-                      className="h-8 px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm w-full"
+                      className="h-8 px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm"
                     >
                       <option value="">선택</option>
                       {filteredEmployees?.map((emp) => (
@@ -914,7 +893,7 @@ export default function DbManagementPage() {
                       ))}
                     </select>
                   </td>
-                  <td className="p-3 font-medium whitespace-nowrap sticky left-[170px] z-10 bg-card group-hover:bg-muted/30 border-b">
+                  <td className="p-3 font-medium">
                     <span
                       className="cursor-pointer hover:text-primary hover:underline"
                       onClick={() => handleCustomerClick(customer.id)}
@@ -922,10 +901,8 @@ export default function DbManagementPage() {
                       {customer.name}
                     </span>
                   </td>
-                  <td className="p-3 whitespace-nowrap sticky left-[240px] z-10 bg-card group-hover:bg-muted/30 border-b">
-                    {customer.phone}
-                  </td>
-                  <td className="p-3 sticky left-[360px] z-10 bg-card group-hover:bg-muted/30 border-b">
+                  <td className="p-3">{customer.phone}</td>
+                  <td className="p-3">
                     {isAdmin ? (
                       <Input
                         defaultValue={customer.interestProduct || ""}
@@ -952,15 +929,14 @@ export default function DbManagementPage() {
                       </span>
                     )}
                   </td>
-                  {/* 유입경로는 관리자만 표시 */}
                   {isAdmin && (
-                    <td className="p-3 sticky left-[460px] z-10 bg-card group-hover:bg-muted/30 border-b">
+                    <td className="p-3">
                       <select
                         value={customer.source || ""}
                         onChange={(e) =>
                           handleSourceChange(customer.id, e.target.value)
                         }
-                        className="h-8 px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm w-full"
+                        className="h-8 px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm"
                       >
                         <option value="">선택</option>
                         {sources?.map((src) => (
@@ -971,18 +947,14 @@ export default function DbManagementPage() {
                       </select>
                     </td>
                   )}
-                  <td
-                    className={`p-3 sticky z-10 bg-card group-hover:bg-muted/30 border-b shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] ${
-                      isAdmin ? "left-[550px]" : "left-[460px]"
-                    }`}
-                  >
+                  <td className="p-3">
                     {canEditMemo(customer) ? (
                       <select
                         value={customer.status}
                         onChange={(e) =>
                           handleStatusChange(customer.id, e.target.value)
                         }
-                        className="h-8 px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm w-full"
+                        className="h-8 px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm"
                       >
                         {CUSTOMER_STATUSES.map((status) => (
                           <option key={status.value} value={status.value}>
@@ -998,15 +970,14 @@ export default function DbManagementPage() {
                       </span>
                     )}
                   </td>
-                  {/* 스크롤 가능한 열들 */}
-                  <td className="p-3 border-b min-w-[200px]">
+                  <td className="p-3">
                     <div className="flex items-center gap-2">
                       <div className="flex-1 min-w-0">
                         <div
-                          className="text-sm text-muted-foreground truncate"
+                          className="text-sm text-muted-foreground"
                           title={customer.memo || ""}
                         >
-                          {customer.memo || "메모 없음"}
+                          {customer.memo || "-"}
                         </div>
                       </div>
                       <Button
@@ -1020,7 +991,7 @@ export default function DbManagementPage() {
                       </Button>
                     </div>
                   </td>
-                  <td className="p-3 border-b min-w-[150px]">
+                  <td className="p-3">
                     {isAdmin ? (
                       <Input
                         defaultValue={customer.adminComment || ""}
