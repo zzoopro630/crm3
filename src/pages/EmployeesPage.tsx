@@ -92,13 +92,86 @@ export function EmployeesPage() {
   const activeEmployees = employees?.filter((emp) => emp.isActive) || [];
   const inactiveEmployees = employees?.filter((emp) => !emp.isActive) || [];
 
+  // 직급 우선순위 (낮을수록 상단)
+  const getPositionPriority = (position: string | null): number => {
+    const priorities: Record<string, number> = {
+      대표: 1,
+      총괄이사: 2,
+      사업단장: 3,
+      지점장: 4,
+      팀장: 5,
+      FC: 6,
+      실장: 10,
+      과장: 11,
+      대리: 12,
+      주임: 13,
+      사원: 14,
+    };
+    return priorities[position || ""] || 99;
+  };
+
+  // 계층 레벨 계산 (상위자 기반)
+  const getHierarchyLevel = (empId: string, empList: Employee[]): number => {
+    const emp = empList.find((e) => e.id === empId);
+    if (!emp || !emp.parentId) return 0;
+    return 1 + getHierarchyLevel(emp.parentId, empList);
+  };
+
+  // 트리 구조로 정렬 (상위자-하위자 관계 기반)
+  const buildHierarchicalList = (empList: Employee[]): Employee[] => {
+    const result: Employee[] = [];
+    const visited = new Set<string>();
+
+    const addWithChildren = (emp: Employee, level: number = 0) => {
+      if (visited.has(emp.id)) return;
+      visited.add(emp.id);
+      result.push(emp);
+
+      // 이 사원의 하위자들 찾아서 추가 (직급 순 정렬)
+      const children = empList
+        .filter((e) => e.parentId === emp.id && !visited.has(e.id))
+        .sort((a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName));
+      children.forEach((child) => addWithChildren(child, level + 1));
+    };
+
+    // 조직별로 그룹핑
+    const byOrg = new Map<number | null, Employee[]>();
+    empList.forEach((emp) => {
+      const orgId = emp.organizationId || null;
+      if (!byOrg.has(orgId)) byOrg.set(orgId, []);
+      byOrg.get(orgId)!.push(emp);
+    });
+
+    // 조직 ID 순으로 정렬
+    const sortedOrgIds = Array.from(byOrg.keys()).sort((a, b) => (a || 9999) - (b || 9999));
+
+    for (const orgId of sortedOrgIds) {
+      const orgMembers = byOrg.get(orgId)!;
+      // 루트 사원 찾기 (상위자가 없거나 다른 조직에 있는 경우)
+      const roots = orgMembers
+        .filter((emp) => !emp.parentId || !orgMembers.some((m) => m.id === emp.parentId))
+        .sort((a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName));
+
+      roots.forEach((root) => addWithChildren(root));
+
+      // 남은 사원 추가 (순환 참조 방지)
+      orgMembers
+        .filter((emp) => !visited.has(emp.id))
+        .sort((a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName))
+        .forEach((emp) => addWithChildren(emp));
+    }
+
+    return result;
+  };
+
   // 현재 보기 모드에 따른 필터링
   const currentList = showInactive ? inactiveEmployees : activeEmployees;
-  const filteredEmployees = currentList.filter(
+  const searchFiltered = currentList.filter(
     (emp) =>
       emp.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       emp.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  const filteredEmployees = buildHierarchicalList(searchFiltered);
 
   const handleOpenSheet = (employee?: Employee) => {
     if (employee) {
@@ -336,10 +409,10 @@ export function EmployeesPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                    <th className="py-3 px-4 w-10">
+              <table className="w-full text-sm table-fixed">
+                <thead className="bg-muted/50 border-b">
+                  <tr>
+                    <th className="py-2 px-2 w-10">
                       <input
                         type="checkbox"
                         checked={
@@ -350,25 +423,22 @@ export function EmployeesPage() {
                         className="rounded border-zinc-300"
                       />
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">
                       이름
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">
                       직급
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                      조직
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                      보안등급
-                    </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">
                       상위자
                     </th>
-                    <th className="text-left py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[70px]">
+                      보안등급
+                    </th>
+                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400">
                       이메일
                     </th>
-                    <th className="text-right py-3 px-4 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                    <th className="text-right py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">
                       작업
                     </th>
                   </tr>
@@ -377,9 +447,9 @@ export function EmployeesPage() {
                   {filteredEmployees?.map((employee) => (
                     <tr
                       key={employee.id}
-                      className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                      className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-muted/40 odd:bg-muted/20"
                     >
-                      <td className="py-3 px-4">
+                      <td className="py-2 px-2">
                         <input
                           type="checkbox"
                           checked={selectedIds.includes(employee.id)}
@@ -389,36 +459,34 @@ export function EmployeesPage() {
                           className="rounded border-zinc-300"
                         />
                       </td>
-                      <td className="py-3 px-4 text-sm text-zinc-900 dark:text-white font-medium">
+                      <td className="py-2 px-2 text-zinc-900 dark:text-white font-medium whitespace-nowrap">
                         <span
                           className="cursor-pointer hover:underline text-primary"
+                          style={{ paddingLeft: `${getHierarchyLevel(employee.id, searchFiltered) * 16}px` }}
                           onClick={() => handleOpenSheet(employee)}
                         >
                           {employee.fullName}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
+                      <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
                         {employee.positionName || "-"}
                       </td>
-                      <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
-                        {getOrganizationName(employee.organizationId)}
+                      <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
+                        {getEmployeeName(employee.parentId)}
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-2 px-2">
                         <span
-                          className={`inline-flex px-2 py-1 text-xs font-medium rounded-md border ${getSecurityLevelBadge(
+                          className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-md border ${getSecurityLevelBadge(
                             employee.securityLevel
                           )}`}
                         >
                           {employee.securityLevel}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
-                        {getEmployeeName(employee.parentId)}
-                      </td>
-                      <td className="py-3 px-4 text-sm text-zinc-600 dark:text-zinc-400">
+                      <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 truncate">
                         {employee.email}
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-2 px-2 text-right">
                         <div className="flex justify-end gap-2">
                           {showInactive ? (
                             <Button
@@ -774,7 +842,10 @@ export function EmployeesPage() {
                 className="flex-1"
                 disabled={
                   updateEmployee.isPending ||
-                  (!bulkEditData.securityLevel && !bulkEditData.organizationId)
+                  (!bulkEditData.securityLevel &&
+                    !bulkEditData.organizationId &&
+                    !bulkEditData.positionName &&
+                    !bulkEditData.parentId)
                 }
               >
                 {updateEmployee.isPending && (
