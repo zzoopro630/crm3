@@ -848,29 +848,27 @@ export default function DbManagementPage() {
       {/* 데스크탑: 테이블 레이아웃 */}
       {!isLoading && dbList.length > 0 && (
         <div className="hidden md:block rounded-md border bg-card shadow-sm overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed">
             <thead className="bg-muted/50 border-b">
               <tr>
-                <th className="text-left p-3 font-medium">등록일</th>
-                <th className="text-left p-3 font-medium">담당자</th>
-                <th className="text-left p-3 font-medium">고객명</th>
-                <th className="text-left p-3 font-medium">연락처</th>
-                <th className="text-left p-3 font-medium">관심상품</th>
+                <th className="text-left p-3 font-medium w-[85px]">등록일</th>
+                <th className="text-left p-3 font-medium w-[90px]">담당자</th>
+                <th className="text-left p-3 font-medium w-[70px]">고객명</th>
+                <th className="text-left p-3 font-medium w-[110px]">연락처</th>
+                <th className="text-left p-3 font-medium w-[100px]">관심상품</th>
                 {isAdmin && (
-                  <th className="text-left p-3 font-medium">유입경로</th>
+                  <th className="text-left p-3 font-medium w-[90px]">유입경로</th>
                 )}
-                <th className="text-left p-3 font-medium">상태</th>
+                <th className="text-left p-3 font-medium w-[85px]">상태</th>
                 <th className="text-left p-3 font-medium">메모</th>
-                <th className="text-left p-3 font-medium">관리자 코멘트</th>
+                <th className="text-left p-3 font-medium w-[180px]">관리자 코멘트</th>
               </tr>
             </thead>
             <tbody>
-              {dbList.map((customer, index) => (
+              {dbList.map((customer) => (
                 <tr
                   key={customer.id}
-                  className={`border-b hover:bg-muted/40 ${
-                    index % 2 === 1 ? "bg-muted/20" : ""
-                  }`}
+                  className="border-b hover:bg-muted/40 odd:bg-muted/20"
                 >
                   <td className="p-3 text-muted-foreground text-xs">
                     {customer.createdAt
