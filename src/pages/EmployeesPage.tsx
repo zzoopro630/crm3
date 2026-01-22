@@ -35,7 +35,8 @@ import {
   RotateCcw,
   Users,
   UserX,
-  Settings2,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { EmployeeExcelUpload } from "@/components/employees/EmployeeExcelUpload";
 import type { Employee, CreateEmployeeInput } from "@/types/employee";
@@ -110,58 +111,16 @@ export function EmployeesPage() {
     return priorities[position || ""] || 99;
   };
 
-  // 계층 레벨 계산 (상위자 기반)
-  const getHierarchyLevel = (empId: string, empList: Employee[]): number => {
-    const emp = empList.find((e) => e.id === empId);
-    if (!emp || !emp.parentId) return 0;
-    return 1 + getHierarchyLevel(emp.parentId, empList);
+  // 대표 직속 조직 여부 (영업지원팀, 총무팀)
+  const isDirectOrg = (orgName: string) => {
+    return ["영업지원팀", "총무팀"].includes(orgName);
   };
 
-  // 트리 구조로 정렬 (상위자-하위자 관계 기반)
-  const buildHierarchicalList = (empList: Employee[]): Employee[] => {
-    const result: Employee[] = [];
-    const visited = new Set<string>();
-
-    const addWithChildren = (emp: Employee, level: number = 0) => {
-      if (visited.has(emp.id)) return;
-      visited.add(emp.id);
-      result.push(emp);
-
-      // 이 사원의 하위자들 찾아서 추가 (직급 순 정렬)
-      const children = empList
-        .filter((e) => e.parentId === emp.id && !visited.has(e.id))
-        .sort((a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName));
-      children.forEach((child) => addWithChildren(child, level + 1));
-    };
-
-    // 조직별로 그룹핑
-    const byOrg = new Map<number | null, Employee[]>();
-    empList.forEach((emp) => {
-      const orgId = emp.organizationId || null;
-      if (!byOrg.has(orgId)) byOrg.set(orgId, []);
-      byOrg.get(orgId)!.push(emp);
-    });
-
-    // 조직 ID 순으로 정렬
-    const sortedOrgIds = Array.from(byOrg.keys()).sort((a, b) => (a || 9999) - (b || 9999));
-
-    for (const orgId of sortedOrgIds) {
-      const orgMembers = byOrg.get(orgId)!;
-      // 루트 사원 찾기 (상위자가 없거나 다른 조직에 있는 경우)
-      const roots = orgMembers
-        .filter((emp) => !emp.parentId || !orgMembers.some((m) => m.id === emp.parentId))
-        .sort((a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName));
-
-      roots.forEach((root) => addWithChildren(root));
-
-      // 남은 사원 추가 (순환 참조 방지)
-      orgMembers
-        .filter((emp) => !visited.has(emp.id))
-        .sort((a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName))
-        .forEach((emp) => addWithChildren(emp));
-    }
-
-    return result;
+  // 조직 정렬 우선순위
+  const getOrgPriority = (orgName: string): number => {
+    if (orgName === "영업지원팀") return 1;
+    if (orgName === "총무팀") return 2;
+    return 10; // 사업단 등
   };
 
   // 현재 보기 모드에 따른 필터링
@@ -171,7 +130,64 @@ export function EmployeesPage() {
       emp.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       emp.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const filteredEmployees = buildHierarchicalList(searchFiltered);
+
+  // 대표 추출 (조직 무관하게 최상위)
+  const ceoList = searchFiltered
+    .filter((emp) => emp.positionName === "대표")
+    .sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+  // 나머지 사원 (대표 제외)
+  const nonCeoList = searchFiltered.filter((emp) => emp.positionName !== "대표");
+
+  // 조직별 그룹핑
+  const groupByOrganization = () => {
+    const groups: { orgName: string; orgId: number | null; members: Employee[] }[] = [];
+    const byOrg = new Map<number | null, Employee[]>();
+
+    nonCeoList.forEach((emp) => {
+      const orgId = emp.organizationId || null;
+      if (!byOrg.has(orgId)) byOrg.set(orgId, []);
+      byOrg.get(orgId)!.push(emp);
+    });
+
+    // 조직명으로 정렬하여 그룹 생성
+    Array.from(byOrg.entries()).forEach(([orgId, members]) => {
+      const orgName = getOrganizationName(orgId);
+      groups.push({
+        orgName,
+        orgId,
+        members: members.sort(
+          (a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName)
+        ),
+      });
+    });
+
+    // 대표 직속 조직 먼저, 그 다음 사업단
+    return groups.sort((a, b) => {
+      const priorityA = getOrgPriority(a.orgName);
+      const priorityB = getOrgPriority(b.orgName);
+      if (priorityA !== priorityB) return priorityA - priorityB;
+      return a.orgName.localeCompare(b.orgName);
+    });
+  };
+
+  const organizationGroups = groupByOrganization();
+  const [collapsedOrgs, setCollapsedOrgs] = useState<Set<string>>(new Set());
+
+  const toggleOrgCollapse = (orgName: string) => {
+    setCollapsedOrgs((prev) => {
+      const next = new Set(prev);
+      if (next.has(orgName)) {
+        next.delete(orgName);
+      } else {
+        next.add(orgName);
+      }
+      return next;
+    });
+  };
+
+  // 전체 사원 목록 (체크박스용)
+  const allFilteredEmployees = [...ceoList, ...nonCeoList];
 
   const handleOpenSheet = (employee?: Employee) => {
     if (employee) {
@@ -229,31 +245,36 @@ export function EmployeesPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("정말 이 사원을 비활성화하시겠습니까?")) {
-      try {
-        await deleteEmployee.mutateAsync(id);
-      } catch (error) {
-        console.error("Failed to delete employee:", error);
-      }
-    }
-  };
-
-  const handleRestore = async (id: string) => {
-    if (window.confirm("이 사원을 다시 활성화하시겠습니까?")) {
-      try {
-        await restoreEmployee.mutateAsync(id);
-      } catch (error) {
-        console.error("Failed to restore employee:", error);
-      }
-    }
-  };
-
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = (checked: boolean, members: Employee[]) => {
     if (checked) {
-      setSelectedIds(filteredEmployees.map((e) => e.id));
+      const newIds = members.map((e) => e.id);
+      setSelectedIds((prev) => [...new Set([...prev, ...newIds])]);
     } else {
+      const memberIds = new Set(members.map((e) => e.id));
+      setSelectedIds((prev) => prev.filter((id) => !memberIds.has(id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`선택한 ${selectedIds.length}명의 사원을 비활성화하시겠습니까?`)) return;
+
+    try {
+      for (const id of selectedIds) {
+        await deleteEmployee.mutateAsync(id);
+      }
       setSelectedIds([]);
+    } catch (error) {
+      console.error("Failed to bulk delete:", error);
+    }
+  };
+
+  const handleEditSelected = () => {
+    if (selectedIds.length === 1) {
+      const emp = employees?.find((e) => e.id === selectedIds[0]);
+      if (emp) handleOpenSheet(emp);
+    } else {
+      setIsBulkEditOpen(true);
     }
   };
 
@@ -323,21 +344,40 @@ export function EmployeesPage() {
     <div className="space-y-6">
       {/* Header */}
       {/* Actions (Title removed) */}
-      <div className="flex justify-end gap-2 mb-4">
-        {selectedIds.length > 0 && (
-          <Button variant="outline" onClick={() => setIsBulkEditOpen(true)}>
-            <Settings2 className="mr-2 h-4 w-4" />
-            일괄 수정 ({selectedIds.length}명)
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex gap-2">
+          {selectedIds.length > 0 && (
+            <>
+              <Button variant="outline" onClick={handleEditSelected}>
+                <Pencil className="mr-2 h-4 w-4" />
+                {selectedIds.length === 1 ? "수정" : `일괄 수정 (${selectedIds.length}명)`}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleBulkDelete}
+                className="text-red-500 hover:text-red-600"
+                disabled={deleteEmployee.isPending}
+              >
+                {deleteEmployee.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
+                비활성화 ({selectedIds.length}명)
+              </Button>
+            </>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsExcelUploadOpen(true)}>
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Excel 업로드
           </Button>
-        )}
-        <Button variant="outline" onClick={() => setIsExcelUploadOpen(true)}>
-          <FileSpreadsheet className="mr-2 h-4 w-4" />
-          Excel 업로드
-        </Button>
-        <Button onClick={() => handleOpenSheet()}>
-          <Plus className="mr-2 h-4 w-4" />
-          사원 등록
-        </Button>
+          <Button onClick={() => handleOpenSheet()}>
+            <Plus className="mr-2 h-4 w-4" />
+            사원 등록
+          </Button>
+        </div>
       </div>
 
       {/* Tabs for Active/Inactive */}
@@ -385,12 +425,12 @@ export function EmployeesPage() {
           </CardTitle>
           <CardDescription>
             {showInactive
-              ? `비활성화된 사원 ${filteredEmployees.length}명`
-              : `총 ${filteredEmployees.length}명`}
+              ? `비활성화된 사원 ${allFilteredEmployees.length}명`
+              : `총 ${allFilteredEmployees.length}명`}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          {filteredEmployees.length === 0 ? (
+        <CardContent className="space-y-4">
+          {allFilteredEmployees.length === 0 ? (
             <div className="text-center py-12 text-zinc-500">
               {showInactive ? (
                 <>
@@ -408,125 +448,174 @@ export function EmployeesPage() {
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm table-fixed">
-                <thead className="bg-muted/50 border-b">
-                  <tr>
-                    <th className="py-2 px-2 w-10">
-                      <input
-                        type="checkbox"
-                        checked={
-                          filteredEmployees.length > 0 &&
-                          selectedIds.length === filteredEmployees.length
-                        }
-                        onChange={(e) => handleSelectAll(e.target.checked)}
-                        className="rounded border-zinc-300"
-                      />
-                    </th>
-                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">
-                      이름
-                    </th>
-                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">
-                      직급
-                    </th>
-                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">
-                      상위자
-                    </th>
-                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[70px]">
-                      보안등급
-                    </th>
-                    <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400">
-                      이메일
-                    </th>
-                    <th className="text-right py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">
-                      작업
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredEmployees?.map((employee) => (
-                    <tr
-                      key={employee.id}
-                      className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-muted/40 odd:bg-muted/20"
-                    >
-                      <td className="py-2 px-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.includes(employee.id)}
-                          onChange={(e) =>
-                            handleSelectOne(employee.id, e.target.checked)
-                          }
-                          className="rounded border-zinc-300"
-                        />
-                      </td>
-                      <td className="py-2 px-2 text-zinc-900 dark:text-white font-medium whitespace-nowrap">
-                        <span
-                          className="cursor-pointer hover:underline text-primary"
-                          style={{ paddingLeft: `${getHierarchyLevel(employee.id, searchFiltered) * 16}px` }}
-                          onClick={() => handleOpenSheet(employee)}
+            <>
+              {/* 대표 섹션 */}
+              {ceoList.length > 0 && (
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="bg-muted/50 px-3 py-2 font-medium text-sm flex items-center justify-between">
+                    <span>대표</span>
+                    <span className="text-xs text-muted-foreground">{ceoList.length}명</span>
+                  </div>
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/30 border-b">
+                      <tr>
+                        <th className="py-2 px-2 w-10">
+                          <input
+                            type="checkbox"
+                            checked={ceoList.every((e) => selectedIds.includes(e.id))}
+                            onChange={(e) => handleSelectAll(e.target.checked, ceoList)}
+                            className="rounded border-zinc-300"
+                          />
+                        </th>
+                        <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[100px]">이름</th>
+                        <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">직급</th>
+                        <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[70px]">보안등급</th>
+                        <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400">이메일</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ceoList.map((employee) => (
+                        <tr
+                          key={employee.id}
+                          className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-muted/40"
                         >
-                          {employee.fullName}
-                        </span>
-                      </td>
-                      <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
-                        {employee.positionName || "-"}
-                      </td>
-                      <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
-                        {getEmployeeName(employee.parentId)}
-                      </td>
-                      <td className="py-2 px-2">
-                        <span
-                          className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-md border ${getSecurityLevelBadge(
-                            employee.securityLevel
-                          )}`}
-                        >
-                          {employee.securityLevel}
-                        </span>
-                      </td>
-                      <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 truncate">
-                        {employee.email}
-                      </td>
-                      <td className="py-2 px-2 text-right">
-                        <div className="flex justify-end gap-2">
-                          {showInactive ? (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRestore(employee.id)}
-                              className="h-8 w-8 text-green-500 hover:text-green-600"
-                              title="사원 복원"
+                          <td className="py-2 px-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(employee.id)}
+                              onChange={(e) => handleSelectOne(employee.id, e.target.checked)}
+                              className="rounded border-zinc-300"
+                            />
+                          </td>
+                          <td className="py-2 px-2 text-zinc-900 dark:text-white font-medium">
+                            <span
+                              className="cursor-pointer hover:underline text-primary"
+                              onClick={() => handleOpenSheet(employee)}
                             >
-                              <RotateCcw className="h-4 w-4" />
-                            </Button>
-                          ) : (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
+                              {employee.fullName}
+                            </span>
+                          </td>
+                          <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400">
+                            {employee.positionName || "-"}
+                          </td>
+                          <td className="py-2 px-2">
+                            <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-md border ${getSecurityLevelBadge(employee.securityLevel)}`}>
+                              {employee.securityLevel}
+                            </span>
+                          </td>
+                          <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 truncate">
+                            {employee.email}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* 조직별 섹션 */}
+              {organizationGroups.map((group) => (
+                <div key={group.orgName} className="border rounded-lg overflow-hidden">
+                  <button
+                    className="w-full bg-muted/50 px-3 py-2 font-medium text-sm flex items-center justify-between hover:bg-muted/70 transition-colors"
+                    onClick={() => toggleOrgCollapse(group.orgName)}
+                  >
+                    <div className="flex items-center gap-2">
+                      {collapsedOrgs.has(group.orgName) ? (
+                        <ChevronRight className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                      <span>{group.orgName}</span>
+                      {isDirectOrg(group.orgName) && (
+                        <span className="text-xs text-muted-foreground">(대표 직속)</span>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground">{group.members.length}명</span>
+                  </button>
+                  {!collapsedOrgs.has(group.orgName) && (
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/30 border-b">
+                        <tr>
+                          <th className="py-2 px-2 w-10">
+                            <input
+                              type="checkbox"
+                              checked={group.members.every((e) => selectedIds.includes(e.id))}
+                              onChange={(e) => handleSelectAll(e.target.checked, group.members)}
+                              className="rounded border-zinc-300"
+                            />
+                          </th>
+                          <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[100px]">이름</th>
+                          <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">직급</th>
+                          <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">상위자</th>
+                          <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[70px]">보안등급</th>
+                          <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400">이메일</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {group.members.map((employee) => (
+                          <tr
+                            key={employee.id}
+                            className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-muted/40"
+                          >
+                            <td className="py-2 px-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.includes(employee.id)}
+                                onChange={(e) => handleSelectOne(employee.id, e.target.checked)}
+                                className="rounded border-zinc-300"
+                              />
+                            </td>
+                            <td className="py-2 px-2 text-zinc-900 dark:text-white font-medium">
+                              <span
+                                className="cursor-pointer hover:underline text-primary"
                                 onClick={() => handleOpenSheet(employee)}
-                                className="h-8 w-8"
-                                title="수정"
                               >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDelete(employee.id)}
-                                className="h-8 w-8 text-red-500 hover:text-red-600"
-                                title="비활성화"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                                {employee.fullName}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400">
+                              {employee.positionName || "-"}
+                            </td>
+                            <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400">
+                              {getEmployeeName(employee.parentId)}
+                            </td>
+                            <td className="py-2 px-2">
+                              <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-md border ${getSecurityLevelBadge(employee.securityLevel)}`}>
+                                {employee.securityLevel}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 truncate">
+                              {employee.email}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              ))}
+
+              {/* 비활성 사원 복원 버튼 (비활성 탭에서만) */}
+              {showInactive && selectedIds.length > 0 && (
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      if (!window.confirm(`선택한 ${selectedIds.length}명의 사원을 복원하시겠습니까?`)) return;
+                      for (const id of selectedIds) {
+                        await restoreEmployee.mutateAsync(id);
+                      }
+                      setSelectedIds([]);
+                    }}
+                    className="text-green-500 hover:text-green-600"
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    선택 복원 ({selectedIds.length}명)
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
