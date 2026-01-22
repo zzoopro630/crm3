@@ -452,9 +452,9 @@ export function EmployeesPage() {
               {/* 대표 섹션 */}
               {ceoList.length > 0 && (
                 <div className="border rounded-lg overflow-hidden">
-                  <div className="bg-muted/50 px-3 py-2 font-medium text-sm flex items-center justify-between">
+                  <div className="bg-muted/50 px-4 py-3 font-semibold text-base flex items-center justify-between">
                     <span>대표</span>
-                    <span className="text-xs text-muted-foreground">{ceoList.length}명</span>
+                    <span className="text-sm text-muted-foreground">{ceoList.length}명</span>
                   </div>
                   <table className="w-full text-sm">
                     <thead className="bg-muted/30 border-b">
@@ -517,21 +517,21 @@ export function EmployeesPage() {
               {organizationGroups.map((group) => (
                 <div key={group.orgName} className="border rounded-lg overflow-hidden">
                   <button
-                    className="w-full bg-muted/50 px-3 py-2 font-medium text-sm flex items-center justify-between hover:bg-muted/70 transition-colors"
+                    className="w-full bg-muted/50 px-4 py-3 font-semibold text-base flex items-center justify-between hover:bg-muted/70 transition-colors"
                     onClick={() => toggleOrgCollapse(group.orgName)}
                   >
                     <div className="flex items-center gap-2">
                       {collapsedOrgs.has(group.orgName) ? (
-                        <ChevronRight className="h-4 w-4" />
+                        <ChevronRight className="h-5 w-5" />
                       ) : (
-                        <ChevronDown className="h-4 w-4" />
+                        <ChevronDown className="h-5 w-5" />
                       )}
                       <span>{group.orgName}</span>
                       {isDirectOrg(group.orgName) && (
-                        <span className="text-xs text-muted-foreground">(대표 직속)</span>
+                        <span className="text-sm text-muted-foreground">(대표 직속)</span>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground">{group.members.length}명</span>
+                    <span className="text-sm text-muted-foreground">{group.members.length}명</span>
                   </button>
                   {!collapsedOrgs.has(group.orgName) && (
                     <table className="w-full text-sm">
@@ -737,9 +737,20 @@ export function EmployeesPage() {
               <select
                 id="positionName"
                 value={formData.positionName || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, positionName: e.target.value })
-                }
+                onChange={(e) => {
+                  const newPosition = e.target.value;
+                  // 총괄이사 선택 시 상위자를 대표로 자동 지정
+                  if (newPosition === "총괄이사") {
+                    const ceo = employees?.find((emp) => emp.positionName === "대표" && emp.isActive);
+                    setFormData({
+                      ...formData,
+                      positionName: newPosition,
+                      parentId: ceo?.id || null,
+                    });
+                  } else {
+                    setFormData({ ...formData, positionName: newPosition });
+                  }
+                }}
                 className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
               >
                 <option value="">선택 안함</option>
