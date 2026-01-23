@@ -250,6 +250,14 @@ app.put("/api/customers/:id", async (c) => {
   if (body.memo !== undefined) dbInput.memo = body.memo;
   if (body.adminComment !== undefined)
     dbInput.admin_comment = body.adminComment;
+  if (body.maritalStatus !== undefined)
+    dbInput.marital_status = body.maritalStatus;
+  if (body.annualIncome !== undefined)
+    dbInput.annual_income = body.annualIncome;
+  if (body.existingInsurance !== undefined)
+    dbInput.existing_insurance = body.existingInsurance;
+  if (body.insuranceType !== undefined)
+    dbInput.insurance_type = body.insuranceType;
 
   const { data, error } = await supabase
     .from("customers")
