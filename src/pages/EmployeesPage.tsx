@@ -83,12 +83,6 @@ export function EmployeesPage() {
     return organizations.find((o) => o.id === orgId)?.name || "-";
   };
 
-  // 사원 ID로 사원명 찾기 (상위자)
-  const getEmployeeName = (empId: string | null) => {
-    if (!empId || !employees) return "-";
-    return employees.find((e) => e.id === empId)?.fullName || "-";
-  };
-
   // 활성/비활성 사원 분리
   const activeEmployees = employees?.filter((emp) => emp.isActive) || [];
   const inactiveEmployees = employees?.filter((emp) => !emp.isActive) || [];
@@ -139,9 +133,54 @@ export function EmployeesPage() {
   // 나머지 사원 (대표 제외)
   const nonCeoList = searchFiltered.filter((emp) => emp.positionName !== "대표");
 
-  // 조직별 그룹핑
-  const groupByOrganization = () => {
-    const groups: { orgName: string; orgId: number | null; members: Employee[] }[] = [];
+  // 사원 ID로 사원명 찾기 (상위자)
+  const getEmployeeName = (empId: string | null) => {
+    if (!empId || !employees) return "-";
+    return employees.find((e) => e.id === empId)?.fullName || "-";
+  };
+
+  // 트리 순회 정렬 (상위자 → 하위자 순서로 연속 배치)
+  const buildTreeSortedList = (empList: Employee[]): Employee[] => {
+    const result: Employee[] = [];
+    const visited = new Set<string>();
+
+    const addWithChildren = (emp: Employee) => {
+      if (visited.has(emp.id)) return;
+      visited.add(emp.id);
+      result.push(emp);
+
+      // 이 사원의 하위자들 찾아서 바로 아래에 추가 (직급 순)
+      const children = empList
+        .filter((e) => e.parentId === emp.id && !visited.has(e.id))
+        .sort((a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName));
+      children.forEach((child) => addWithChildren(child));
+    };
+
+    // 루트 사원 찾기 (상위자가 없거나 상위자가 목록에 없는 경우)
+    const roots = empList
+      .filter((emp) => !emp.parentId || !empList.some((e) => e.id === emp.parentId))
+      .sort((a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName));
+
+    roots.forEach((root) => addWithChildren(root));
+
+    // 남은 사원 추가 (순환 참조 방지)
+    empList
+      .filter((emp) => !visited.has(emp.id))
+      .sort((a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName))
+      .forEach((emp) => addWithChildren(emp));
+
+    return result;
+  };
+
+  type OrgGroup = {
+    orgName: string;
+    orgId: number | null;
+    members: Employee[];
+  };
+
+  // 조직별 그룹핑 + 트리 정렬
+  const groupByOrganization = (): OrgGroup[] => {
+    const groups: OrgGroup[] = [];
     const byOrg = new Map<number | null, Employee[]>();
 
     nonCeoList.forEach((emp) => {
@@ -150,15 +189,14 @@ export function EmployeesPage() {
       byOrg.get(orgId)!.push(emp);
     });
 
-    // 조직명으로 정렬하여 그룹 생성
     Array.from(byOrg.entries()).forEach(([orgId, members]) => {
       const orgName = getOrganizationName(orgId);
+      // 트리 정렬 적용
+      const sortedMembers = buildTreeSortedList(members);
       groups.push({
         orgName,
         orgId,
-        members: members.sort(
-          (a, b) => getPositionPriority(a.positionName) - getPositionPriority(b.positionName)
-        ),
+        members: sortedMembers,
       });
     });
 
@@ -452,9 +490,9 @@ export function EmployeesPage() {
               {/* 대표 섹션 */}
               {ceoList.length > 0 && (
                 <div className="border rounded-lg overflow-hidden">
-                  <div className="bg-muted/50 px-3 py-2 font-medium text-sm flex items-center justify-between">
+                  <div className="bg-muted/50 px-4 py-3 font-semibold text-base flex items-center justify-between">
                     <span>대표</span>
-                    <span className="text-xs text-muted-foreground">{ceoList.length}명</span>
+                    <span className="text-sm text-muted-foreground">{ceoList.length}명</span>
                   </div>
                   <table className="w-full text-sm">
                     <thead className="bg-muted/30 border-b">
@@ -517,21 +555,21 @@ export function EmployeesPage() {
               {organizationGroups.map((group) => (
                 <div key={group.orgName} className="border rounded-lg overflow-hidden">
                   <button
-                    className="w-full bg-muted/50 px-3 py-2 font-medium text-sm flex items-center justify-between hover:bg-muted/70 transition-colors"
+                    className="w-full bg-muted/50 px-4 py-3 font-semibold text-base flex items-center justify-between hover:bg-muted/70 transition-colors"
                     onClick={() => toggleOrgCollapse(group.orgName)}
                   >
                     <div className="flex items-center gap-2">
                       {collapsedOrgs.has(group.orgName) ? (
-                        <ChevronRight className="h-4 w-4" />
+                        <ChevronRight className="h-5 w-5" />
                       ) : (
-                        <ChevronDown className="h-4 w-4" />
+                        <ChevronDown className="h-5 w-5" />
                       )}
                       <span>{group.orgName}</span>
                       {isDirectOrg(group.orgName) && (
-                        <span className="text-xs text-muted-foreground">(대표 직속)</span>
+                        <span className="text-sm text-muted-foreground">(대표 직속)</span>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground">{group.members.length}명</span>
+                    <span className="text-sm text-muted-foreground">{group.members.length}명</span>
                   </button>
                   {!collapsedOrgs.has(group.orgName) && (
                     <table className="w-full text-sm">
@@ -737,9 +775,20 @@ export function EmployeesPage() {
               <select
                 id="positionName"
                 value={formData.positionName || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, positionName: e.target.value })
-                }
+                onChange={(e) => {
+                  const newPosition = e.target.value;
+                  // 총괄이사 선택 시 상위자를 대표로 자동 지정
+                  if (newPosition === "총괄이사") {
+                    const ceo = employees?.find((emp) => emp.positionName === "대표" && emp.isActive);
+                    setFormData({
+                      ...formData,
+                      positionName: newPosition,
+                      parentId: ceo?.id || null,
+                    });
+                  } else {
+                    setFormData({ ...formData, positionName: newPosition });
+                  }
+                }}
                 className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
               >
                 <option value="">선택 안함</option>
