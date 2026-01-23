@@ -11,13 +11,13 @@ export type {
   ApprovalStatus,
 } from "@/db/schema";
 
-// Security levels constant
+// Security levels constant (직급과 분리된 개념)
 export const SECURITY_LEVELS = [
-  { value: "F1", label: "F1 - 최고관리자" },
-  { value: "F2", label: "F2 - 총괄이사" },
-  { value: "F3", label: "F3 - 사업단장" },
-  { value: "F4", label: "F4 - 지점장" },
-  { value: "F5", label: "F5 - 팀장" },
+  { value: "F1", label: "F1" },
+  { value: "F2", label: "F2" },
+  { value: "F3", label: "F3" },
+  { value: "F4", label: "F4" },
+  { value: "F5", label: "F5" },
 ] as const;
 
 export type SecurityLevelValue = (typeof SECURITY_LEVELS)[number]["value"];
