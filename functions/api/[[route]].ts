@@ -653,6 +653,31 @@ app.put("/api/employees/:id/restore", async (c) => {
   return c.json(data);
 });
 
+// 완전 삭제 (비활성 사원만)
+app.delete("/api/employees/:id/permanent", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const id = c.req.param("id");
+
+  // 비활성 사원인지 확인
+  const { data: employee } = await supabase
+    .from("employees")
+    .select("is_active")
+    .eq("id", id)
+    .single();
+
+  if (employee?.is_active) {
+    return c.json({ error: "활성 사원은 완전 삭제할 수 없습니다" }, 400);
+  }
+
+  const { error } = await supabase.from("employees").delete().eq("id", id);
+
+  if (error) {
+    return c.json({ error: error.message }, 500);
+  }
+
+  return c.json({ success: true });
+});
+
 // ============ Sources API ============
 app.get("/api/sources", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
