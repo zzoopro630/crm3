@@ -10,6 +10,12 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card'
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 import { Users, UserCheck, MessageSquare, FileText, CheckCircle, Loader2, Search, ChevronDown, ChevronRight } from 'lucide-react'
 import type { TeamMember } from '@/services/team'
 
@@ -22,6 +28,7 @@ export function TeamPage() {
 
     const [searchQuery, setSearchQuery] = useState('')
     const [collapsedOrgs, setCollapsedOrgs] = useState<Set<string>>(new Set())
+    const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
 
     // 조직 ID로 조직명 찾기
     const getOrganizationName = (orgId: number | null | undefined) => {
@@ -183,7 +190,12 @@ export function TeamPage() {
             <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">
-                        {member.fullName}
+                        <span
+                            className="cursor-pointer hover:underline text-primary"
+                            onClick={() => setSelectedMember(member)}
+                        >
+                            {member.fullName}
+                        </span>
                         {member.id === employee?.id && (
                             <span className="ml-1 text-xs text-emerald-500">(본인)</span>
                         )}
@@ -368,6 +380,71 @@ export function TeamPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* 팀원 상세 정보 다이얼로그 */}
+            <Dialog open={!!selectedMember} onOpenChange={(open) => !open && setSelectedMember(null)}>
+                <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-zinc-900 dark:text-white">
+                            팀원 정보
+                        </DialogTitle>
+                    </DialogHeader>
+                    {selectedMember && (
+                        <div className="space-y-4 mt-2">
+                            <div className="grid grid-cols-[100px_1fr] gap-2 text-sm">
+                                <span className="text-zinc-500">이름</span>
+                                <span className="text-zinc-900 dark:text-white font-medium">
+                                    {selectedMember.fullName}
+                                </span>
+
+                                <span className="text-zinc-500">이메일</span>
+                                <span className="text-zinc-900 dark:text-white">
+                                    {selectedMember.email}
+                                </span>
+
+                                <span className="text-zinc-500">직급</span>
+                                <span className="text-zinc-900 dark:text-white">
+                                    {selectedMember.positionName || '-'}
+                                </span>
+
+                                <span className="text-zinc-500">조직</span>
+                                <span className="text-zinc-900 dark:text-white">
+                                    {getOrganizationName(selectedMember.organizationId)}
+                                </span>
+
+                                <span className="text-zinc-500">보안등급</span>
+                                <span className={`inline-flex w-fit px-2 py-0.5 text-xs font-medium rounded-md border ${getSecurityLevelBadge(selectedMember.securityLevel)}`}>
+                                    {selectedMember.securityLevel}
+                                </span>
+
+                                <span className="text-zinc-500">상위자</span>
+                                <span className="text-zinc-900 dark:text-white">
+                                    {getEmployeeName(selectedMember.parentId)}
+                                </span>
+
+                                <span className="text-zinc-500">가입일</span>
+                                <span className="text-zinc-900 dark:text-white">
+                                    {selectedMember.createdAt
+                                        ? new Date(selectedMember.createdAt).toLocaleDateString('ko-KR')
+                                        : '-'}
+                                </span>
+                            </div>
+
+                            <div className="pt-2 border-t">
+                                <p className="text-sm text-zinc-500 mb-2">고객 현황</p>
+                                <div className="flex items-center gap-4 text-sm">
+                                    <span className="text-zinc-600 dark:text-zinc-400">
+                                        전체 <span className="font-semibold text-zinc-900 dark:text-white">{selectedMember.customerCount}</span>명
+                                    </span>
+                                    <span className="text-purple-500">신규 {selectedMember.customersByStatus.new}</span>
+                                    <span className="text-yellow-500">상담 {selectedMember.customersByStatus.consulting}</span>
+                                    <span className="text-emerald-500">완료 {selectedMember.customersByStatus.closed}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
