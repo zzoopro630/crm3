@@ -5,6 +5,7 @@ import {
   useUpdateEmployee,
   useDeleteEmployee,
   useRestoreEmployee,
+  usePermanentDeleteEmployee,
 } from "@/hooks/useEmployees";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useAuthStore } from "@/stores/authStore";
@@ -52,6 +53,7 @@ export function EmployeesPage() {
   const updateEmployee = useUpdateEmployee();
   const deleteEmployee = useDeleteEmployee();
   const restoreEmployee = useRestoreEmployee();
+  const permanentDeleteEmployee = usePermanentDeleteEmployee();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isExcelUploadOpen, setIsExcelUploadOpen] = useState(false);
@@ -634,9 +636,9 @@ export function EmployeesPage() {
                 </div>
               ))}
 
-              {/* 비활성 사원 복원 버튼 (비활성 탭에서만) */}
+              {/* 비활성 사원 복원/삭제 버튼 (비활성 탭에서만) */}
               {showInactive && selectedIds.length > 0 && (
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
                   <Button
                     variant="outline"
                     onClick={async () => {
@@ -647,9 +649,33 @@ export function EmployeesPage() {
                       setSelectedIds([]);
                     }}
                     className="text-green-500 hover:text-green-600"
+                    disabled={restoreEmployee.isPending}
                   >
-                    <RotateCcw className="mr-2 h-4 w-4" />
+                    {restoreEmployee.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                    )}
                     선택 복원 ({selectedIds.length}명)
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      if (!window.confirm(`선택한 ${selectedIds.length}명의 사원을 완전히 삭제하시겠습니까?\n\n⚠️ 이 작업은 되돌릴 수 없습니다.`)) return;
+                      for (const id of selectedIds) {
+                        await permanentDeleteEmployee.mutateAsync(id);
+                      }
+                      setSelectedIds([]);
+                    }}
+                    className="text-red-500 hover:text-red-600"
+                    disabled={permanentDeleteEmployee.isPending}
+                  >
+                    {permanentDeleteEmployee.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="mr-2 h-4 w-4" />
+                    )}
+                    완전 삭제 ({selectedIds.length}명)
                   </Button>
                 </div>
               )}
