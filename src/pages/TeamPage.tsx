@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useTeamMembers, useTeamStats } from '@/hooks/useTeam'
 import { useOrganizations } from '@/hooks/useOrganizations'
 import { useAuthStore } from '@/stores/authStore'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
     Card,
@@ -12,7 +11,6 @@ import {
     CardTitle,
 } from '@/components/ui/card'
 import { Users, UserCheck, MessageSquare, FileText, CheckCircle, Loader2, Search, ChevronDown, ChevronRight } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import type { TeamMember } from '@/services/team'
 
 export function TeamPage() {
@@ -204,13 +202,6 @@ export function TeamPage() {
                 <span className="text-purple-500">신규 {member.customersByStatus.new}</span>
                 <span className="text-yellow-500">상담 {member.customersByStatus.consulting}</span>
                 <span className="text-emerald-500">완료 {member.customersByStatus.closed}</span>
-            </div>
-            <div className="mt-2">
-                <Link to={`/customers?manager=${member.id}`}>
-                    <Button variant="ghost" size="sm" className="h-7 text-xs w-full">
-                        고객 보기
-                    </Button>
-                </Link>
             </div>
         </div>
     )
