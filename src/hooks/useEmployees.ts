@@ -5,6 +5,7 @@ import {
     updateEmployee,
     deleteEmployee,
     restoreEmployee,
+    permanentDeleteEmployee,
     bulkCreateEmployees,
     getPendingApprovals,
     approveUser,
@@ -71,6 +72,17 @@ export function useRestoreEmployee() {
 
     return useMutation({
         mutationFn: (id: string) => restoreEmployee(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['employees'] })
+        },
+    })
+}
+
+export function usePermanentDeleteEmployee() {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        mutationFn: (id: string) => permanentDeleteEmployee(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['employees'] })
         },
