@@ -63,6 +63,12 @@ export async function restoreEmployee(id: string): Promise<Employee> {
     })
 }
 
+export async function permanentDeleteEmployee(id: string): Promise<void> {
+    await apiRequest(`/api/employees/${id}/permanent`, {
+        method: 'DELETE',
+    })
+}
+
 export async function bulkCreateEmployees(employees: CreateEmployeeInput[]): Promise<{ success: number; failed: number }> {
     let success = 0
     let failed = 0
