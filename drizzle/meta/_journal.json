@@ -43,6 +43,13 @@
       "when": 1769756490920,
       "tag": "0005_nebulous_silvermane",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1769770775461,
+      "tag": "0006_gorgeous_supernaut",
+      "breakpoints": true
     }
   ]
 }
