@@ -186,6 +186,34 @@ export const contracts = pgTable("contracts", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// ============ Contacts Table ============
+export const jobTitleEnum = pgEnum("job_title_enum", [
+  "대표",
+  "총괄이사",
+  "사업단장",
+  "지점장",
+  "팀장",
+  "실장",
+  "과장",
+  "대리",
+]);
+
+export const contacts = pgTable("contacts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  title: jobTitleEnum("title"),
+  team: text("team").default("미지정"),
+  phone: text("phone").notNull(),
+  managerId: uuid("manager_id").references((): AnyPgColumn => contacts.id, {
+    onDelete: "set null",
+  }),
+  employeeId: uuid("employee_id").references(() => employees.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at").defaultNow(),
+  deletedAt: timestamp("deleted_at"),
+});
+
 // ============ Type Exports ============
 export type Organization = typeof organizations.$inferSelect;
 export type NewOrganization = typeof organizations.$inferInsert;
@@ -204,6 +232,8 @@ export type CustomerLabel = typeof customerLabels.$inferSelect;
 export type NewCustomerLabel = typeof customerLabels.$inferInsert;
 export type Contract = typeof contracts.$inferSelect;
 export type NewContract = typeof contracts.$inferInsert;
+export type Contact = typeof contacts.$inferSelect;
+export type NewContact = typeof contacts.$inferInsert;
 
 // ============ ENUM Value Types ============
 export type SecurityLevel = (typeof securityLevelEnum.enumValues)[number];

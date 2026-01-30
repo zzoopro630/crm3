@@ -1636,6 +1636,248 @@ app.get("/api/address/search", async (c) => {
   }
 });
 
+// ============ Contacts API ============
+
+// GET /api/contacts - 활성 연락처 목록
+app.get("/api/contacts", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+
+  const { data, error } = await supabase
+    .from("contacts")
+    .select("*")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+
+  if (error) return c.json({ error: error.message }, 500);
+
+  const contacts = (data || []).map((row: Record<string, unknown>) => ({
+    id: row.id,
+    name: row.name,
+    title: row.title,
+    team: row.team,
+    phone: row.phone,
+    managerId: row.manager_id,
+    employeeId: row.employee_id,
+    createdAt: row.created_at,
+    deletedAt: row.deleted_at,
+  }));
+
+  return c.json(contacts);
+});
+
+// POST /api/contacts - 연락처 추가
+app.post("/api/contacts", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const body = await c.req.json();
+
+  const { data, error } = await supabase
+    .from("contacts")
+    .insert({
+      name: body.name,
+      title: body.title || null,
+      team: body.team || "미지정",
+      phone: body.phone,
+      manager_id: body.managerId || null,
+      employee_id: body.employeeId || null,
+    })
+    .select()
+    .single();
+
+  if (error) return c.json({ error: error.message }, 500);
+
+  return c.json({
+    id: data.id,
+    name: data.name,
+    title: data.title,
+    team: data.team,
+    phone: data.phone,
+    managerId: data.manager_id,
+    employeeId: data.employee_id,
+    createdAt: data.created_at,
+    deletedAt: data.deleted_at,
+  }, 201);
+});
+
+// PUT /api/contacts/:id - 연락처 수정
+app.put("/api/contacts/:id", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const id = c.req.param("id");
+  const body = await c.req.json();
+
+  const updateData: Record<string, unknown> = {};
+  if (body.name !== undefined) updateData.name = body.name;
+  if (body.title !== undefined) updateData.title = body.title;
+  if (body.team !== undefined) updateData.team = body.team;
+  if (body.phone !== undefined) updateData.phone = body.phone;
+  if (body.managerId !== undefined) updateData.manager_id = body.managerId;
+  if (body.employeeId !== undefined) updateData.employee_id = body.employeeId;
+
+  const { data, error } = await supabase
+    .from("contacts")
+    .update(updateData)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) return c.json({ error: error.message }, 500);
+
+  return c.json({
+    id: data.id,
+    name: data.name,
+    title: data.title,
+    team: data.team,
+    phone: data.phone,
+    managerId: data.manager_id,
+    employeeId: data.employee_id,
+    createdAt: data.created_at,
+    deletedAt: data.deleted_at,
+  });
+});
+
+// DELETE /api/contacts/:id - 소프트 삭제
+app.delete("/api/contacts/:id", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const id = c.req.param("id");
+
+  const { error } = await supabase
+    .from("contacts")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json({ success: true });
+});
+
+// GET /api/contacts/trash - 휴지통 목록
+app.get("/api/contacts/trash", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+
+  const { data, error } = await supabase
+    .from("contacts")
+    .select("*")
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
+
+  if (error) return c.json({ error: error.message }, 500);
+
+  const contacts = (data || []).map((row: Record<string, unknown>) => ({
+    id: row.id,
+    name: row.name,
+    title: row.title,
+    team: row.team,
+    phone: row.phone,
+    managerId: row.manager_id,
+    employeeId: row.employee_id,
+    createdAt: row.created_at,
+    deletedAt: row.deleted_at,
+  }));
+
+  return c.json(contacts);
+});
+
+// POST /api/contacts/:id/restore - 복원
+app.post("/api/contacts/:id/restore", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const id = c.req.param("id");
+
+  const { error } = await supabase
+    .from("contacts")
+    .update({ deleted_at: null })
+    .eq("id", id);
+
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json({ success: true });
+});
+
+// DELETE /api/contacts/:id/permanent - 완전 삭제
+app.delete("/api/contacts/:id/permanent", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const id = c.req.param("id");
+
+  const { error } = await supabase
+    .from("contacts")
+    .delete()
+    .eq("id", id);
+
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json({ success: true });
+});
+
+// DELETE /api/contacts/trash/empty - 휴지통 비우기
+app.delete("/api/contacts/trash/empty", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+
+  const { error } = await supabase
+    .from("contacts")
+    .delete()
+    .not("deleted_at", "is", null);
+
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json({ success: true });
+});
+
+// POST /api/contacts/bulk - Excel 일괄 등록 (2-pass)
+app.post("/api/contacts/bulk", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const body = await c.req.json();
+  const { contacts, managerNames } = body as {
+    contacts: Array<{
+      name: string;
+      title?: string | null;
+      team?: string;
+      phone: string;
+    }>;
+    managerNames: Record<string, string>; // index -> manager name
+  };
+
+  // Pass 1: Insert all contacts without manager_id
+  const insertData = contacts.map((c) => ({
+    name: c.name,
+    title: c.title || null,
+    team: c.team || "미지정",
+    phone: c.phone,
+  }));
+
+  const { data: inserted, error: insertError } = await supabase
+    .from("contacts")
+    .insert(insertData)
+    .select();
+
+  if (insertError) return c.json({ error: insertError.message }, 500);
+  if (!inserted) return c.json({ error: "Insert failed" }, 500);
+
+  // Pass 2: Resolve manager names and update manager_id
+  // Build name → id map from ALL active contacts
+  const { data: allContacts } = await supabase
+    .from("contacts")
+    .select("id, name")
+    .is("deleted_at", null);
+
+  const nameToId = new Map<string, string>();
+  for (const c of allContacts || []) {
+    nameToId.set(c.name, c.id);
+  }
+
+  let updated = 0;
+  for (const [indexStr, managerName] of Object.entries(managerNames)) {
+    const index = parseInt(indexStr);
+    const contact = inserted[index];
+    const managerId = nameToId.get(managerName);
+    if (contact && managerId) {
+      await supabase
+        .from("contacts")
+        .update({ manager_id: managerId })
+        .eq("id", contact.id);
+      updated++;
+    }
+  }
+
+  return c.json({
+    success: inserted.length,
+    managersLinked: updated,
+  }, 201);
+});
+
 // Cloudflare Pages Functions export
 import { handle } from "hono/cloudflare-pages";
 export const onRequest = handle(app);
