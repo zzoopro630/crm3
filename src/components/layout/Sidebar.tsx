@@ -14,14 +14,17 @@ import {
   ChevronRight,
   Trash2,
   BarChart3,
+  BookUser,
 } from "lucide-react";
 import type { SecurityLevel } from "@/types/employee";
+import { useOrganizations } from "@/hooks/useOrganizations";
 
 interface NavItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   allowedLevels?: SecurityLevel[];
+  allowedOrgs?: string[];
   isSubmenu?: boolean;
   submenuItems?: NavItem[];
 }
@@ -46,6 +49,12 @@ const navItems: NavItem[] = [
     href: "/team",
     icon: UsersRound,
     allowedLevels: ["F1", "F2", "F3", "F4", "F5"],
+  },
+  {
+    title: "연락처",
+    href: "/contacts-direct",
+    icon: BookUser,
+    allowedOrgs: ["직할"],
   },
   {
     title: "광고 분석",
@@ -124,6 +133,7 @@ export function Sidebar({
 }: SidebarProps) {
   const location = useLocation();
   const { employee } = useAuthStore();
+  const { data: organizations = [] } = useOrganizations();
 
   // 현재 경로가 하위 메뉴에 속하는지 확인
   const isInSubmenu = (item: NavItem): boolean => {
@@ -155,6 +165,11 @@ export function Sidebar({
     return null;
   };
 
+  // 사원의 소속 조직명 조회
+  const employeeOrgName = employee?.organizationId
+    ? organizations.find((o) => o.id === employee.organizationId)?.name || ''
+    : '';
+
   const visibleNavItems = navItems
     .filter((item) => {
       if (!employee) return false;
@@ -163,6 +178,12 @@ export function Sidebar({
         !item.allowedLevels.includes(employee.securityLevel)
       )
         return false;
+      // allowedOrgs: F1은 무조건 통과, 그 외는 소속 조직명 매칭
+      if (item.allowedOrgs) {
+        if (employee.securityLevel === 'F1') return true;
+        if (!item.allowedOrgs.some((org) => employeeOrgName.includes(org)))
+          return false;
+      }
       return true;
     })
     .map((item) => {
