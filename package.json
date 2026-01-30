@@ -59,6 +59,7 @@
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "csv-parse": "^6.1.0",
     "dotenv": "^17.2.3",
     "drizzle-kit": "^0.31.8",
     "eslint": "^9.39.1",
