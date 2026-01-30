@@ -132,6 +132,9 @@ export default function TrashPage() {
                   <thead>
                     <tr className="border-b border-border bg-secondary/30">
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                        출처
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">
                         고객명
                       </th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">
@@ -154,6 +157,15 @@ export default function TrashPage() {
                         key={customer.id}
                         className="border-b border-border hover:bg-secondary/20"
                       >
+                        <td className="py-3 px-4">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            customer.type === "db"
+                              ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                              : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                          }`}>
+                            {customer.type === "db" ? "상담관리" : "고객관리"}
+                          </span>
+                        </td>
                         <td className="py-3 px-4 font-medium">
                           {customer.name}
                         </td>
