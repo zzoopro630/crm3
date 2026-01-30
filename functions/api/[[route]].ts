@@ -54,7 +54,7 @@ app.get("/api/customers", async (c) => {
 
   const offset = (page - 1) * limit;
 
-  let query = supabase.from("customers").select("*", { count: "exact" });
+  let query = supabase.from("customers").select("*", { count: "exact" }).is("deleted_at", null);
 
   if (search) {
     query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
@@ -138,6 +138,54 @@ app.get("/api/customers", async (c) => {
     limit,
     totalPages: Math.ceil((count || 0) / limit),
   });
+});
+
+// 휴지통 목록 (`:id` 라우트보다 먼저 정의해야 함)
+app.get("/api/customers/trash", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const page = parseInt(c.req.query("page") || "1");
+  const limit = parseInt(c.req.query("limit") || "20");
+  const search = c.req.query("search") || "";
+  const offset = (page - 1) * limit;
+
+  let query = supabase.from("customers").select("*", { count: "exact" }).not("deleted_at", "is", null);
+
+  if (search) {
+    query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%`);
+  }
+
+  query = query.order("deleted_at", { ascending: false });
+  query = query.range(offset, offset + limit - 1);
+
+  const { data, count, error } = await query;
+
+  if (error) {
+    return c.json({ error: error.message }, 500);
+  }
+
+  const managerIds = [...new Set((data || []).map((c) => c.manager_id).filter(Boolean))];
+  let managersMap: Record<string, string> = {};
+  if (managerIds.length > 0) {
+    const { data: managers } = await supabase.from("employees").select("id, full_name").in("id", managerIds);
+    if (managers) {
+      managersMap = Object.fromEntries(managers.map((m) => [m.id, m.full_name]));
+    }
+  }
+
+  const customers = (data || []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    phone: row.phone,
+    email: row.email,
+    status: row.status,
+    type: row.type,
+    managerId: row.manager_id,
+    managerName: managersMap[row.manager_id] || null,
+    deletedAt: row.deleted_at,
+    createdAt: row.created_at,
+  }));
+
+  return c.json({ data: customers, total: count || 0, page, limit, totalPages: Math.ceil((count || 0) / limit) });
 });
 
 app.get("/api/customers/:id", async (c) => {
@@ -277,7 +325,42 @@ app.delete("/api/customers/:id", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
+  // Soft delete
+  const { error } = await supabase
+    .from("customers")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) {
+    return c.json({ error: error.message }, 500);
+  }
+
+  return c.json({ success: true });
+});
+
+// 완전 삭제
+app.delete("/api/customers/:id/permanent", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const id = c.req.param("id");
+
   const { error } = await supabase.from("customers").delete().eq("id", id);
+
+  if (error) {
+    return c.json({ error: error.message }, 500);
+  }
+
+  return c.json({ success: true });
+});
+
+// 복원
+app.post("/api/customers/:id/restore", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const id = c.req.param("id");
+
+  const { error } = await supabase
+    .from("customers")
+    .update({ deleted_at: null, updated_at: new Date().toISOString() })
+    .eq("id", id);
 
   if (error) {
     return c.json({ error: error.message }, 500);
