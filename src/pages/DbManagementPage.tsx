@@ -31,7 +31,6 @@ import type {
   CreateCustomerInput,
 } from "@/types/customer";
 import { CUSTOMER_STATUSES } from "@/types/customer";
-import { pad } from "kr-format";
 
 // 폼 에러 타입
 interface FormErrors {
@@ -51,24 +50,19 @@ const validateName = (name: string): string | undefined => {
   return undefined;
 };
 
-// 전화번호 검증 함수 (8자리 숫자)
-const validatePhone = (phoneDigits: string): string | undefined => {
-  if (!phoneDigits) return "연락처를 입력해주세요.";
-  const digits = phoneDigits.replace(/\D/g, "");
-  if (digits.length !== 8) return "전화번호 8자리를 입력해주세요.";
+// 전화번호 검증 함수 (010-XXXX-XXXX)
+const validatePhone = (phone: string): string | undefined => {
+  if (!phone) return "연락처를 입력해주세요.";
+  if (!/^010-\d{4}-\d{4}$/.test(phone)) return "올바른 전화번호 형식이 아닙니다 (010-0000-0000)";
   return undefined;
 };
 
-// 전화번호 포맷팅 함수 (8자리 → 010-XXXX-XXXX)
-const formatPhoneForSave = (digits: string): string => {
-  if (!digits || digits.length !== 8) return "";
-  // 010 + 8자리를 kr-format으로 포맷팅
-  const fullNumber = "010" + digits;
-  try {
-    return pad.phone(fullNumber);
-  } catch {
-    return `010-${digits.slice(0, 4)}-${digits.slice(4)}`;
-  }
+// 전화번호 포맷팅 함수 (11자리 자유 입력, 자동 하이픈)
+const formatPhoneNumber = (value: string): string => {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
 };
 
 // 탭 타입
@@ -151,14 +145,12 @@ export default function DbManagementPage() {
     setFormErrors((prev) => ({ ...prev, name: error }));
   }, [formData.name]);
 
-  // 전화번호 입력 핸들러 (숫자 8자리만)
+  // 전화번호 입력 핸들러 (11자리 자유 입력)
   const handlePhoneChange = useCallback(
     (value: string) => {
-      // 숫자만 추출하고 8자리로 제한
-      const digits = value.replace(/\D/g, "").slice(0, 8);
-      setFormData((prev) => ({ ...prev, phone: digits }));
-      // 입력 중에는 에러 클리어
-      if (formErrors.phone && digits) {
+      const formatted = formatPhoneNumber(value);
+      setFormData((prev) => ({ ...prev, phone: formatted }));
+      if (formErrors.phone && formatted) {
         setFormErrors((prev) => ({ ...prev, phone: undefined }));
       }
     },
@@ -385,9 +377,7 @@ export default function DbManagementPage() {
 
     setIsSubmitting(true);
     try {
-      // 전화번호를 010-XXXX-XXXX 형식으로 변환하여 저장
-      const formattedPhone = formatPhoneForSave(formData.phone || "");
-      await createCustomer({ ...formData, phone: formattedPhone });
+      await createCustomer({ ...formData });
       setShowAddModal(false);
       setFormData({
         name: "",
@@ -1097,34 +1087,26 @@ export default function DbManagementPage() {
                 <Label htmlFor="phone">
                   연락처 <span className="text-red-500">*</span>
                 </Label>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-muted-foreground whitespace-nowrap bg-muted px-3 py-2 rounded-l-md border border-r-0">
-                    010-
-                  </span>
-                  <Input
-                    id="phone"
-                    value={formData.phone || ""}
-                    onChange={(e) => handlePhoneChange(e.target.value)}
-                    onBlur={handlePhoneBlur}
-                    placeholder="12345678"
-                    maxLength={8}
-                    inputMode="numeric"
-                    className={`flex-1 rounded-l-none ${
-                      formErrors.phone
-                        ? "border-red-500 focus-visible:ring-red-500"
-                        : ""
-                    }`}
-                  />
-                </div>
+                <Input
+                  id="phone"
+                  value={formData.phone || ""}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  onBlur={handlePhoneBlur}
+                  placeholder="010-0000-0000"
+                  maxLength={13}
+                  inputMode="numeric"
+                  className={
+                    formErrors.phone
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : ""
+                  }
+                />
                 {formErrors.phone && (
                   <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
                     {formErrors.phone}
                   </p>
                 )}
-                <p className="text-muted-foreground text-xs mt-1">
-                  숫자 8자리만 입력해주세요.
-                </p>
               </div>
               <div>
                 <Label htmlFor="interestProduct">
