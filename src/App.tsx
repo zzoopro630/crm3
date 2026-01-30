@@ -19,6 +19,10 @@ import { PendingApprovalsPage } from '@/pages/PendingApprovalsPage'
 import { SystemSettingsPage } from '@/pages/SystemSettingsPage'
 import DbManagementPage from '@/pages/DbManagementPage'
 import TrashPage from '@/pages/TrashPage'
+import { AdsPage } from '@/pages/AdsPage'
+import AdsNDataPage from '@/pages/ads/AdsNDataPage'
+import AdsReportPage from '@/pages/ads/AdsReportPage'
+import AdsWeeklyPage from '@/pages/ads/AdsWeeklyPage'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -71,6 +75,14 @@ function AppContent() {
         <Route path="/db-management" element={<DbManagementPage />} />
         <Route path="/trash" element={<TrashPage />} />
         <Route path="/team" element={<TeamPage />} />
+
+        {/* Ads nested routes (F1 only) */}
+        <Route path="/ads" element={<AdsPage />}>
+          <Route index element={<Navigate to="ndata" replace />} />
+          <Route path="ndata" element={<AdsNDataPage />} />
+          <Route path="report" element={<AdsReportPage />} />
+          <Route path="weekly" element={<AdsWeeklyPage />} />
+        </Route>
 
         {/* Settings nested routes */}
         <Route path="/settings" element={<SettingsPage />}>

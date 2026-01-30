@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronRight,
   Trash2,
+  BarChart3,
 } from "lucide-react";
 import type { SecurityLevel } from "@/types/employee";
 
@@ -45,6 +46,33 @@ const navItems: NavItem[] = [
     href: "/team",
     icon: UsersRound,
     allowedLevels: ["F1", "F2", "F3", "F4", "F5"],
+  },
+  {
+    title: "광고 분석",
+    href: "/ads",
+    icon: BarChart3,
+    allowedLevels: ["F1"],
+    isSubmenu: true,
+    submenuItems: [
+      {
+        title: "N-DATA",
+        href: "/ads/ndata",
+        icon: BarChart3,
+        allowedLevels: ["F1"],
+      },
+      {
+        title: "보고서",
+        href: "/ads/report",
+        icon: BarChart3,
+        allowedLevels: ["F1"],
+      },
+      {
+        title: "주간데이터",
+        href: "/ads/weekly",
+        icon: BarChart3,
+        allowedLevels: ["F1"],
+      },
+    ],
   },
   {
     title: "설정",
