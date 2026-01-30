@@ -173,11 +173,7 @@ export function Sidebar({
           {/* Logo */}
           <div className="flex h-16 items-center justify-between px-4 border-b border-border">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <span className="text-sm font-bold text-primary-foreground">
-                  FC
-                </span>
-              </div>
+              <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded-lg object-contain" />
               {!isCollapsed && (
                 <span className="text-lg font-semibold text-foreground">
                   CRM
