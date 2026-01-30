@@ -12,6 +12,7 @@ import {
   Database,
   ChevronDown,
   ChevronRight,
+  Trash2,
 } from "lucide-react";
 import type { SecurityLevel } from "@/types/employee";
 
@@ -32,6 +33,12 @@ const navItems: NavItem[] = [
     href: "/db-management",
     icon: Database,
     allowedLevels: ["F1", "F2", "F3", "F4", "F5"],
+  },
+  {
+    title: "휴지통",
+    href: "/trash",
+    icon: Trash2,
+    allowedLevels: ["F1", "F2"],
   },
   {
     title: "팀 관리",

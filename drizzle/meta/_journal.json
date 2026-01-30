@@ -36,6 +36,13 @@
       "when": 1768450753461,
       "tag": "0004_cloudy_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1769756490920,
+      "tag": "0005_nebulous_silvermane",
+      "breakpoints": true
     }
   ]
 }

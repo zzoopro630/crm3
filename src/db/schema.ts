@@ -121,6 +121,7 @@ export const customers = pgTable("customers", {
   annualIncome: text("annual_income"),
   maritalStatus: text("marital_status"),
   notes: text("notes"),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
