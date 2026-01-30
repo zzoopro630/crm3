@@ -53,14 +53,13 @@ import type {
 import { CUSTOMER_STATUSES, GENDER_OPTIONS } from "@/types/customer";
 import { cn } from "@/lib/utils";
 
-// 전화번호 포맷팅 함수 (010- 고정, 8자리만 입력)
+// 전화번호 포맷팅 함수 (11자리 자유 입력, 자동 하이픈)
 function formatPhoneNumber(value: string): string {
-  // Remove all non-digits
-  const digits = value.replace(/\D/g, "");
-  // Always start with 010
-  if (digits.length <= 3) return "010-";
-  if (digits.length <= 7) return `010-${digits.slice(3)}`;
-  return `010-${digits.slice(3, 7)}-${digits.slice(7, 11)}`;
+  // 숫자만 추출, 11자리 제한
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
 }
 
 // 이메일 검증
@@ -198,7 +197,7 @@ export function CustomersPage() {
 
   const [formData, setFormData] = useState<CreateCustomerInput>({
     name: "",
-    phone: "010-",
+    phone: "",
     email: "",
     address: "",
     gender: "",
@@ -226,7 +225,7 @@ export function CustomersPage() {
     }
 
     if (field === "phone") {
-      if (!formData.phone || formData.phone === "010-") {
+      if (!formData.phone) {
         newErrors.phone = "전화번호를 입력하세요";
       } else if (!/^010-\d{4}-\d{4}$/.test(formData.phone)) {
         newErrors.phone = "올바른 전화번호 형식이 아닙니다 (010-0000-0000)";
@@ -349,7 +348,7 @@ export function CustomersPage() {
   const handleOpenSheet = () => {
     setFormData({
       name: "",
-      phone: "010-",
+      phone: "",
       email: "",
       address: "",
       gender: "",
@@ -382,7 +381,7 @@ export function CustomersPage() {
     }
 
     // 전화번호 검증
-    if (!formData.phone || formData.phone === "010-") {
+    if (!formData.phone) {
       errors.phone = "전화번호를 입력하세요";
     } else if (!/^010-\d{4}-\d{4}$/.test(formData.phone)) {
       errors.phone = "올바른 전화번호 형식이 아닙니다 (010-0000-0000)";
@@ -642,9 +641,11 @@ export function CustomersPage() {
                         {sortConfig.key === "createdAt" &&
                           (sortConfig.direction === "asc" ? "↑" : "↓")}
                       </th>
+                      {(employee?.securityLevel === "F1" || employee?.securityLevel === "F2") && (
                       <th className="text-right py-4 px-4 text-sm font-medium text-muted-foreground">
                         작업
                       </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -715,6 +716,7 @@ export function CustomersPage() {
                                 )
                               : "-"}
                           </td>
+                          {(employee?.securityLevel === "F1" || employee?.securityLevel === "F2") && (
                           <td className="py-3 px-4 text-right">
                             <div className="flex justify-end gap-2">
                               <Button
@@ -727,6 +729,7 @@ export function CustomersPage() {
                               </Button>
                             </div>
                           </td>
+                          )}
                         </tr>
                       );
                     })}

@@ -6,6 +6,9 @@ import {
     updateCustomer,
     deleteCustomer,
     bulkCreateCustomers,
+    getTrashCustomers,
+    permanentDeleteCustomer,
+    restoreCustomer,
 } from '@/services/customers'
 import type { CustomerListParams, CreateCustomerInput, UpdateCustomerInput } from '@/types/customer'
 
@@ -61,6 +64,36 @@ export function useDeleteCustomer() {
     return useMutation({
         mutationFn: (id: number) => deleteCustomer(id),
         onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['customers'] })
+        },
+    })
+}
+
+// ============ Trash Hooks ============
+
+export function useTrashCustomers(params: CustomerListParams = {}) {
+    return useQuery({
+        queryKey: ['customers-trash', params],
+        queryFn: () => getTrashCustomers(params),
+    })
+}
+
+export function usePermanentDeleteCustomer() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (id: number) => permanentDeleteCustomer(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['customers-trash'] })
+        },
+    })
+}
+
+export function useRestoreCustomer() {
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (id: number) => restoreCustomer(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['customers-trash'] })
             queryClient.invalidateQueries({ queryKey: ['customers'] })
         },
     })

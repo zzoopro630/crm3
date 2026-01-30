@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useSources } from "@/hooks/useSources";
 import { useAuthStore } from "@/stores/authStore";
@@ -114,12 +115,11 @@ export default function DbManagementPage() {
     filters.source,
   ].filter(Boolean).length;
 
+  const navigate = useNavigate();
+
   // 모달 상태
   const [showAddModal, setShowAddModal] = useState(false);
   const [notesCustomerId, setNotesCustomerId] = useState<number | null>(null);
-  const [detailCustomerId, setDetailCustomerId] = useState<number | null>(null);
-  const [detailFormData, setDetailFormData] = useState<Partial<CustomerWithManager>>({});
-  const [isDetailSaving, setIsDetailSaving] = useState(false);
   const [formData, setFormData] = useState<CreateCustomerInput>({
     name: "",
     phone: "",
@@ -354,61 +354,7 @@ export default function DbManagementPage() {
   };
 
   const handleCustomerClick = (customerId: number) => {
-    const customer = dbList.find((c) => c.id === customerId);
-    if (customer) {
-      setDetailFormData({
-        id: customer.id,
-        name: customer.name,
-        phone: customer.phone,
-        email: customer.email,
-        address: customer.address,
-        gender: customer.gender,
-        birthdate: customer.birthdate,
-        company: customer.company,
-        jobTitle: customer.jobTitle,
-        source: customer.source,
-        status: customer.status,
-        managerId: customer.managerId,
-        interestProduct: customer.interestProduct,
-        managerName: customer.managerName,
-        createdAt: customer.createdAt,
-      });
-      setDetailCustomerId(customerId);
-    }
-  };
-
-  const handleDetailClose = () => {
-    setDetailCustomerId(null);
-    setDetailFormData({});
-  };
-
-  const handleDetailSave = async () => {
-    if (!detailCustomerId) return;
-    setIsDetailSaving(true);
-    try {
-      const updateInput = {
-        name: detailFormData.name,
-        phone: detailFormData.phone || undefined,
-        email: detailFormData.email || undefined,
-        address: detailFormData.address || undefined,
-        gender: detailFormData.gender || undefined,
-        birthdate: detailFormData.birthdate || undefined,
-        company: detailFormData.company || undefined,
-        jobTitle: detailFormData.jobTitle || undefined,
-        source: detailFormData.source || undefined,
-        status: detailFormData.status,
-        managerId: detailFormData.managerId || undefined,
-        interestProduct: detailFormData.interestProduct || undefined,
-      };
-      await updateCustomer(detailCustomerId, updateInput);
-      fetchDbList();
-      handleDetailClose();
-    } catch (error) {
-      console.error("Failed to update customer:", error);
-      alert("저장에 실패했습니다.");
-    } finally {
-      setIsDetailSaving(false);
-    }
+    navigate(`/customers/${customerId}`);
   };
 
   const handleNotesClick = (customerId: number) => {
@@ -1286,192 +1232,6 @@ export default function DbManagementPage() {
         />
       )}
 
-      {/* 고객 상세 모달 */}
-      {detailCustomerId && (
-        <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-          onClick={handleDetailClose}
-        >
-          <div
-            className="bg-white dark:bg-zinc-900 rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h3 className="text-lg font-semibold">고객 상세</h3>
-                <p className="text-sm text-muted-foreground">
-                  {isAdmin ? "고객 정보를 수정할 수 있습니다" : "상태만 변경할 수 있습니다"}
-                </p>
-              </div>
-              <Button variant="ghost" size="icon" onClick={handleDetailClose}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="space-y-4">
-              {/* 기본 정보 */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>고객명</Label>
-                  {isAdmin ? (
-                    <Input
-                      value={detailFormData.name || ""}
-                      onChange={(e) => setDetailFormData((prev) => ({ ...prev, name: e.target.value }))}
-                    />
-                  ) : (
-                    <p className="text-sm py-2 px-3 bg-muted rounded-md">{detailFormData.name || "-"}</p>
-                  )}
-                </div>
-                <div>
-                  <Label>연락처</Label>
-                  {isAdmin ? (
-                    <Input
-                      value={detailFormData.phone || ""}
-                      onChange={(e) => setDetailFormData((prev) => ({ ...prev, phone: e.target.value }))}
-                    />
-                  ) : (
-                    <p className="text-sm py-2 px-3 bg-muted rounded-md">{detailFormData.phone || "-"}</p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <Label>관심항목</Label>
-                {isAdmin ? (
-                  <Input
-                    value={detailFormData.interestProduct || ""}
-                    onChange={(e) => setDetailFormData((prev) => ({ ...prev, interestProduct: e.target.value }))}
-                  />
-                ) : (
-                  <p className="text-sm py-2 px-3 bg-muted rounded-md">{detailFormData.interestProduct || "-"}</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>상태</Label>
-                  <select
-                    value={detailFormData.status || ""}
-                    onChange={(e) => setDetailFormData((prev) => ({ ...prev, status: e.target.value }))}
-                    className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
-                  >
-                    {CUSTOMER_STATUSES.map((s) => (
-                      <option key={s.value} value={s.value}>{s.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <Label>담당자</Label>
-                  {isAdmin ? (
-                    <select
-                      value={detailFormData.managerId || ""}
-                      onChange={(e) => setDetailFormData((prev) => ({ ...prev, managerId: e.target.value }))}
-                      className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
-                    >
-                      <option value="">선택</option>
-                      {filteredEmployees?.map((emp) => (
-                        <option key={emp.id} value={emp.id}>{emp.fullName}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="text-sm py-2 px-3 bg-muted rounded-md">{detailFormData.managerName || "-"}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>유입경로</Label>
-                  {isAdmin ? (
-                    <select
-                      value={detailFormData.source || ""}
-                      onChange={(e) => setDetailFormData((prev) => ({ ...prev, source: e.target.value }))}
-                      className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
-                    >
-                      <option value="">선택</option>
-                      {sources?.map((src) => (
-                        <option key={src.id} value={src.name}>{src.name}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <p className="text-sm py-2 px-3 bg-muted rounded-md">{detailFormData.source || "-"}</p>
-                  )}
-                </div>
-                <div>
-                  <Label>등록일</Label>
-                  <p className="text-sm py-2 px-3 bg-muted rounded-md">
-                    {detailFormData.createdAt ? new Date(detailFormData.createdAt).toLocaleDateString("ko-KR") : "-"}
-                  </p>
-                </div>
-              </div>
-
-              {/* 추가 정보 (F1,F2만 수정 가능) */}
-              {isAdmin && (
-                <>
-                  <div className="border-t pt-4 mt-4">
-                    <p className="text-sm font-medium text-muted-foreground mb-3">추가 정보</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>이메일</Label>
-                      <Input
-                        type="email"
-                        value={detailFormData.email || ""}
-                        onChange={(e) => setDetailFormData((prev) => ({ ...prev, email: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>성별</Label>
-                      <select
-                        value={detailFormData.gender || ""}
-                        onChange={(e) => setDetailFormData((prev) => ({ ...prev, gender: e.target.value }))}
-                        className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
-                      >
-                        <option value="">선택</option>
-                        <option value="남성">남성</option>
-                        <option value="여성">여성</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>생년월일</Label>
-                      <Input
-                        type="date"
-                        value={detailFormData.birthdate || ""}
-                        onChange={(e) => setDetailFormData((prev) => ({ ...prev, birthdate: e.target.value }))}
-                      />
-                    </div>
-                    <div>
-                      <Label>회사</Label>
-                      <Input
-                        value={detailFormData.company || ""}
-                        onChange={(e) => setDetailFormData((prev) => ({ ...prev, company: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label>주소</Label>
-                    <Input
-                      value={detailFormData.address || ""}
-                      onChange={(e) => setDetailFormData((prev) => ({ ...prev, address: e.target.value }))}
-                    />
-                  </div>
-                </>
-              )}
-
-              <div className="flex gap-3 pt-4 border-t">
-                <Button variant="outline" className="flex-1" onClick={handleDetailClose}>
-                  취소
-                </Button>
-                <Button className="flex-1" onClick={handleDetailSave} disabled={isDetailSaving}>
-                  {isDetailSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  저장
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

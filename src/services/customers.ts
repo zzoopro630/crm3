@@ -97,6 +97,28 @@ export async function deleteCustomer(id: number): Promise<void> {
   });
 }
 
+// ============ Trash (Soft Delete) Services ============
+
+export async function getTrashCustomers(
+  params: CustomerListParams = {}
+): Promise<CustomerListResponse> {
+  const { page = 1, limit = 20 } = params;
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  if (params.filters?.search) searchParams.set("search", params.filters.search);
+  return apiRequest<CustomerListResponse>(`/api/customers/trash?${searchParams}`);
+}
+
+export async function permanentDeleteCustomer(id: number): Promise<void> {
+  await apiRequest(`/api/customers/${id}/permanent`, { method: "DELETE" });
+}
+
+export async function restoreCustomer(id: number): Promise<void> {
+  await apiRequest(`/api/customers/${id}/restore`, { method: "POST" });
+}
+
 export async function bulkCreateCustomers(
   customers: CreateCustomerInput[],
   managerId: string
