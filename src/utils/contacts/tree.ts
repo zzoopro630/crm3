@@ -6,7 +6,7 @@ const TITLE_PRIORITY: Record<string, number> = Object.fromEntries(
 )
 
 const TEAM_ORDER = [
-  '채널대표', '총무팀', '지원팀', '직할1', '직할3', 'Zenith',
+  '경영지원', '영업1팀', '영업2팀', '영업3팀',
 ] as const
 
 export function getTitlePriority(title: JobTitle | null): number {

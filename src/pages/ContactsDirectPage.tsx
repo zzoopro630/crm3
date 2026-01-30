@@ -239,14 +239,14 @@ export default function ContactsDirectPage() {
 // --- Contact Card Sub-Component ---
 
 const TITLE_COLORS: Record<string, string> = {
-  대표: 'text-amber-600 dark:text-amber-400',
-  총괄이사: 'text-purple-600 dark:text-purple-400',
-  사업단장: 'text-blue-600 dark:text-blue-400',
-  지점장: 'text-green-600 dark:text-green-400',
-  팀장: 'text-teal-600 dark:text-teal-400',
-  실장: 'text-sky-600 dark:text-sky-400',
-  과장: 'text-indigo-500 dark:text-indigo-400',
-  대리: 'text-slate-500 dark:text-slate-400',
+  대표: 'bg-gradient-to-r from-amber-500 to-yellow-400 text-white',
+  총괄이사: 'bg-gradient-to-r from-purple-500 to-violet-400 text-white',
+  사업단장: 'bg-gradient-to-r from-blue-500 to-cyan-400 text-white',
+  지점장: 'bg-gradient-to-r from-green-500 to-emerald-400 text-white',
+  팀장: 'bg-gradient-to-r from-teal-500 to-green-400 text-white',
+  실장: 'bg-gradient-to-r from-sky-500 to-blue-400 text-white',
+  과장: 'bg-gradient-to-r from-indigo-400 to-blue-300 text-white',
+  대리: 'bg-gradient-to-r from-slate-400 to-gray-300 text-white',
 }
 
 function ContactCard({
@@ -273,9 +273,12 @@ function ContactCard({
           <div className="flex items-center gap-2">
             <span className="font-medium truncate">{contact.name}</span>
             {contact.title && (
-              <span className={`text-xs font-medium shrink-0 ${TITLE_COLORS[contact.title] || 'text-muted-foreground'}`}>
+              <Badge
+                variant="secondary"
+                className={`text-xs shrink-0 ${TITLE_COLORS[contact.title] || ''}`}
+              >
                 {contact.title}
-              </span>
+              </Badge>
             )}
           </div>
           <p className="text-sm text-muted-foreground mt-1">
