@@ -86,12 +86,40 @@ functions/api/[[route]].ts  # Hono REST API (Cloudflare Pages)
 - `contracts`: 고객별 계약 정보
 - `customer_notes`: 고객 메모
 - `pending_approvals`: 신규 사용자 승인 대기
+- `contacts`: 조직 연락처 (직할 조직 + F1 전용)
 
 ## Git Workflow
 
 커밋 메시지: `<type>(<scope>): <설명>` (feat, fix, docs, refactor, chore)
 
 브랜치: `feature/이슈번호-간단한설명` (예: `feature/15-user-dropdown`)
+
+### PR 생성 규칙 (필수)
+
+**main에 직접 커밋 금지.** 항상 feature 브랜치에서 작업 후 PR 생성.
+
+```bash
+# 1. 최신 main에서 브랜치 생성
+git checkout main && git pull
+git checkout -b feature/xxx
+
+# 2. 작업 후 커밋
+git add ... && git commit -m "..."
+
+# 3. PR 전에 main rebase (충돌 방지)
+git fetch origin
+git rebase origin/main
+
+# 4. push + PR 생성
+git push -u origin feature/xxx
+gh pr create ...
+
+# 5. 병합 후 로컬 정리
+git checkout main && git pull
+git branch -d feature/xxx
+```
+
+**충돌 해결 시 주의**: `git merge main` 대신 `git rebase origin/main` 사용. rebase 중 충돌 시 현재 작업 코드가 유지되므로 혼동 없음.
 
 ## Environment Variables
 

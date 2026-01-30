@@ -1,6 +1,5 @@
 import { config } from 'dotenv'
 import { drizzle } from 'drizzle-orm/postgres-js'
-import postgres from 'postgres'
 import { employees } from './schema'
 
 // Load .env.local
@@ -16,8 +15,7 @@ if (!DATABASE_URL) {
 async function seed() {
     console.log('🌱 Seeding database...')
 
-    const client = postgres(DATABASE_URL as string)
-    const db = drizzle(client)
+    const db = drizzle(DATABASE_URL as string)
 
     // 최초 관리자 등록 - 본인 이메일로 변경하세요!
     const adminEmail = process.argv[2]
@@ -46,7 +44,7 @@ async function seed() {
         }
     }
 
-    await client.end()
+    await (db as unknown as { $client: { end: () => Promise<void> } }).$client.end()
     console.log('🌱 Seeding complete!')
 }
 
