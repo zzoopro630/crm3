@@ -28,7 +28,7 @@ import {
     CircleUser
 } from 'lucide-react'
 import { SidebarTrigger } from './Sidebar'
-import { Breadcrumb, useBreadcrumbs } from './Breadcrumb'
+import { Breadcrumb } from './Breadcrumb'
 import { SECURITY_LEVELS } from '@/types/employee'
 
 interface HeaderProps {
@@ -39,8 +39,6 @@ export function Header({ onSidebarToggle }: HeaderProps) {
     const navigate = useNavigate()
     const { theme, setTheme } = useThemeStore()
     const { signOut, user, employee } = useAuthStore()
-    const { title } = useBreadcrumbs()
-
     const handleSignOut = async () => {
         await signOut()
         navigate('/login')
