@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
@@ -207,6 +208,39 @@ export function Sidebar({
 
   const activeItem = getActiveItem();
 
+  // 서브메뉴 열림/닫힘 상태 관리 (데스크탑용)
+  const [openSubmenus, setOpenSubmenus] = useState<Set<string>>(() => {
+    // 초기값: 현재 경로에 해당하는 서브메뉴는 열린 상태
+    const initial = new Set<string>();
+    for (const item of navItems) {
+      if (item.submenuItems && isInSubmenu(item)) {
+        initial.add(item.href);
+      }
+    }
+    return initial;
+  });
+
+  // 경로 변경 시 해당 서브메뉴 자동 열기
+  useEffect(() => {
+    for (const item of navItems) {
+      if (item.submenuItems && isInSubmenu(item)) {
+        setOpenSubmenus((prev) => new Set(prev).add(item.href));
+      }
+    }
+  }, [location.pathname]);
+
+  const toggleSubmenu = (href: string) => {
+    setOpenSubmenus((prev) => {
+      const next = new Set(prev);
+      if (next.has(href)) {
+        next.delete(href);
+      } else {
+        next.add(href);
+      }
+      return next;
+    });
+  };
+
   return (
     <>
       {/* Mobile overlay */}
@@ -270,20 +304,19 @@ export function Sidebar({
                 (item.submenuItems && isInSubmenu(item));
               const hasSubmenu =
                 item.submenuItems && item.submenuItems.length > 0;
-              const isSubmenuActive = item.submenuItems?.some(
-                (subItem) => location.pathname === subItem.href
-              );
+              const isSubmenuOpen = openSubmenus.has(item.href);
 
               return (
                 <div key={item.href}>
                   {/* 메인 메뉴 아이템 */}
                   <Link
-                    to={item.href}
-                    onClick={() => {
+                    to={hasSubmenu ? item.submenuItems![0].href : item.href}
+                    onClick={(e) => {
                       if (window.innerWidth < 1024) onToggle();
-                      // 하위 메뉴가 있고, 축소 상태가 아니면 자동으로 축소
-                      if (hasSubmenu && !isCollapsed && onCollapseToggle) {
-                        onCollapseToggle();
+                      // 데스크탑: 하위 메뉴가 있으면 네비게이션 대신 토글
+                      if (hasSubmenu && window.innerWidth >= 1024 && !isCollapsed) {
+                        e.preventDefault();
+                        toggleSubmenu(item.href);
                       }
                     }}
                     className={cn(
@@ -310,7 +343,7 @@ export function Sidebar({
                           <ChevronDown
                             className={cn(
                               "h-4 w-4 ml-auto transition-transform",
-                              isSubmenuActive && "rotate-180"
+                              isSubmenuOpen && "rotate-180"
                             )}
                           />
                         )}
@@ -323,7 +356,7 @@ export function Sidebar({
                     <div
                       className={cn(
                         "ml-6 mt-1 space-y-1 overflow-hidden transition-all duration-200",
-                        isSubmenuActive ? "max-h-96" : "max-h-0"
+                        isSubmenuOpen ? "max-h-96" : "max-h-0"
                       )}
                     >
                       {item.submenuItems?.map((subItem) => {
