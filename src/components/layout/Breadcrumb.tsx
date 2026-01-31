@@ -13,6 +13,12 @@ const ROUTE_TITLES: Record<string, string> = {
   "/settings/employees": "사원 관리",
   "/settings/approvals": "승인 대기",
   "/settings/system": "시스템 설정",
+  "/trash": "휴지통",
+  "/contacts-direct": "연락처",
+  "/ads": "광고 분석",
+  "/ads/ndata": "N-DATA",
+  "/ads/report": "보고서",
+  "/ads/weekly": "주간데이터",
 };
 
 interface BreadcrumbItem {
@@ -29,12 +35,13 @@ export function useBreadcrumbs(): {
   const params = useParams();
   const pathname = location.pathname;
 
-  // 현재 경로의 타이틀
-  let title = ROUTE_TITLES[pathname] || "페이지";
+  // 최상위 경로의 타이틀 (예: /settings/labels → "설정")
+  const topSegment = "/" + (pathname.split("/").filter(Boolean)[0] || "");
+  let title = ROUTE_TITLES[topSegment] || ROUTE_TITLES[pathname] || "페이지";
 
   // 고객 상세 페이지 처리
   if (pathname.startsWith("/customers/") && params.id) {
-    title = "고객 상세";
+    title = "고객 관리";
   }
 
   // Breadcrumb 생성
@@ -83,7 +90,7 @@ export function Breadcrumb() {
             <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
           )}
           {item.isLast ? (
-            <span className="text-2xl font-bold text-foreground leading-none">
+            <span className="font-semibold text-foreground leading-none">
               {item.label}
             </span>
           ) : (

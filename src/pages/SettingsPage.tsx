@@ -53,8 +53,8 @@ export function SettingsPage() {
     // 관리자(F1)인 경우: 사이드바 + Outlet 레이아웃
     return (
         <div className="flex gap-6 min-h-[calc(100vh-8rem)]">
-            {/* Left Sidebar - Tab Menu */}
-            <div className="w-56 shrink-0">
+            {/* Left Sidebar - Tab Menu (데스크탑만 표시) */}
+            <div className="hidden lg:block w-56 shrink-0">
                 <div className="sticky top-6">
                     <nav className="space-y-1">
                         {settingsTabs.map((tab) => {

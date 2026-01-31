@@ -434,22 +434,9 @@ export function CustomersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      {/* Actions (Title removed) */}
-      <div className="flex justify-end gap-2 mb-4">
-        <Button variant="outline" onClick={() => setIsExcelUploadOpen(true)}>
-          <FileSpreadsheet className="mr-2 h-4 w-4" />
-          Excel 업로드
-        </Button>
-        <Button onClick={handleOpenSheet}>
-          <Plus className="mr-2 h-4 w-4" />
-          고객 등록
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1 max-w-md">
+      {/* 검색 + 액션 버튼 */}
+      <div className="flex gap-2 items-center">
+        <div className="relative flex-1 min-w-0">
           <button
             onClick={handleSearch}
             className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 hover:text-primary cursor-pointer"
@@ -472,13 +459,23 @@ export function CustomersPage() {
             </button>
           )}
         </div>
+        <Button variant="outline" className="shrink-0" onClick={() => setIsExcelUploadOpen(true)}>
+          <FileSpreadsheet className="mr-2 h-4 w-4" />
+          Excel 업로드
+        </Button>
+        <Button className="shrink-0" onClick={handleOpenSheet}>
+          <Plus className="mr-2 h-4 w-4" />
+          고객 등록
+        </Button>
+      </div>
 
-        <div className="flex gap-2">
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2">
           {/* 기간 필터 */}
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value as any)}
-            className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
+            className="h-9 px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm min-w-0"
           >
             <option value="all">전체 기간</option>
             <option value="this_month">당월</option>
@@ -487,7 +484,7 @@ export function CustomersPage() {
 
           <select
             onChange={(e) => handleStatusFilter(e.target.value)}
-            className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
+            className="h-9 px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm min-w-0"
           >
             <option value="">전체 상태</option>
             {CUSTOMER_STATUSES.map((status) => (
@@ -498,7 +495,7 @@ export function CustomersPage() {
           </select>
 
           {/* 유입경로 필터 */}
-          <select className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm max-w-[120px]">
+          <select className="h-9 px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm min-w-0">
             <option value="">전체 경로</option>
             {sources?.map((source) => (
               <option key={source.id} value={source.name}>
@@ -506,7 +503,6 @@ export function CustomersPage() {
               </option>
             ))}
           </select>
-        </div>
       </div>
 
       {/* Manager Filter Badge (F5 사용자에게는 숨김) */}
