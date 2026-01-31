@@ -459,13 +459,13 @@ export function CustomersPage() {
             </button>
           )}
         </div>
-        <Button variant="outline" size="sm" className="shrink-0" onClick={() => setIsExcelUploadOpen(true)}>
-          <FileSpreadsheet className="mr-1 h-4 w-4" />
-          <span className="hidden sm:inline">업로드</span>
+        <Button variant="outline" className="shrink-0" onClick={() => setIsExcelUploadOpen(true)}>
+          <FileSpreadsheet className="mr-2 h-4 w-4" />
+          Excel 업로드
         </Button>
-        <Button size="sm" className="shrink-0" onClick={handleOpenSheet}>
-          <Plus className="mr-1 h-4 w-4" />
-          <span className="hidden sm:inline">고객 등록</span>
+        <Button className="shrink-0" onClick={handleOpenSheet}>
+          <Plus className="mr-2 h-4 w-4" />
+          고객 등록
         </Button>
       </div>
 
