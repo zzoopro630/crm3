@@ -89,7 +89,7 @@ export function Breadcrumb() {
             <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
           )}
           {item.isLast ? (
-            <span className="text-2xl font-bold text-foreground leading-none">
+            <span className="font-semibold text-foreground leading-none">
               {item.label}
             </span>
           ) : (
