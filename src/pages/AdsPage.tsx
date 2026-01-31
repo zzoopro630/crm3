@@ -24,7 +24,7 @@ export function AdsPage() {
 
   return (
     <div className="flex gap-6 min-h-[calc(100vh-8rem)]">
-      <div className="w-48 shrink-0">
+      <div className="hidden lg:block w-48 shrink-0">
         <div className="sticky top-6">
           <nav className="space-y-1">
             {adsTabs.map((tab) => {
