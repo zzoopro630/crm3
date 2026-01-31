@@ -61,7 +61,7 @@ export function Header({ onSidebarToggle }: HeaderProps) {
                     <SidebarTrigger onToggle={onSidebarToggle} />
                     <div className="flex md:hidden flex-col">
                         <h1 className="text-lg font-semibold text-zinc-900 dark:text-white">
-                            {title}
+                            CRM
                         </h1>
                     </div>
                 </div>
