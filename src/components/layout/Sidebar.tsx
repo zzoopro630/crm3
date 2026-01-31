@@ -136,6 +136,15 @@ export function Sidebar({
   const { employee } = useAuthStore();
   const { data: organizations = [] } = useOrganizations();
 
+  // 모바일에서는 축소 상태를 무시하고 항상 풀 메뉴 표시
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const effectiveCollapsed = isDesktop && isCollapsed;
+
   // 현재 경로가 하위 메뉴에 속하는지 확인
   const isInSubmenu = (item: NavItem): boolean => {
     if (!item.submenuItems) return false;
@@ -255,7 +264,9 @@ export function Sidebar({
       <aside
         className={cn(
           "fixed left-0 top-0 z-50 h-full bg-card border-r border-border transition-all duration-300 ease-in-out lg:translate-x-0",
-          isCollapsed ? "w-16" : "w-64",
+          // 모바일: 항상 w-64 (풀 드로어), 데스크탑: 축소 상태에 따라
+          "w-64",
+          isCollapsed && "lg:w-16",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -264,7 +275,7 @@ export function Sidebar({
           <div className="flex h-16 items-center justify-between px-4 border-b border-border">
             <div className="flex items-center gap-3">
               <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded-lg object-contain" />
-              {!isCollapsed && (
+              {!effectiveCollapsed && (
                 <span className="text-lg font-semibold text-foreground">
                   CRM
                 </span>
@@ -314,7 +325,7 @@ export function Sidebar({
                     onClick={(e) => {
                       if (window.innerWidth < 1024) onToggle();
                       // 데스크탑: 하위 메뉴가 있으면 네비게이션 대신 토글
-                      if (hasSubmenu && window.innerWidth >= 1024 && !isCollapsed) {
+                      if (hasSubmenu && window.innerWidth >= 1024 && !effectiveCollapsed) {
                         e.preventDefault();
                         toggleSubmenu(item.href);
                       }
@@ -336,7 +347,7 @@ export function Sidebar({
                     )}
                   >
                     <item.icon className="h-5 w-5 shrink-0" />
-                    {!isCollapsed && (
+                    {!effectiveCollapsed && (
                       <>
                         <span className="truncate">{item.title}</span>
                         {hasSubmenu && (
@@ -352,7 +363,7 @@ export function Sidebar({
                   </Link>
 
                   {/* 하위 메뉴 (축소되지 않았을 때만 표시) */}
-                  {hasSubmenu && !isCollapsed && (
+                  {hasSubmenu && !effectiveCollapsed && (
                     <div
                       className={cn(
                         "ml-6 mt-1 space-y-1 overflow-hidden transition-all duration-200",
