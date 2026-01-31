@@ -543,16 +543,16 @@ export default function DbManagementPage() {
   return (
     <div className="space-y-6 max-w-[1800px] mx-auto p-4 md:p-8 overflow-x-hidden">
       {/* 헤더 */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex justify-between items-start gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">상담관리</h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             상담 고객을 등록하고 영업 담당자에게 배분합니다.
           </p>
         </div>
         {isAdmin && (
-          <Button onClick={() => setShowAddModal(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+          <Button size="sm" className="shrink-0" onClick={() => setShowAddModal(true)}>
+            <Plus className="mr-1 h-4 w-4" />
             고객 등록
           </Button>
         )}
