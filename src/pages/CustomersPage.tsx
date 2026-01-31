@@ -437,12 +437,13 @@ export function CustomersPage() {
       {/* Header */}
       {/* Actions (Title removed) */}
       <div className="flex justify-end gap-2 mb-4">
-        <Button variant="outline" onClick={() => setIsExcelUploadOpen(true)}>
-          <FileSpreadsheet className="mr-2 h-4 w-4" />
-          Excel 업로드
+        <Button variant="outline" size="sm" onClick={() => setIsExcelUploadOpen(true)}>
+          <FileSpreadsheet className="mr-1 h-4 w-4" />
+          <span className="hidden sm:inline">Excel 업로드</span>
+          <span className="sm:hidden">업로드</span>
         </Button>
-        <Button onClick={handleOpenSheet}>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button size="sm" onClick={handleOpenSheet}>
+          <Plus className="mr-1 h-4 w-4" />
           고객 등록
         </Button>
       </div>
@@ -473,12 +474,12 @@ export function CustomersPage() {
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {/* 기간 필터 */}
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value as any)}
-            className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
+            className="h-9 px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm min-w-0"
           >
             <option value="all">전체 기간</option>
             <option value="this_month">당월</option>
@@ -487,7 +488,7 @@ export function CustomersPage() {
 
           <select
             onChange={(e) => handleStatusFilter(e.target.value)}
-            className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm"
+            className="h-9 px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm min-w-0"
           >
             <option value="">전체 상태</option>
             {CUSTOMER_STATUSES.map((status) => (
@@ -498,7 +499,7 @@ export function CustomersPage() {
           </select>
 
           {/* 유입경로 필터 */}
-          <select className="h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm max-w-[120px]">
+          <select className="h-9 px-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white text-sm min-w-0">
             <option value="">전체 경로</option>
             {sources?.map((source) => (
               <option key={source.id} value={source.name}>
