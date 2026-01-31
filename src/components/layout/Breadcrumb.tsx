@@ -35,12 +35,13 @@ export function useBreadcrumbs(): {
   const params = useParams();
   const pathname = location.pathname;
 
-  // 현재 경로의 타이틀
-  let title = ROUTE_TITLES[pathname] || "페이지";
+  // 최상위 경로의 타이틀 (예: /settings/labels → "설정")
+  const topSegment = "/" + (pathname.split("/").filter(Boolean)[0] || "");
+  let title = ROUTE_TITLES[topSegment] || ROUTE_TITLES[pathname] || "페이지";
 
   // 고객 상세 페이지 처리
   if (pathname.startsWith("/customers/") && params.id) {
-    title = "고객 상세";
+    title = "고객 관리";
   }
 
   // Breadcrumb 생성
