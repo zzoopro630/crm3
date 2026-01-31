@@ -13,6 +13,12 @@ const ROUTE_TITLES: Record<string, string> = {
   "/settings/employees": "사원 관리",
   "/settings/approvals": "승인 대기",
   "/settings/system": "시스템 설정",
+  "/trash": "휴지통",
+  "/contacts-direct": "연락처",
+  "/ads": "광고 분석",
+  "/ads/ndata": "N-DATA",
+  "/ads/report": "보고서",
+  "/ads/weekly": "주간데이터",
 };
 
 interface BreadcrumbItem {
