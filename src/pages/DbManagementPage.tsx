@@ -194,6 +194,17 @@ export default function DbManagementPage() {
     }
   };
 
+  const handleAdminCommentSave = async (inquiryId: number, adminComment: string) => {
+    try {
+      await updateInquiry.mutateAsync({
+        id: inquiryId,
+        input: { adminComment },
+      });
+    } catch (error) {
+      console.error("Failed to save admin comment:", error);
+    }
+  };
+
   const canEditMemo = (inquiry: Inquiry) => {
     return isAdmin || inquiry.managerId === employee?.id;
   };
@@ -365,6 +376,29 @@ export default function DbManagementPage() {
           </div>
         )}
       </div>
+
+      {/* 관리자 코멘트 */}
+      {isAdmin && (
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            관리자 코멘트
+          </label>
+          <Input
+            defaultValue={inquiry.adminComment || ""}
+            onBlur={(e) => {
+              if (e.target.value !== (inquiry.adminComment || "")) {
+                handleAdminCommentSave(inquiry.id, e.target.value);
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.nativeEvent.isComposing)
+                e.currentTarget.blur();
+            }}
+            className="h-9 text-sm"
+            placeholder="관리자 코멘트..."
+          />
+        </div>
+      )}
     </div>
   );
 
@@ -644,6 +678,9 @@ export default function DbManagementPage() {
                   상태
                 </th>
                 <th className="text-left px-2 py-3 font-medium">메모</th>
+                {isAdmin && (
+                  <th className="text-left px-2 py-3 font-medium">관리자 코멘트</th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -727,6 +764,24 @@ export default function DbManagementPage() {
                       </span>
                     )}
                   </td>
+                  {isAdmin && (
+                    <td className="px-2 py-3">
+                      <Input
+                        defaultValue={inquiry.adminComment || ""}
+                        onBlur={(e) => {
+                          if (e.target.value !== (inquiry.adminComment || "")) {
+                            handleAdminCommentSave(inquiry.id, e.target.value);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.nativeEvent.isComposing)
+                            e.currentTarget.blur();
+                        }}
+                        className="h-7 text-sm bg-transparent border-zinc-200 dark:border-zinc-700 w-full"
+                        placeholder="관리자 코멘트..."
+                      />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

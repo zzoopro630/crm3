@@ -216,6 +216,9 @@ export default function RecruitInquiriesPage() {
                 <th className="px-3 py-3 text-left font-medium">담당자</th>
                 <th className="px-3 py-3 text-left font-medium">상태</th>
                 <th className="px-3 py-3 text-left font-medium">메모</th>
+                {isAdmin && (
+                  <th className="px-3 py-3 text-left font-medium">관리자 코멘트</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -278,6 +281,27 @@ export default function RecruitInquiriesPage() {
                   <td className="px-3 py-3 max-w-[150px] truncate">
                     {item.memo || "-"}
                   </td>
+                  {isAdmin && (
+                    <td className="px-3 py-3">
+                      <input
+                        defaultValue={item.adminComment || ""}
+                        onBlur={(e) => {
+                          if (e.target.value !== (item.adminComment || "")) {
+                            updateInquiry.mutate({
+                              id: item.id,
+                              input: { adminComment: e.target.value },
+                            });
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.nativeEvent.isComposing)
+                            e.currentTarget.blur();
+                        }}
+                        className="px-2 py-1 text-xs border rounded bg-background w-full"
+                        placeholder="관리자 코멘트..."
+                      />
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

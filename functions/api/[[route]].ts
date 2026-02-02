@@ -1408,6 +1408,7 @@ app.get("/api/inquiries", async (c) => {
     status: row.status || "new",
     email: row.email,
     memo: row.memo,
+    adminComment: row.admin_comment,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
@@ -1434,6 +1435,7 @@ app.put("/api/inquiries/:id", async (c) => {
   if (body.status !== undefined) updateData.status = body.status;
   if (body.memo !== undefined) updateData.memo = body.memo;
   if (body.email !== undefined) updateData.email = body.email;
+  if (body.adminComment !== undefined) updateData.admin_comment = body.adminComment;
 
   const { data, error } = await (supabase as any)
     .schema("marketing")
@@ -1459,6 +1461,7 @@ app.put("/api/inquiries/:id", async (c) => {
     status: data.status || "new",
     email: data.email,
     memo: data.memo,
+    adminComment: data.admin_comment,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   });
@@ -1575,6 +1578,7 @@ app.get("/api/consultant-inquiries", async (c) => {
     managerName: row.manager_id ? managersMap[row.manager_id] || null : null,
     status: row.status || "new",
     memo: row.memo,
+    adminComment: row.admin_comment,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
@@ -1600,6 +1604,7 @@ app.put("/api/consultant-inquiries/:id", async (c) => {
   if (body.managerId !== undefined) updateData.manager_id = body.managerId;
   if (body.status !== undefined) updateData.status = body.status;
   if (body.memo !== undefined) updateData.memo = body.memo;
+  if (body.adminComment !== undefined) updateData.admin_comment = body.adminComment;
 
   const { data, error } = await (supabase as any)
     .schema("marketing")
@@ -1627,6 +1632,7 @@ app.put("/api/consultant-inquiries/:id", async (c) => {
     managerId: data.manager_id,
     status: data.status || "new",
     memo: data.memo,
+    adminComment: data.admin_comment,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   });
@@ -1703,6 +1709,7 @@ app.get("/api/recruit-inquiries", async (c) => {
     status: row.status || "new",
     email: row.email,
     memo: row.memo,
+    adminComment: row.admin_comment,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
@@ -1729,6 +1736,7 @@ app.put("/api/recruit-inquiries/:id", async (c) => {
   if (body.status !== undefined) updateData.status = body.status;
   if (body.memo !== undefined) updateData.memo = body.memo;
   if (body.email !== undefined) updateData.email = body.email;
+  if (body.adminComment !== undefined) updateData.admin_comment = body.adminComment;
 
   const { data, error } = await (supabase as any)
     .schema("marketing")
@@ -1754,6 +1762,7 @@ app.put("/api/recruit-inquiries/:id", async (c) => {
     status: data.status || "new",
     email: data.email,
     memo: data.memo,
+    adminComment: data.admin_comment,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   });
