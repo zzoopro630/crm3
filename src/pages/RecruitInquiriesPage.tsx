@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useAuthStore } from "@/stores/authStore";
+import { useMenuLabels } from "@/hooks/useAppSettings";
 import { Input } from "@/components/ui/input";
 import {
   Loader2,
@@ -25,6 +26,7 @@ const getSavedPageSize = () => {
 
 export default function RecruitInquiriesPage() {
   const { employee } = useAuthStore();
+  const menuLabels = useMenuLabels();
   const isAdmin =
     employee?.securityLevel === "F1" || employee?.securityLevel === "F2";
   const isF1 = employee?.securityLevel === "F1";
@@ -119,7 +121,7 @@ export default function RecruitInquiriesPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">입사문의</h1>
+        <h1 className="text-2xl font-bold">{menuLabels['/recruit-inquiries'] || '입사문의'}</h1>
         <span className="text-sm text-muted-foreground">
           총 {totalCount}건
         </span>

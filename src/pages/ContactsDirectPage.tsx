@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useMenuLabels } from '@/hooks/useAppSettings'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -35,6 +36,7 @@ import type { Contact, ContactInput, UpdateContactInput } from '@/types/contact'
 
 export default function ContactsDirectPage() {
   const employee = useAuthStore((s) => s.employee)
+  const menuLabels = useMenuLabels()
   const isAdmin = employee?.securityLevel === 'F1'
 
   const { data: contacts = [], isLoading } = useContacts()
@@ -135,7 +137,7 @@ export default function ContactsDirectPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">연락처</h1>
+        <h1 className="text-2xl font-bold">{menuLabels['/contacts-direct'] || '연락처'}</h1>
         {isAdmin && (
           <div className="flex items-center gap-2">
             <ExcelUpload onUpload={handleBulkUpload} isLoading={bulkCreateMutation.isPending} />
