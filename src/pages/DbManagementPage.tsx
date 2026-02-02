@@ -1,7 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { useEmployees } from "@/hooks/useEmployees";
-import { useSources } from "@/hooks/useSources";
 import { useAuthStore } from "@/stores/authStore";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,46 +16,34 @@ import {
   AlertCircle,
   ChevronDown,
   Filter,
-  MessageSquare,
 } from "lucide-react";
-import {
-  updateCustomer,
-  getCustomers,
-  createCustomer,
-} from "@/services/customers";
-import { CustomerNotesModal } from "@/components/customers/CustomerNotesModal";
-import type {
-  CustomerWithManager,
-  CreateCustomerInput,
-} from "@/types/customer";
+import { useInquiries, useUpdateInquiry, useCreateInquiry } from "@/hooks/useInquiries";
 import { CUSTOMER_STATUSES } from "@/types/customer";
+import type { Inquiry, InquiryListParams } from "@/types/inquiry";
 
 // 폼 에러 타입
 interface FormErrors {
   name?: string;
   phone?: string;
-  interestProduct?: string;
+  productName?: string;
 }
 
-// 이름 검증 함수 (한글/영문만, 최소 2글자)
+// 이름 검증 함수
 const validateName = (name: string): string | undefined => {
   if (!name.trim()) return "고객명을 입력해주세요.";
   if (name.trim().length < 2) return "고객명은 최소 2글자 이상이어야 합니다.";
-  // 한글, 영문, 공백만 허용
-  const nameRegex = /^[가-힣a-zA-Z\s]+$/;
-  if (!nameRegex.test(name.trim()))
-    return "고객명은 한글 또는 영문만 입력 가능합니다.";
   return undefined;
 };
 
-// 전화번호 검증 함수 (010-XXXX-XXXX)
+// 전화번호 검증 함수
 const validatePhone = (phone: string): string | undefined => {
   if (!phone) return "연락처를 입력해주세요.";
-  if (!/^010-\d{4}-\d{4}$/.test(phone)) return "올바른 전화번호 형식이 아닙니다 (010-0000-0000)";
+  if (!/^010-\d{4}-\d{4}$/.test(phone))
+    return "올바른 전화번호 형식이 아닙니다 (010-0000-0000)";
   return undefined;
 };
 
-// 전화번호 포맷팅 함수 (11자리 자유 입력, 자동 하이픈)
+// 전화번호 포맷팅
 const formatPhoneNumber = (value: string): string => {
   const digits = value.replace(/\D/g, "").slice(0, 11);
   if (digits.length <= 3) return digits;
@@ -71,7 +57,6 @@ type TabType = "inProgress" | "closed";
 // 페이지 사이즈 옵션
 const PAGE_SIZE_OPTIONS = [15, 30, 50, 100];
 
-// 저장된 페이지 사이즈 가져오기
 const getSavedPageSize = () => {
   const saved = localStorage.getItem("dbManagement_pageSize");
   return saved ? parseInt(saved) : 15;
@@ -83,54 +68,140 @@ export default function DbManagementPage() {
     employee?.securityLevel === "F1" || employee?.securityLevel === "F2";
   const isF1 = employee?.securityLevel === "F1";
 
-  // 탭 상태
   const [activeTab, setActiveTab] = useState<TabType>("inProgress");
-
-  // DB 목록 상태
-  const [dbList, setDbList] = useState<CustomerWithManager[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [pageSize, setPageSize] = useState(getSavedPageSize);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
 
   // 필터 상태
   const [filters, setFilters] = useState({
     status: "",
     managerId: "",
-    source: "",
     search: "",
   });
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  // 활성화된 필터 개수 계산
-  const activeFilterCount = [
-    filters.status,
-    filters.managerId,
-    filters.source,
-  ].filter(Boolean).length;
-
-  const navigate = useNavigate();
+  const activeFilterCount = [filters.status, filters.managerId].filter(
+    Boolean
+  ).length;
 
   // 모달 상태
   const [showAddModal, setShowAddModal] = useState(false);
-  const [notesCustomerId, setNotesCustomerId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<CreateCustomerInput>({
-    name: "",
+  const [formData, setFormData] = useState({
+    customerName: "",
     phone: "",
-    interestProduct: "",
-    source: "",
+    productName: "",
     managerId: "",
-    status: "new",
-    type: "db",
   });
   const [formErrors, setFormErrors] = useState<FormErrors>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 이름 입력 핸들러 (실시간 검증)
+  const { data: employees } = useEmployees();
+  const updateInquiry = useUpdateInquiry();
+  const createInquiry = useCreateInquiry();
+
+  // 담당자 필터용 직원 목록
+  const filteredEmployees = useMemo(() => {
+    if (!employees) return [];
+    return employees.filter((emp) => {
+      if (!emp.isActive) return false;
+      if (isF1) return true;
+      return emp.organizationId === employee?.organizationId;
+    });
+  }, [employees, isF1, employee?.organizationId]);
+
+  // 페이지 사이즈 저장
+  useEffect(() => {
+    localStorage.setItem("dbManagement_pageSize", String(pageSize));
+  }, [pageSize]);
+
+  // API 파라미터 구성
+  const queryParams = useMemo<InquiryListParams>(() => {
+    const managedFilter =
+      !isAdmin && employee?.id ? employee.id : filters.managerId || undefined;
+
+    let statusFilter = filters.status;
+    if (activeTab === "closed") {
+      statusFilter = "closed";
+    } else if (activeTab === "inProgress" && !statusFilter) {
+      statusFilter = "!closed";
+    }
+
+    return {
+      page: currentPage,
+      limit: pageSize,
+      search: filters.search || undefined,
+      status: statusFilter || undefined,
+      managerId: managedFilter,
+    };
+  }, [currentPage, pageSize, filters, activeTab, isAdmin, employee?.id]);
+
+  const { data: response, isLoading } = useInquiries(queryParams);
+
+  const dbList = response?.data || [];
+  const totalCount = response?.total || 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  // 탭 변경 시 페이지 리셋
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
+  const handleAssign = async (inquiryId: number, managerId: string, selectEl: HTMLSelectElement) => {
+    if (!managerId) return;
+
+    const managerName = filteredEmployees.find((e) => e.id === managerId)?.fullName || "선택한 담당자";
+    const inquiry = dbList.find((c) => c.id === inquiryId);
+    const prevManagerId = inquiry?.managerId || "";
+
+    if (!window.confirm(`"${managerName}"에게 배정하시겠습니까?`)) {
+      selectEl.value = prevManagerId;
+      return;
+    }
+
+    try {
+      await updateInquiry.mutateAsync({
+        id: inquiryId,
+        input: { managerId },
+      });
+    } catch (error) {
+      console.error("Failed to assign manager:", error);
+      alert("담당자 배정에 실패했습니다.");
+      selectEl.value = prevManagerId;
+    }
+  };
+
+  const handleStatusChange = async (inquiryId: number, status: string) => {
+    const inquiry = dbList.find((c) => c.id === inquiryId);
+    if (!inquiry) return;
+    if (!isAdmin && inquiry.managerId !== employee?.id) return;
+    try {
+      await updateInquiry.mutateAsync({
+        id: inquiryId,
+        input: { status },
+      });
+    } catch (error) {
+      console.error("Failed to save status:", error);
+    }
+  };
+
+  const handleMemoSave = async (inquiryId: number, memo: string) => {
+    try {
+      await updateInquiry.mutateAsync({
+        id: inquiryId,
+        input: { memo },
+      });
+    } catch (error) {
+      console.error("Failed to save memo:", error);
+    }
+  };
+
+  const canEditMemo = (inquiry: Inquiry) => {
+    return isAdmin || inquiry.managerId === employee?.id;
+  };
+
+  // 이름 입력 핸들러
   const handleNameChange = useCallback(
     (value: string) => {
-      setFormData((prev) => ({ ...prev, name: value }));
-      // 입력 중에는 빈 값 에러만 체크하지 않음 (blur 시 전체 검증)
+      setFormData((prev) => ({ ...prev, customerName: value }));
       if (formErrors.name && value.trim()) {
         const error = validateName(value);
         setFormErrors((prev) => ({ ...prev, name: error }));
@@ -139,13 +210,11 @@ export default function DbManagementPage() {
     [formErrors.name]
   );
 
-  // 이름 blur 핸들러 (전체 검증)
   const handleNameBlur = useCallback(() => {
-    const error = validateName(formData.name);
+    const error = validateName(formData.customerName);
     setFormErrors((prev) => ({ ...prev, name: error }));
-  }, [formData.name]);
+  }, [formData.customerName]);
 
-  // 전화번호 입력 핸들러 (11자리 자유 입력)
   const handlePhoneChange = useCallback(
     (value: string) => {
       const formatted = formatPhoneNumber(value);
@@ -157,296 +226,68 @@ export default function DbManagementPage() {
     [formErrors.phone]
   );
 
-  // 전화번호 blur 핸들러 (전체 검증)
   const handlePhoneBlur = useCallback(() => {
-    const error = validatePhone(formData.phone || "");
+    const error = validatePhone(formData.phone);
     setFormErrors((prev) => ({ ...prev, phone: error }));
   }, [formData.phone]);
 
-  // 관심항목 blur 핸들러
-  const handleInterestProductBlur = useCallback(() => {
-    if (!formData.interestProduct?.trim()) {
-      setFormErrors((prev) => ({
-        ...prev,
-        interestProduct: "관심항목을 입력해주세요.",
-      }));
-    } else {
-      setFormErrors((prev) => ({ ...prev, interestProduct: undefined }));
-    }
-  }, [formData.interestProduct]);
-
-  // 직원 목록 (배정용)
-  const { data: employees } = useEmployees();
-  const { data: sources } = useSources();
-
-  // 담당자 필터용 직원 목록 (활성화된 직원만, F1은 전체, 그 외는 팀 소속만)
-  const filteredEmployees = useMemo(() => {
-    if (!employees) return [];
-    return employees.filter((emp) => {
-      // 비활성화 직원 제외
-      if (!emp.isActive) return false;
-      // F1 최고관리자는 모두 볼 수 있음
-      if (isF1) return true;
-      // 그 외는 같은 팀 소속만 (organizationId 같은 경우)
-      return emp.organizationId === employee?.organizationId;
-    });
-  }, [employees, isF1, employee?.organizationId]);
-
-  // 페이지 사이즈 저장
-  useEffect(() => {
-    localStorage.setItem("dbManagement_pageSize", String(pageSize));
-  }, [pageSize]);
-
-  // 데이터 가져오기 함수
-  const fetchDbList = async (pageOverride?: number) => {
-    const page = pageOverride ?? currentPage;
-    setIsLoading(true);
-    try {
-      // F3~F5는 자기 배정 고객만 조회
-      const managedFilter =
-        !isAdmin && employee?.id ? { managerId: employee.id } : {};
-      // 탭에 따른 상태 필터 설정
-      let statusFilter = filters.status;
-      if (activeTab === "closed") {
-        statusFilter = "closed";
-      } else if (activeTab === "inProgress" && !statusFilter) {
-        statusFilter = "!closed";
-      }
-
-      const response = await getCustomers({
-        page,
-        limit: pageSize,
-        filters: {
-          ...filters,
-          ...managedFilter,
-          type: "db",
-          status: statusFilter,
-        },
-      });
-
-      setDbList(response.data);
-      setTotalCount(response.total);
-    } catch (error) {
-      console.error("Failed to fetch DB list:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 탭 변경 시 페이지 리셋 및 데이터 fetch
-  useEffect(() => {
-    setCurrentPage(1);
-    fetchDbList(1); // 명시적으로 page=1로 호출
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
-
-  // 필터, 페이지 사이즈, 페이지 변경 시 데이터 fetch
-  useEffect(() => {
-    fetchDbList();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, pageSize, currentPage]);
-
-  const handleAssign = async (customerId: number, managerId: string) => {
-    try {
-      await updateCustomer(customerId, { managerId });
-      setDbList((prev) =>
-        prev.map((item) =>
-          item.id === customerId
-            ? {
-                ...item,
-                managerId,
-                managerName:
-                  filteredEmployees?.find((e) => e.id === managerId)
-                    ?.fullName || "",
-              }
-            : item
-        )
-      );
-    } catch (error) {
-      console.error("Failed to assign manager:", error);
-      alert("담당자 배정에 실패했습니다.");
-    }
-  };
-
-  // handleMemoSave 함수는 CustomerNotesModal이 대체하므로 제거
-
-  const handleAdminCommentSave = async (
-    customerId: number,
-    adminComment: string
-  ) => {
-    if (!isAdmin) return;
-    try {
-      await updateCustomer(customerId, { adminComment });
-      setDbList((prev) =>
-        prev.map((item) =>
-          item.id === customerId ? { ...item, adminComment } : item
-        )
-      );
-    } catch (error) {
-      console.error("Failed to save admin comment:", error);
-    }
-  };
-
-  const handleInterestProductSave = async (
-    customerId: number,
-    interestProduct: string
-  ) => {
-    if (!isAdmin) return;
-    try {
-      await updateCustomer(customerId, { interestProduct });
-      setDbList((prev) =>
-        prev.map((item) =>
-          item.id === customerId ? { ...item, interestProduct } : item
-        )
-      );
-    } catch (error) {
-      console.error("Failed to save interest product:", error);
-    }
-  };
-
-  const handleSourceChange = async (customerId: number, source: string) => {
-    if (!isAdmin) return;
-    try {
-      await updateCustomer(customerId, { source });
-      setDbList((prev) =>
-        prev.map((item) =>
-          item.id === customerId ? { ...item, source } : item
-        )
-      );
-    } catch (error) {
-      console.error("Failed to save source:", error);
-    }
-  };
-
-  const handleStatusChange = async (customerId: number, status: string) => {
-    const customer = dbList.find((c) => c.id === customerId);
-    if (!customer) return;
-    if (!isAdmin && customer.managerId !== employee?.id) return;
-    try {
-      await updateCustomer(customerId, { status });
-      // 상태 변경 시 탭에서 제거
-      if (status === "closed" && activeTab === "inProgress") {
-        setDbList((prev) => prev.filter((item) => item.id !== customerId));
-      } else if (status !== "closed" && activeTab === "closed") {
-        setDbList((prev) => prev.filter((item) => item.id !== customerId));
-      } else {
-        setDbList((prev) =>
-          prev.map((item) =>
-            item.id === customerId ? { ...item, status } : item
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Failed to save status:", error);
-    }
-  };
-
-  const canEditMemo = (customer: CustomerWithManager) => {
-    return isAdmin || customer.managerId === employee?.id;
-  };
-
-  const handleCustomerClick = (customerId: number) => {
-    navigate(`/customers/${customerId}`);
-  };
-
-  const handleNotesClick = (customerId: number) => {
-    setNotesCustomerId(customerId);
-  };
-
-  // DB 등록 핸들러
+  // 등록 핸들러
   const handleAddSubmit = async () => {
-    // 전체 필드 검증
-    const nameError = validateName(formData.name);
-    const phoneError = validatePhone(formData.phone || "");
-    const interestProductError = !formData.interestProduct?.trim()
-      ? "관심항목을 입력해주세요."
-      : undefined;
+    const nameError = validateName(formData.customerName);
+    const phoneError = validatePhone(formData.phone);
 
-    const errors: FormErrors = {
-      name: nameError,
-      phone: phoneError,
-      interestProduct: interestProductError,
-    };
-
+    const errors: FormErrors = { name: nameError, phone: phoneError };
     setFormErrors(errors);
 
-    // 에러가 있으면 중단
-    if (nameError || phoneError || interestProductError) {
-      return;
-    }
+    if (nameError || phoneError) return;
 
-    setIsSubmitting(true);
     try {
-      await createCustomer({ ...formData });
-      setShowAddModal(false);
-      setFormData({
-        name: "",
-        phone: "",
-        interestProduct: "",
-        source: "",
-        managerId: "",
+      await createInquiry.mutateAsync({
+        customerName: formData.customerName,
+        phone: formData.phone,
+        productName: formData.productName || undefined,
+        managerId: formData.managerId || undefined,
         status: "new",
-        type: "db",
       });
+      setShowAddModal(false);
+      setFormData({ customerName: "", phone: "", productName: "", managerId: "" });
       setFormErrors({});
-      fetchDbList();
     } catch (error) {
-      console.error("Failed to create customer:", error);
+      console.error("Failed to create inquiry:", error);
       alert("등록에 실패했습니다.");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  // 모달 닫기 핸들러 (폼 리셋 포함)
   const handleCloseModal = useCallback(() => {
     setShowAddModal(false);
-    setFormData({
-      name: "",
-      phone: "",
-      interestProduct: "",
-      source: "",
-      managerId: "",
-      status: "new",
-      type: "db",
-    });
+    setFormData({ customerName: "", phone: "", productName: "", managerId: "" });
     setFormErrors({});
   }, []);
 
-  // 총 페이지 수 계산
-  const totalPages = Math.ceil(totalCount / pageSize);
-
-  // F1~F5 모두 접근 가능 (isAdmin 체크 제거)
-
   // 모바일 카드 렌더링
-  const renderMobileCard = (customer: CustomerWithManager) => (
+  const renderMobileCard = (inquiry: Inquiry) => (
     <div
-      key={customer.id}
+      key={inquiry.id}
       className="bg-card border rounded-lg p-4 space-y-4 shadow-sm"
     >
       {/* 헤더: 고객명 + 상태 */}
       <div className="flex justify-between items-start">
         <div className="flex-1">
-          <h3
-            className="font-semibold text-lg cursor-pointer hover:text-primary hover:underline mb-1"
-            onClick={() => handleCustomerClick(customer.id)}
-          >
-            {customer.name}
-          </h3>
-          {customer.phone && (
+          <h3 className="font-semibold text-lg mb-1">{inquiry.customerName}</h3>
+          {inquiry.phone && (
             <a
-              href={`tel:${customer.phone}`}
+              href={`tel:${inquiry.phone}`}
               className="text-sm text-primary flex items-center gap-1 hover:underline"
             >
               <Phone className="h-3 w-3" />
-              {customer.phone}
+              {inquiry.phone}
             </a>
           )}
         </div>
-        {canEditMemo(customer) ? (
+        {canEditMemo(inquiry) ? (
           <select
-            value={customer.status}
-            onChange={(e) => handleStatusChange(customer.id, e.target.value)}
+            value={inquiry.status}
+            onChange={(e) => handleStatusChange(inquiry.id, e.target.value)}
             className="h-8 px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs min-w-[80px]"
           >
             {CUSTOMER_STATUSES.map((status) => (
@@ -457,46 +298,26 @@ export default function DbManagementPage() {
           </select>
         ) : (
           <span className="px-2 py-1 rounded-full text-xs bg-zinc-100 dark:bg-zinc-800 min-w-[80px] text-center">
-            {CUSTOMER_STATUSES.find((s) => s.value === customer.status)
-              ?.label || customer.status}
+            {CUSTOMER_STATUSES.find((s) => s.value === inquiry.status)?.label ||
+              inquiry.status}
           </span>
         )}
       </div>
 
-      {/* 등록일 */}
+      {/* 문의일 */}
       <div className="text-sm text-muted-foreground">
-        등록일:{" "}
-        {customer.createdAt
-          ? new Date(customer.createdAt).toLocaleDateString()
+        문의일:{" "}
+        {inquiry.inquiryDate
+          ? new Date(inquiry.inquiryDate).toLocaleDateString()
           : "-"}
       </div>
 
-      {/* 관심상품 */}
-      <div className="space-y-1">
-        <label className="text-xs font-medium text-muted-foreground">
-          관심상품
-        </label>
-        {isAdmin ? (
-          <Input
-            defaultValue={customer.interestProduct || ""}
-            onBlur={(e) => {
-              if (e.target.value !== (customer.interestProduct || "")) {
-                handleInterestProductSave(customer.id, e.target.value);
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.nativeEvent.isComposing)
-                e.currentTarget.blur();
-            }}
-            className="h-9 text-sm"
-            placeholder="관심상품..."
-          />
-        ) : (
-          <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded border">
-            {customer.interestProduct || "-"}
-          </div>
-        )}
-      </div>
+      {/* 상품명 */}
+      {inquiry.productName && (
+        <div className="text-sm text-muted-foreground">
+          상품: {inquiry.productName}
+        </div>
+      )}
 
       {/* 담당자 */}
       <div className="space-y-1">
@@ -505,8 +326,8 @@ export default function DbManagementPage() {
           담당자
         </label>
         <select
-          value={customer.managerId || ""}
-          onChange={(e) => handleAssign(customer.id, e.target.value)}
+          value={inquiry.managerId || ""}
+          onChange={(e) => handleAssign(inquiry.id, e.target.value, e.target)}
           className="w-full h-9 px-3 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm"
         >
           <option value="">담당자 선택</option>
@@ -520,22 +341,29 @@ export default function DbManagementPage() {
 
       {/* 메모 */}
       <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <label className="text-xs font-medium text-muted-foreground">
-            메모
-          </label>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleNotesClick(customer.id)}
-            className="h-6 w-6 p-0 text-xs"
-          >
-            <MessageSquare className="h-3 w-3" />
-          </Button>
-        </div>
-        <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded border min-h-[36px] flex items-center">
-          {customer.memo || "메모 없음"}
-        </div>
+        <label className="text-xs font-medium text-muted-foreground">
+          메모
+        </label>
+        {canEditMemo(inquiry) ? (
+          <Input
+            defaultValue={inquiry.memo || ""}
+            onBlur={(e) => {
+              if (e.target.value !== (inquiry.memo || "")) {
+                handleMemoSave(inquiry.id, e.target.value);
+              }
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.nativeEvent.isComposing)
+                e.currentTarget.blur();
+            }}
+            className="h-9 text-sm"
+            placeholder="메모..."
+          />
+        ) : (
+          <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded border min-h-[36px] flex items-center">
+            {inquiry.memo || "메모 없음"}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -547,11 +375,15 @@ export default function DbManagementPage() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">상담관리</h1>
           <p className="text-sm text-muted-foreground">
-            상담 고객을 등록하고 영업 담당자에게 배분합니다.
+            문의 고객을 확인하고 영업 담당자에게 배분합니다.
           </p>
         </div>
         {isAdmin && (
-          <Button size="sm" className="shrink-0" onClick={() => setShowAddModal(true)}>
+          <Button
+            size="sm"
+            className="shrink-0"
+            onClick={() => setShowAddModal(true)}
+          >
             <Plus className="mr-1 h-4 w-4" />
             고객 등록
           </Button>
@@ -586,9 +418,7 @@ export default function DbManagementPage() {
 
       {/* 필터 영역 */}
       <div className="bg-card p-4 rounded-lg border shadow-sm">
-        {/* 검색 + 필터 토글 (모바일) / 검색 + 필터들 (데스크탑) */}
         <div className="flex flex-col md:flex-row gap-4">
-          {/* 검색창 */}
           <div className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -603,7 +433,7 @@ export default function DbManagementPage() {
             </div>
           </div>
 
-          {/* 모바일: 필터 토글 버튼 */}
+          {/* 모바일: 필터 토글 */}
           <Button
             variant="outline"
             size="sm"
@@ -625,7 +455,7 @@ export default function DbManagementPage() {
           </Button>
         </div>
 
-        {/* 데스크탑: 인라인 필터들 */}
+        {/* 데스크탑: 인라인 필터 */}
         <div className="hidden md:flex items-center gap-3 pt-2">
           <div className="h-6 w-px bg-border" />
 
@@ -653,27 +483,6 @@ export default function DbManagementPage() {
               </select>
             </div>
           )}
-
-          {/* 유입경로 필터 */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground whitespace-nowrap">
-              유입경로
-            </span>
-            <select
-              value={filters.source}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, source: e.target.value }))
-              }
-              className="h-9 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm min-w-[120px]"
-            >
-              <option value="">전체 유입경로</option>
-              {sources?.map((src) => (
-                <option key={src.id} value={src.name}>
-                  {src.name}
-                </option>
-              ))}
-            </select>
-          </div>
 
           {/* 담당자 필터 */}
           <div className="flex items-center gap-2">
@@ -721,7 +530,6 @@ export default function DbManagementPage() {
         {/* 모바일: 펼쳐지는 필터 패널 */}
         {showMobileFilters && (
           <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t">
-            {/* 상태 필터 (진행중 탭만) */}
             {activeTab === "inProgress" && (
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">
@@ -746,28 +554,6 @@ export default function DbManagementPage() {
               </div>
             )}
 
-            {/* 유입경로 필터 */}
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">
-                유입경로
-              </label>
-              <select
-                value={filters.source}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, source: e.target.value }))
-                }
-                className="w-full h-9 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm"
-              >
-                <option value="">전체 유입경로</option>
-                {sources?.map((src) => (
-                  <option key={src.id} value={src.name}>
-                    {src.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* 담당자 필터 */}
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">
                 담당자
@@ -788,7 +574,6 @@ export default function DbManagementPage() {
               </select>
             </div>
 
-            {/* 페이지 사이즈 */}
             <div>
               <label className="text-xs text-muted-foreground mb-1 block">
                 표시 개수
@@ -824,16 +609,14 @@ export default function DbManagementPage() {
       {!isLoading && dbList.length === 0 && (
         <div className="flex justify-center items-center h-40 text-muted-foreground">
           {activeTab === "closed"
-            ? "청약완료된 고객이 없습니다."
-            : "등록된 상담 고객이 없습니다."}
+            ? "청약완료된 문의가 없습니다."
+            : "등록된 문의가 없습니다."}
         </div>
       )}
 
       {/* 모바일: 카드 레이아웃 */}
       {!isLoading && dbList.length > 0 && (
-        <div className="md:hidden space-y-4">
-          {dbList.map(renderMobileCard)}
-        </div>
+        <div className="md:hidden space-y-4">{dbList.map(renderMobileCard)}</div>
       )}
 
       {/* 데스크탑: 테이블 레이아웃 */}
@@ -842,35 +625,43 @@ export default function DbManagementPage() {
           <table className="w-full text-sm table-fixed">
             <thead className="bg-muted/50 border-b">
               <tr>
-                <th className="text-left px-2 py-3 font-medium w-[75px]">등록일</th>
-                <th className="text-left px-2 py-3 font-medium w-[90px]">담당자</th>
-                <th className="text-left px-2 py-3 font-medium w-[65px]">고객명</th>
-                <th className="text-left px-2 py-3 font-medium w-[105px]">연락처</th>
-                <th className="text-left px-2 py-3 font-medium w-[90px]">관심상품</th>
-                {isAdmin && (
-                  <th className="text-left px-2 py-3 font-medium w-[90px]">유입경로</th>
-                )}
-                <th className="text-left px-2 py-3 font-medium w-[90px]">상태</th>
+                <th className="text-left px-2 py-3 font-medium w-[75px]">
+                  문의일
+                </th>
+                <th className="text-left px-2 py-3 font-medium w-[90px]">
+                  담당자
+                </th>
+                <th className="text-left px-2 py-3 font-medium w-[65px]">
+                  고객명
+                </th>
+                <th className="text-left px-2 py-3 font-medium w-[105px]">
+                  연락처
+                </th>
+                <th className="text-left px-2 py-3 font-medium w-[120px]">
+                  상품명
+                </th>
+                <th className="text-left px-2 py-3 font-medium w-[90px]">
+                  상태
+                </th>
                 <th className="text-left px-2 py-3 font-medium">메모</th>
-                <th className="text-left px-2 py-3 font-medium w-[150px]">관리자 코멘트</th>
               </tr>
             </thead>
             <tbody>
-              {dbList.map((customer) => (
+              {dbList.map((inquiry) => (
                 <tr
-                  key={customer.id}
+                  key={inquiry.id}
                   className="border-b hover:bg-muted/40 odd:bg-muted/20"
                 >
                   <td className="px-2 py-3 text-muted-foreground text-xs whitespace-nowrap">
-                    {customer.createdAt
-                      ? new Date(customer.createdAt).toLocaleDateString()
+                    {inquiry.inquiryDate
+                      ? new Date(inquiry.inquiryDate).toLocaleDateString()
                       : "-"}
                   </td>
                   <td className="px-2 py-3">
                     <select
-                      value={customer.managerId || ""}
+                      value={inquiry.managerId || ""}
                       onChange={(e) =>
-                        handleAssign(customer.id, e.target.value)
+                        handleAssign(inquiry.id, e.target.value, e.target)
                       }
                       className="h-7 px-1 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm w-full"
                     >
@@ -883,65 +674,20 @@ export default function DbManagementPage() {
                     </select>
                   </td>
                   <td className="px-2 py-3 font-medium whitespace-nowrap">
-                    <span
-                      className="cursor-pointer hover:text-primary hover:underline"
-                      onClick={() => handleCustomerClick(customer.id)}
-                    >
-                      {customer.name}
-                    </span>
+                    {inquiry.customerName}
                   </td>
-                  <td className="px-2 py-3 whitespace-nowrap">{customer.phone}</td>
-                  <td className="px-2 py-3">
-                    {isAdmin ? (
-                      <Input
-                        defaultValue={customer.interestProduct || ""}
-                        onBlur={(e) => {
-                          if (
-                            e.target.value !== (customer.interestProduct || "")
-                          ) {
-                            handleInterestProductSave(
-                              customer.id,
-                              e.target.value
-                            );
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.nativeEvent.isComposing)
-                            e.currentTarget.blur();
-                        }}
-                        className="h-7 text-sm bg-transparent border-zinc-200 dark:border-zinc-700 w-full"
-                        placeholder="관심상품..."
-                      />
-                    ) : (
-                      <span className="text-sm text-muted-foreground">
-                        {customer.interestProduct || "-"}
-                      </span>
-                    )}
+                  <td className="px-2 py-3 whitespace-nowrap">
+                    {inquiry.phone || "-"}
                   </td>
-                  {isAdmin && (
-                    <td className="px-2 py-3">
-                      <select
-                        value={customer.source || ""}
-                        onChange={(e) =>
-                          handleSourceChange(customer.id, e.target.value)
-                        }
-                        className="h-7 px-1 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm w-full"
-                      >
-                        <option value="">선택</option>
-                        {sources?.map((src) => (
-                          <option key={src.id} value={src.name}>
-                            {src.name}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                  )}
+                  <td className="px-2 py-3 text-muted-foreground truncate">
+                    {inquiry.productName || "-"}
+                  </td>
                   <td className="px-2 py-3">
-                    {canEditMemo(customer) ? (
+                    {canEditMemo(inquiry) ? (
                       <select
-                        value={customer.status}
+                        value={inquiry.status}
                         onChange={(e) =>
-                          handleStatusChange(customer.id, e.target.value)
+                          handleStatusChange(inquiry.id, e.target.value)
                         }
                         className="h-7 px-1 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm w-full"
                       >
@@ -954,53 +700,30 @@ export default function DbManagementPage() {
                     ) : (
                       <span className="px-2 py-1 rounded-full text-xs bg-zinc-100 dark:bg-zinc-800 whitespace-nowrap">
                         {CUSTOMER_STATUSES.find(
-                          (s) => s.value === customer.status
-                        )?.label || customer.status}
+                          (s) => s.value === inquiry.status
+                        )?.label || inquiry.status}
                       </span>
                     )}
                   </td>
                   <td className="px-2 py-3">
-                    <div className="flex items-center gap-1">
-                      <div className="flex-1 min-w-0">
-                        <div
-                          className="text-sm text-muted-foreground truncate"
-                          title={customer.memo || ""}
-                        >
-                          {customer.memo || "-"}
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleNotesClick(customer.id)}
-                        className="h-6 w-6 p-0 shrink-0"
-                        title="메모 보기"
-                      >
-                        <MessageSquare className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </td>
-                  <td className="px-2 py-3">
-                    {isAdmin ? (
+                    {canEditMemo(inquiry) ? (
                       <Input
-                        defaultValue={customer.adminComment || ""}
+                        defaultValue={inquiry.memo || ""}
                         onBlur={(e) => {
-                          if (
-                            e.target.value !== (customer.adminComment || "")
-                          ) {
-                            handleAdminCommentSave(customer.id, e.target.value);
+                          if (e.target.value !== (inquiry.memo || "")) {
+                            handleMemoSave(inquiry.id, e.target.value);
                           }
                         }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" && !e.nativeEvent.isComposing)
                             e.currentTarget.blur();
                         }}
-                        className="h-8 text-sm bg-transparent border-zinc-200 dark:border-zinc-700"
-                        placeholder="코멘트..."
+                        className="h-7 text-sm bg-transparent border-zinc-200 dark:border-zinc-700 w-full"
+                        placeholder="메모..."
                       />
                     ) : (
                       <span className="text-sm text-muted-foreground">
-                        {customer.adminComment || "-"}
+                        {inquiry.memo || "-"}
                       </span>
                     )}
                   </td>
@@ -1066,10 +789,10 @@ export default function DbManagementPage() {
                 </Label>
                 <Input
                   id="name"
-                  value={formData.name}
+                  value={formData.customerName}
                   onChange={(e) => handleNameChange(e.target.value)}
                   onBlur={handleNameBlur}
-                  placeholder="고객명 입력 (한글/영문)"
+                  placeholder="고객명 입력"
                   className={
                     formErrors.name
                       ? "border-red-500 focus-visible:ring-red-500"
@@ -1089,7 +812,7 @@ export default function DbManagementPage() {
                 </Label>
                 <Input
                   id="phone"
-                  value={formData.phone || ""}
+                  value={formData.phone}
                   onChange={(e) => handlePhoneChange(e.target.value)}
                   onBlur={handlePhoneBlur}
                   placeholder="010-0000-0000"
@@ -1109,62 +832,24 @@ export default function DbManagementPage() {
                 )}
               </div>
               <div>
-                <Label htmlFor="interestProduct">
-                  관심항목 <span className="text-red-500">*</span>
-                </Label>
+                <Label htmlFor="productName">상품명</Label>
                 <Input
-                  id="interestProduct"
-                  value={formData.interestProduct || ""}
-                  onChange={(e) => {
+                  id="productName"
+                  value={formData.productName}
+                  onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
-                      interestProduct: e.target.value,
-                    }));
-                    if (formErrors.interestProduct && e.target.value.trim()) {
-                      setFormErrors((prev) => ({
-                        ...prev,
-                        interestProduct: undefined,
-                      }));
-                    }
-                  }}
-                  onBlur={handleInterestProductBlur}
+                      productName: e.target.value,
+                    }))
+                  }
                   placeholder="관심 상품/서비스"
-                  className={
-                    formErrors.interestProduct
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                  }
                 />
-                {formErrors.interestProduct && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
-                    <AlertCircle className="h-3 w-3" />
-                    {formErrors.interestProduct}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="source">유입경로</Label>
-                <select
-                  id="source"
-                  value={formData.source || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, source: e.target.value }))
-                  }
-                  className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
-                >
-                  <option value="">선택</option>
-                  {sources?.map((src) => (
-                    <option key={src.id} value={src.name}>
-                      {src.name}
-                    </option>
-                  ))}
-                </select>
               </div>
               <div>
                 <Label htmlFor="manager">담당자</Label>
                 <select
                   id="manager"
-                  value={formData.managerId || ""}
+                  value={formData.managerId}
                   onChange={(e) =>
                     setFormData((prev) => ({
                       ...prev,
@@ -1192,9 +877,9 @@ export default function DbManagementPage() {
                 <Button
                   className="flex-1"
                   onClick={handleAddSubmit}
-                  disabled={isSubmitting}
+                  disabled={createInquiry.isPending}
                 >
-                  {isSubmitting ? (
+                  {createInquiry.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : null}
                   등록
@@ -1204,16 +889,6 @@ export default function DbManagementPage() {
           </div>
         </div>
       )}
-
-      {/* 메모 상세보기 모달 */}
-      {notesCustomerId && (
-        <CustomerNotesModal
-          customer={dbList.find((c) => c.id === notesCustomerId)!}
-          isOpen={!!notesCustomerId}
-          onClose={() => setNotesCustomerId(null)}
-        />
-      )}
-
     </div>
   );
 }
