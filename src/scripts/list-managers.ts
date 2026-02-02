@@ -1,11 +1,12 @@
+import 'dotenv/config'
 import { google } from 'googleapis'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
-const SHEET_ID = '***REMOVED***'
+const SHEET_ID = process.env.GOOGLE_SHEET_ID!
 
 async function listManagers() {
-  const keyPath = join(process.cwd(), '***REMOVED***.json')
+  const keyPath = join(process.cwd(), process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE || 'google-service-account.json')
   const credentials = JSON.parse(readFileSync(keyPath, 'utf-8'))
 
   const auth = new google.auth.GoogleAuth({

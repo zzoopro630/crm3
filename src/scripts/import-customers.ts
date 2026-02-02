@@ -6,7 +6,7 @@ import postgres from 'postgres'
 import * as readline from 'readline'
 
 const sql = postgres(process.env.DATABASE_URL!)
-const SHEET_ID = '***REMOVED***'
+const SHEET_ID = process.env.GOOGLE_SHEET_ID!
 
 // 상태 매핑
 const STATUS_MAP: Record<string, string> = {
@@ -37,7 +37,7 @@ async function importCustomers() {
 
   try {
     // 1. Google Sheets 인증
-    const keyPath = join(process.cwd(), '***REMOVED***.json')
+    const keyPath = join(process.cwd(), process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE || 'google-service-account.json')
     const credentials = JSON.parse(readFileSync(keyPath, 'utf-8'))
     const auth = new google.auth.GoogleAuth({
       credentials,
