@@ -145,7 +145,18 @@ export default function DbManagementPage() {
     setCurrentPage(1);
   }, [activeTab]);
 
-  const handleAssign = async (inquiryId: number, managerId: string) => {
+  const handleAssign = async (inquiryId: number, managerId: string, selectEl: HTMLSelectElement) => {
+    if (!managerId) return;
+
+    const managerName = filteredEmployees.find((e) => e.id === managerId)?.fullName || "선택한 담당자";
+    const inquiry = dbList.find((c) => c.id === inquiryId);
+    const prevManagerId = inquiry?.managerId || "";
+
+    if (!window.confirm(`"${managerName}"에게 배정하시겠습니까?`)) {
+      selectEl.value = prevManagerId;
+      return;
+    }
+
     try {
       await updateInquiry.mutateAsync({
         id: inquiryId,
@@ -154,6 +165,7 @@ export default function DbManagementPage() {
     } catch (error) {
       console.error("Failed to assign manager:", error);
       alert("담당자 배정에 실패했습니다.");
+      selectEl.value = prevManagerId;
     }
   };
 
@@ -315,7 +327,7 @@ export default function DbManagementPage() {
         </label>
         <select
           value={inquiry.managerId || ""}
-          onChange={(e) => handleAssign(inquiry.id, e.target.value)}
+          onChange={(e) => handleAssign(inquiry.id, e.target.value, e.target)}
           className="w-full h-9 px-3 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm"
         >
           <option value="">담당자 선택</option>
