@@ -11,6 +11,7 @@ export interface Inquiry {
   status: string;
   email: string | null;
   memo: string | null;
+  adminComment: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -36,6 +37,7 @@ export interface UpdateInquiryInput {
   status?: string;
   memo?: string;
   email?: string;
+  adminComment?: string;
 }
 
 export interface CreateInquiryInput {

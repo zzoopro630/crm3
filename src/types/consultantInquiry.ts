@@ -13,6 +13,7 @@ export interface ConsultantInquiry {
   managerName: string | null;
   status: string;
   memo: string | null;
+  adminComment: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -37,4 +38,5 @@ export interface UpdateConsultantInquiryInput {
   managerId?: string;
   status?: string;
   memo?: string;
+  adminComment?: string;
 }
