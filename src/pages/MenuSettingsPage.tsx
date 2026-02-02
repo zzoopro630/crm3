@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppSettings, useUpdateSettings } from '@/hooks/useAppSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,8 +38,11 @@ export default function MenuSettingsPage() {
   const { data: settings = [], isLoading } = useAppSettings();
   const updateSettings = useUpdateSettings();
   const [labels, setLabels] = useState<Record<string, string>>({});
+  const initialized = useRef(false);
 
   useEffect(() => {
+    if (initialized.current || settings.length === 0) return;
+    initialized.current = true;
     const map: Record<string, string> = {};
     for (const s of settings) {
       if (s.key.startsWith('menu_label:') && s.value) {
