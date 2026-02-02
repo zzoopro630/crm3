@@ -1369,7 +1369,7 @@ app.get("/api/inquiries", async (c) => {
     query = query.eq("manager_id", managerId);
   }
 
-  query = query.order("inquiry_date", { ascending: false });
+  query = query.order("created_at", { ascending: false });
   query = query.range(offset, offset + limit - 1);
 
   const { data, count, error } = await query;
