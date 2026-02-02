@@ -342,7 +342,7 @@ npx tsx src/db/add-foreign-keys.ts
 `.env.local` 파일:
 ```
 VITE_SUPABASE_URL=https://xxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 ```
 
 ---
