@@ -16,6 +16,8 @@ import {
   Trash2,
   BarChart3,
   BookUser,
+  MessageSquare,
+  UserPlus,
 } from "lucide-react";
 import type { SecurityLevel } from "@/types/employee";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -56,6 +58,18 @@ const navItems: NavItem[] = [
     href: "/contacts-direct",
     icon: BookUser,
     allowedOrgs: ["직할"],
+  },
+  {
+    title: "the-fin 문의",
+    href: "/consultant-inquiries",
+    icon: MessageSquare,
+    allowedLevels: ["F1", "F2", "F3", "F4", "F5"],
+  },
+  {
+    title: "입사문의",
+    href: "/recruit-inquiries",
+    icon: UserPlus,
+    allowedLevels: ["F1", "F2"],
   },
   {
     title: "광고 분석",
