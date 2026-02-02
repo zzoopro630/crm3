@@ -24,6 +24,8 @@ import AdsNDataPage from '@/pages/ads/AdsNDataPage'
 import AdsReportPage from '@/pages/ads/AdsReportPage'
 import AdsWeeklyPage from '@/pages/ads/AdsWeeklyPage'
 import ContactsDirectPage from '@/pages/ContactsDirectPage'
+import ConsultantInquiriesPage from '@/pages/ConsultantInquiriesPage'
+import RecruitInquiriesPage from '@/pages/RecruitInquiriesPage'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -77,6 +79,8 @@ function AppContent() {
         <Route path="/trash" element={<TrashPage />} />
         <Route path="/team" element={<TeamPage />} />
         <Route path="/contacts-direct" element={<ContactsDirectPage />} />
+        <Route path="/consultant-inquiries" element={<ConsultantInquiriesPage />} />
+        <Route path="/recruit-inquiries" element={<RecruitInquiriesPage />} />
 
         {/* Ads nested routes (F1 only) */}
         <Route path="/ads" element={<AdsPage />}>
