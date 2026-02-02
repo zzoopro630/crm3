@@ -1,5 +1,6 @@
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ChevronRight, Home } from "lucide-react";
+import { useMenuLabels } from "@/hooks/useAppSettings";
 
 // 경로 → 타이틀 매핑
 const ROUTE_TITLES: Record<string, string> = {
@@ -10,11 +11,14 @@ const ROUTE_TITLES: Record<string, string> = {
   "/settings": "설정",
   "/settings/organizations": "조직 관리",
   "/settings/labels": "라벨 관리",
+  "/settings/menus": "메뉴 관리",
   "/settings/employees": "사원 관리",
   "/settings/approvals": "승인 대기",
   "/settings/system": "시스템 설정",
   "/trash": "휴지통",
   "/contacts-direct": "연락처",
+  "/consultant-inquiries": "the-fin 문의",
+  "/recruit-inquiries": "입사문의",
   "/ads": "광고 분석",
   "/ads/ndata": "N-DATA",
   "/ads/report": "보고서",
@@ -33,11 +37,15 @@ export function useBreadcrumbs(): {
 } {
   const location = useLocation();
   const params = useParams();
+  const menuLabels = useMenuLabels();
   const pathname = location.pathname;
+
+  // 커스텀 이름이 있으면 우선, 없으면 기본 매핑
+  const getTitle = (path: string) => menuLabels[path] || ROUTE_TITLES[path];
 
   // 최상위 경로의 타이틀 (예: /settings/labels → "설정")
   const topSegment = "/" + (pathname.split("/").filter(Boolean)[0] || "");
-  let title = ROUTE_TITLES[topSegment] || ROUTE_TITLES[pathname] || "페이지";
+  let title = getTitle(topSegment) || getTitle(pathname) || "페이지";
 
   // 고객 상세 페이지 처리
   if (pathname.startsWith("/customers/") && params.id) {
@@ -64,7 +72,7 @@ export function useBreadcrumbs(): {
     if (/^\d+$/.test(segment)) {
       breadcrumbs.push({ label: "상세", path: currentPath, isLast });
     } else {
-      const label = ROUTE_TITLES[currentPath] || segment;
+      const label = getTitle(currentPath) || segment;
       breadcrumbs.push({ label, path: currentPath, isLast });
     }
   });
