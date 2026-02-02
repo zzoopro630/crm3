@@ -5,7 +5,7 @@ import { join } from 'path'
 import postgres from 'postgres'
 
 const sql = postgres(process.env.DATABASE_URL!)
-const SHEET_ID = '***REMOVED***'
+const SHEET_ID = process.env.GOOGLE_SHEET_ID!
 
 // 월별 탭 목록
 const MONTHLY_TABS = [
@@ -36,7 +36,7 @@ async function importFromMonthlyTabs() {
 
   try {
     // 1. Google Sheets 인증
-    const keyPath = join(process.cwd(), '***REMOVED***.json')
+    const keyPath = join(process.cwd(), process.env.GOOGLE_SERVICE_ACCOUNT_KEY_FILE || 'google-service-account.json')
     const credentials = JSON.parse(readFileSync(keyPath, 'utf-8'))
     const auth = new google.auth.GoogleAuth({
       credentials,
