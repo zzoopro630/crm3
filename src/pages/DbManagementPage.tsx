@@ -661,7 +661,7 @@ export default function DbManagementPage() {
                     <select
                       value={inquiry.managerId || ""}
                       onChange={(e) =>
-                        handleAssign(inquiry.id, e.target.value)
+                        handleAssign(inquiry.id, e.target.value, e.target)
                       }
                       className="h-7 px-1 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-sm w-full"
                     >
