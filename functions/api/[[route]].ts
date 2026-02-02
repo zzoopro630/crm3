@@ -2027,6 +2027,40 @@ app.post("/api/ads/ga/edge-total-sessions", async (c) => {
   return c.json(data);
 });
 
+// ============ Settings API ============
+app.get("/api/settings", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+
+  const { data, error } = await supabase
+    .from("app_settings")
+    .select("key, value");
+
+  if (error) return c.json({ error: error.message }, 500);
+
+  return c.json(
+    (data || []).map((row: any) => ({ key: row.key, value: row.value }))
+  );
+});
+
+app.put("/api/settings", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const body = await c.req.json();
+  const items = body.items as Array<{ key: string; value: string | null }>;
+
+  for (const item of items) {
+    if (item.value) {
+      await supabase.from("app_settings").upsert(
+        { key: item.key, value: item.value, updated_at: new Date().toISOString() },
+        { onConflict: "key" }
+      );
+    } else {
+      await supabase.from("app_settings").delete().eq("key", item.key);
+    }
+  }
+
+  return c.json({ success: true });
+});
+
 // ============ Address Search Proxy API ============
 app.get("/api/address/search", async (c) => {
   const keyword = c.req.query("keyword") || "";
