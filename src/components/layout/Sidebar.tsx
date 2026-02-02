@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import type { SecurityLevel } from "@/types/employee";
 import { useOrganizations } from "@/hooks/useOrganizations";
+import { useMenuLabels } from "@/hooks/useAppSettings";
 
 interface NavItem {
   title: string;
@@ -117,6 +118,12 @@ const navItems: NavItem[] = [
         allowedLevels: ["F1"],
       },
       {
+        title: "메뉴 관리",
+        href: "/settings/menus",
+        icon: Settings,
+        allowedLevels: ["F1"],
+      },
+      {
         title: "사원 관리",
         href: "/settings/employees",
         icon: Settings,
@@ -149,6 +156,7 @@ export function Sidebar({
   const location = useLocation();
   const { employee } = useAuthStore();
   const { data: organizations = [] } = useOrganizations();
+  const menuLabels = useMenuLabels();
 
   // 모바일에서는 축소 상태를 무시하고 항상 풀 메뉴 표시
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
@@ -363,7 +371,7 @@ export function Sidebar({
                     <item.icon className="h-5 w-5 shrink-0" />
                     {!effectiveCollapsed && (
                       <>
-                        <span className="truncate">{item.title}</span>
+                        <span className="truncate">{menuLabels[item.href] || item.title}</span>
                         {hasSubmenu && (
                           <ChevronDown
                             className={cn(
@@ -401,7 +409,7 @@ export function Sidebar({
                             )}
                           >
                             <subItem.icon className="h-4 w-4 shrink-0" />
-                            <span className="truncate">{subItem.title}</span>
+                            <span className="truncate">{menuLabels[subItem.href] || subItem.title}</span>
                           </Link>
                         );
                       })}

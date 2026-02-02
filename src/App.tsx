@@ -26,6 +26,7 @@ import AdsWeeklyPage from '@/pages/ads/AdsWeeklyPage'
 import ContactsDirectPage from '@/pages/ContactsDirectPage'
 import ConsultantInquiriesPage from '@/pages/ConsultantInquiriesPage'
 import RecruitInquiriesPage from '@/pages/RecruitInquiriesPage'
+import MenuSettingsPage from '@/pages/MenuSettingsPage'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -95,6 +96,7 @@ function AppContent() {
           <Route index element={<Navigate to="organizations" replace />} />
           <Route path="organizations" element={<OrganizationsPage />} />
           <Route path="labels" element={<LabelsPage />} />
+          <Route path="menus" element={<MenuSettingsPage />} />
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="approvals" element={<PendingApprovalsPage />} />
           <Route path="system" element={<SystemSettingsPage />} />
