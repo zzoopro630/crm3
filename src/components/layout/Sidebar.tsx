@@ -145,6 +145,7 @@ interface SidebarProps {
   onToggle: () => void;
   isCollapsed?: boolean;
   onCollapseToggle?: () => void;
+  onNavigateToMainMenu?: () => void;
 }
 
 export function Sidebar({
@@ -152,6 +153,7 @@ export function Sidebar({
   onToggle,
   isCollapsed = false,
   onCollapseToggle,
+  onNavigateToMainMenu,
 }: SidebarProps) {
   const location = useLocation();
   const { employee } = useAuthStore();
@@ -176,6 +178,11 @@ export function Sidebar({
         location.pathname.startsWith(subItem.href + "/")
     );
   };
+
+  // 현재 경로가 서브메뉴 영역인지 확인 (어떤 서브메뉴든)
+  const isInAnySubmenu = navItems.some(
+    (item) => item.submenuItems && isInSubmenu(item)
+  );
 
   // 현재 활성화된 메뉴 아이템 찾기
   const getActiveItem = (): NavItem | null => {
@@ -346,6 +353,10 @@ export function Sidebar({
                     to={hasSubmenu ? item.submenuItems![0].href : item.href}
                     onClick={(e) => {
                       if (window.innerWidth < 1024) onToggle();
+                      // 일반 메뉴(서브메뉴가 없는) 클릭 시 수동 축소 설정 초기화
+                      if (!hasSubmenu && onNavigateToMainMenu) {
+                        onNavigateToMainMenu();
+                      }
                       // 데스크탑: 하위 메뉴가 있으면 네비게이션 대신 토글
                       if (hasSubmenu && window.innerWidth >= 1024 && !effectiveCollapsed) {
                         e.preventDefault();
@@ -384,12 +395,13 @@ export function Sidebar({
                     )}
                   </Link>
 
-                  {/* 하위 메뉴 (축소되지 않았을 때만 표시) */}
-                  {hasSubmenu && !effectiveCollapsed && (
+                  {/* 하위 메뉴: 축소 상태에서는 활성화된 서브메뉴만 표시 */}
+                  {hasSubmenu && (!effectiveCollapsed || (effectiveCollapsed && isActive)) && (
                     <div
                       className={cn(
-                        "ml-6 mt-1 space-y-1 overflow-hidden transition-all duration-200",
-                        isSubmenuOpen ? "max-h-96" : "max-h-0"
+                        "mt-1 space-y-1 overflow-hidden transition-all duration-200",
+                        effectiveCollapsed ? "ml-0" : "ml-6",
+                        isSubmenuOpen || (effectiveCollapsed && isActive) ? "max-h-96" : "max-h-0"
                       )}
                     >
                       {item.submenuItems?.map((subItem) => {
@@ -405,11 +417,17 @@ export function Sidebar({
                               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors w-full",
                               isSubActive
                                 ? "bg-primary/10 text-primary"
-                                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                              // 축소 상태에서 서브메뉴 항목도 opacity 적용
+                              effectiveCollapsed && isInAnySubmenu && !isSubActive
+                                ? "opacity-50"
+                                : ""
                             )}
                           >
                             <subItem.icon className="h-4 w-4 shrink-0" />
-                            <span className="truncate">{menuLabels[subItem.href] || subItem.title}</span>
+                            {!effectiveCollapsed && (
+                              <span className="truncate">{menuLabels[subItem.href] || subItem.title}</span>
+                            )}
                           </Link>
                         );
                       })}
