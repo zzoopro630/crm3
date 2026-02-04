@@ -1655,7 +1655,7 @@ app.get("/api/recruit-inquiries", async (c) => {
     .schema("marketing")
     .from("inquiries")
     .select("*", { count: "exact" })
-    .ilike("utm_campaign", "%recruit%");
+    .or("utm_campaign.ilike.%recruit%,source_url.ilike.%contact-forms/456%");
 
   if (search) {
     query = query.or(`customer_name.ilike.%${search}%,phone.ilike.%${search}%`);
