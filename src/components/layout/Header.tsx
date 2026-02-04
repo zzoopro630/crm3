@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useThemeStore } from '@/stores/themeStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -25,7 +26,9 @@ import {
     Palette,
     Check,
     Bell,
-    CircleUser
+    CircleUser,
+    Minus,
+    Plus,
 } from 'lucide-react'
 import { SidebarTrigger } from './Sidebar'
 import { Breadcrumb } from './Breadcrumb'
@@ -37,12 +40,17 @@ interface HeaderProps {
 
 export function Header({ onSidebarToggle }: HeaderProps) {
     const navigate = useNavigate()
-    const { theme, setTheme } = useThemeStore()
+    const { theme, setTheme, fontSize, increaseFontSize, decreaseFontSize } = useThemeStore()
     const { signOut, user, employee } = useAuthStore()
     const handleSignOut = async () => {
         await signOut()
         navigate('/login')
     }
+
+    // fontSize 적용
+    useEffect(() => {
+        document.documentElement.style.fontSize = `${fontSize}px`
+    }, [fontSize])
 
     const getThemeLabel = () => {
         switch (theme) {
@@ -70,7 +78,32 @@ export function Header({ onSidebarToggle }: HeaderProps) {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                    {/* 퀵 액션이나 알림 버튼 (예시) */}
+                    {/* 텍스트 배율 조절 */}
+                    <div className="hidden md:flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={decreaseFontSize}
+                            disabled={fontSize <= 12}
+                            className="text-muted-foreground w-8 h-8"
+                        >
+                            <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="text-xs text-muted-foreground w-8 text-center tabular-nums">
+                            {fontSize}
+                        </span>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={increaseFontSize}
+                            disabled={fontSize >= 18}
+                            className="text-muted-foreground w-8 h-8"
+                        >
+                            <Plus className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    {/* 알림 버튼 */}
                     <Button variant="ghost" size="icon" className="text-muted-foreground w-9 h-9">
                         <Bell className="h-5 w-5" />
                     </Button>

@@ -18,6 +18,13 @@ import {
   BookUser,
   MessageSquare,
   UserPlus,
+  FileText,
+  TrendingUp,
+  Building2,
+  Tag,
+  LayoutList,
+  UserCog,
+  Clock,
 } from "lucide-react";
 import type { SecurityLevel } from "@/types/employee";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -88,13 +95,13 @@ const navItems: NavItem[] = [
       {
         title: "보고서",
         href: "/ads/report",
-        icon: BarChart3,
+        icon: FileText,
         allowedLevels: ["F1"],
       },
       {
         title: "주간데이터",
         href: "/ads/weekly",
-        icon: BarChart3,
+        icon: TrendingUp,
         allowedLevels: ["F1"],
       },
     ],
@@ -108,31 +115,31 @@ const navItems: NavItem[] = [
       {
         title: "조직 관리",
         href: "/settings/organizations",
-        icon: Settings,
+        icon: Building2,
         allowedLevels: ["F1", "F2", "F3", "F4", "F5"],
       },
       {
         title: "라벨 관리",
         href: "/settings/labels",
-        icon: Settings,
+        icon: Tag,
         allowedLevels: ["F1"],
       },
       {
         title: "메뉴 관리",
         href: "/settings/menus",
-        icon: Settings,
+        icon: LayoutList,
         allowedLevels: ["F1"],
       },
       {
         title: "사원 관리",
         href: "/settings/employees",
-        icon: Settings,
+        icon: UserCog,
         allowedLevels: ["F1"],
       },
       {
         title: "승인 대기",
         href: "/settings/approvals",
-        icon: Settings,
+        icon: Clock,
         allowedLevels: ["F1"],
       },
       { title: "시스템 설정", href: "/settings/system", icon: Settings },
@@ -167,7 +174,10 @@ export function Sidebar({
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-  const effectiveCollapsed = isDesktop && isCollapsed;
+
+  // 축소 사이드바 호버 시 펼침
+  const [hoverExpanded, setHoverExpanded] = useState(false);
+  const effectiveCollapsed = isDesktop && isCollapsed && !hoverExpanded;
 
   // 현재 경로가 하위 메뉴에 속하는지 확인
   const isInSubmenu = (item: NavItem): boolean => {
@@ -291,12 +301,20 @@ export function Sidebar({
 
       {/* Sidebar */}
       <aside
+        onMouseEnter={() => {
+          if (isCollapsed && isDesktop) setHoverExpanded(true);
+        }}
+        onMouseLeave={() => {
+          if (isCollapsed && isDesktop) setHoverExpanded(false);
+        }}
         className={cn(
           "fixed left-0 top-0 z-50 h-full bg-card border-r border-border transition-all duration-300 ease-in-out lg:translate-x-0",
           // 모바일: 항상 w-64 (풀 드로어), 데스크탑: 축소 상태에 따라
           "w-64",
-          isCollapsed && "lg:w-16",
-          isOpen ? "translate-x-0" : "-translate-x-full"
+          isCollapsed && !hoverExpanded && "lg:w-16",
+          isOpen ? "translate-x-0" : "-translate-x-full",
+          // 호버 펼침 시 그림자 추가
+          hoverExpanded && "shadow-xl"
         )}
       >
         <div className="flex h-full flex-col">
