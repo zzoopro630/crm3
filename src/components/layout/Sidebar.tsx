@@ -383,6 +383,7 @@ export function Sidebar({
                     }}
                     className={cn(
                       "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full",
+                      effectiveCollapsed && "justify-center px-0",
                       isActive
                         ? "bg-primary/10 text-primary"
                         : "text-muted-foreground hover:bg-secondary hover:text-foreground",
@@ -433,6 +434,7 @@ export function Sidebar({
                             }}
                             className={cn(
                               "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors w-full",
+                              effectiveCollapsed && "justify-center px-0",
                               isSubActive
                                 ? "bg-primary/10 text-primary"
                                 : "text-muted-foreground hover:bg-secondary hover:text-foreground",
