@@ -1353,7 +1353,9 @@ app.get("/api/inquiries", async (c) => {
   let query = (supabase as any)
     .schema("marketing")
     .from("inquiries")
-    .select("*", { count: "exact" });
+    .select("*", { count: "exact" })
+    .not("source_url", "ilike", "%contact-forms/456%")
+    .not("utm_campaign", "ilike", "%recruit%");
 
   if (search) {
     query = query.or(`customer_name.ilike.%${search}%,phone.ilike.%${search}%`);
