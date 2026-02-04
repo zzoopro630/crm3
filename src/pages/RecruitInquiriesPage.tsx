@@ -14,8 +14,13 @@ import {
   useRecruitInquiries,
   useUpdateRecruitInquiry,
 } from "@/hooks/useRecruitInquiries";
-import { CUSTOMER_STATUSES } from "@/types/customer";
 import type { InquiryListParams } from "@/types/inquiry";
+
+const RECRUIT_STATUSES = [
+  { value: "new", label: "접수" },
+  { value: "called", label: "통화완료" },
+  { value: "no_answer", label: "부재" },
+] as const;
 
 const PAGE_SIZE_OPTIONS = [15, 30, 50, 100];
 
@@ -78,23 +83,6 @@ export default function RecruitInquiriesPage() {
   const list = response?.data || [];
   const totalCount = response?.total || 0;
   const totalPages = Math.ceil(totalCount / pageSize);
-
-  const handleAssign = async (
-    inquiryId: number,
-    managerId: string,
-    selectEl: HTMLSelectElement
-  ) => {
-    if (!managerId) return;
-    const prevValue = selectEl.dataset.prevValue || "";
-    try {
-      await updateInquiry.mutateAsync({
-        id: inquiryId,
-        input: { managerId },
-      });
-    } catch {
-      selectEl.value = prevValue;
-    }
-  };
 
   const handleStatusChange = async (
     inquiryId: number,
@@ -185,7 +173,7 @@ export default function RecruitInquiriesPage() {
             className="px-3 py-2 text-sm border rounded-lg bg-background"
           >
             <option value="">상태 전체</option>
-            {CUSTOMER_STATUSES.map((s) => (
+            {RECRUIT_STATUSES.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
               </option>
@@ -210,15 +198,10 @@ export default function RecruitInquiriesPage() {
               <tr>
                 <th className="px-3 py-3 text-left font-medium">고객명</th>
                 <th className="px-3 py-3 text-left font-medium">연락처</th>
-                <th className="px-3 py-3 text-left font-medium">상품명</th>
                 <th className="px-3 py-3 text-left font-medium">캠페인</th>
                 <th className="px-3 py-3 text-left font-medium">문의일</th>
-                <th className="px-3 py-3 text-left font-medium">담당자</th>
                 <th className="px-3 py-3 text-left font-medium">상태</th>
                 <th className="px-3 py-3 text-left font-medium">메모</th>
-                {isAdmin && (
-                  <th className="px-3 py-3 text-left font-medium">관리자 코멘트</th>
-                )}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -231,36 +214,10 @@ export default function RecruitInquiriesPage() {
                     {item.phone || "-"}
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
-                    {item.productName || "-"}
-                  </td>
-                  <td className="px-3 py-3 whitespace-nowrap">
                     {item.utmCampaign || "-"}
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     {formatDate(item.inquiryDate)}
-                  </td>
-                  <td className="px-3 py-3">
-                    {isAdmin ? (
-                      <select
-                        value={item.managerId || ""}
-                        data-prev-value={item.managerId || ""}
-                        onChange={(e) =>
-                          handleAssign(item.id, e.target.value, e.target)
-                        }
-                        className="px-2 py-1 text-xs border rounded bg-background w-20"
-                      >
-                        <option value="">미배정</option>
-                        {filteredEmployees.map((emp) => (
-                          <option key={emp.id} value={emp.id}>
-                            {emp.fullName}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span className="text-xs">
-                        {item.managerName || "미배정"}
-                      </span>
-                    )}
                   </td>
                   <td className="px-3 py-3">
                     <select
@@ -271,37 +228,32 @@ export default function RecruitInquiriesPage() {
                       }
                       className="px-2 py-1 text-xs border rounded bg-background w-20"
                     >
-                      {CUSTOMER_STATUSES.map((s) => (
+                      {RECRUIT_STATUSES.map((s) => (
                         <option key={s.value} value={s.value}>
                           {s.label}
                         </option>
                       ))}
                     </select>
                   </td>
-                  <td className="px-3 py-3 max-w-[150px] truncate">
-                    {item.memo || "-"}
+                  <td className="px-3 py-3">
+                    <input
+                      defaultValue={item.adminComment || ""}
+                      onBlur={(e) => {
+                        if (e.target.value !== (item.adminComment || "")) {
+                          updateInquiry.mutate({
+                            id: item.id,
+                            input: { adminComment: e.target.value },
+                          });
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.nativeEvent.isComposing)
+                          e.currentTarget.blur();
+                      }}
+                      className="px-2 py-1 text-xs border rounded bg-background w-full"
+                      placeholder="메모 입력..."
+                    />
                   </td>
-                  {isAdmin && (
-                    <td className="px-3 py-3">
-                      <input
-                        defaultValue={item.adminComment || ""}
-                        onBlur={(e) => {
-                          if (e.target.value !== (item.adminComment || "")) {
-                            updateInquiry.mutate({
-                              id: item.id,
-                              input: { adminComment: e.target.value },
-                            });
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.nativeEvent.isComposing)
-                            e.currentTarget.blur();
-                        }}
-                        className="px-2 py-1 text-xs border rounded bg-background w-full"
-                        placeholder="관리자 코멘트..."
-                      />
-                    </td>
-                  )}
                 </tr>
               ))}
             </tbody>
