@@ -5,14 +5,22 @@ type Theme = "dark" | "light" | "system";
 
 interface ThemeState {
   theme: Theme;
+  fontSize: number;
   setTheme: (theme: Theme) => void;
+  increaseFontSize: () => void;
+  decreaseFontSize: () => void;
 }
 
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
       theme: "light",
+      fontSize: 14,
       setTheme: (theme) => set({ theme }),
+      increaseFontSize: () =>
+        set((state) => ({ fontSize: Math.min(state.fontSize + 1, 18) })),
+      decreaseFontSize: () =>
+        set((state) => ({ fontSize: Math.max(state.fontSize - 1, 12) })),
     }),
     {
       name: "crm-theme",
