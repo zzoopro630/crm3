@@ -198,7 +198,7 @@ export default function RecruitInquiriesPage() {
               <tr>
                 <th className="px-3 py-3 text-left font-medium">고객명</th>
                 <th className="px-3 py-3 text-left font-medium">연락처</th>
-                <th className="px-3 py-3 text-left font-medium">캠페인</th>
+                <th className="px-3 py-3 text-left font-medium">문의내용</th>
                 <th className="px-3 py-3 text-left font-medium">문의일</th>
                 <th className="px-3 py-3 text-left font-medium">상태</th>
                 <th className="px-3 py-3 text-left font-medium">메모</th>
@@ -213,8 +213,8 @@ export default function RecruitInquiriesPage() {
                   <td className="px-3 py-3 whitespace-nowrap">
                     {item.phone || "-"}
                   </td>
-                  <td className="px-3 py-3 whitespace-nowrap">
-                    {item.utmCampaign || "-"}
+                  <td className="px-3 py-3 max-w-[200px] truncate" title={item.request || ""}>
+                    {item.request || "-"}
                   </td>
                   <td className="px-3 py-3 whitespace-nowrap">
                     {formatDate(item.inquiryDate)}

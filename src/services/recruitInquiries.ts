@@ -1,8 +1,8 @@
 import type {
   InquiryListParams,
-  InquiryListResponse,
+  RecruitInquiryListResponse,
   UpdateInquiryInput,
-  Inquiry,
+  RecruitInquiry,
 } from "@/types/inquiry";
 
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
@@ -26,7 +26,7 @@ async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
 
 export async function getRecruitInquiries(
   params: InquiryListParams = {}
-): Promise<InquiryListResponse> {
+): Promise<RecruitInquiryListResponse> {
   const { page = 1, limit = 15, search, status, managerId } = params;
 
   const searchParams = new URLSearchParams({
@@ -38,7 +38,7 @@ export async function getRecruitInquiries(
   if (status) searchParams.set("status", status);
   if (managerId) searchParams.set("managerId", managerId);
 
-  return apiRequest<InquiryListResponse>(
+  return apiRequest<RecruitInquiryListResponse>(
     `/api/recruit-inquiries?${searchParams}`
   );
 }
@@ -46,8 +46,8 @@ export async function getRecruitInquiries(
 export async function updateRecruitInquiry(
   id: number,
   input: UpdateInquiryInput
-): Promise<Inquiry> {
-  return apiRequest<Inquiry>(`/api/recruit-inquiries/${id}`, {
+): Promise<RecruitInquiry> {
+  return apiRequest<RecruitInquiry>(`/api/recruit-inquiries/${id}`, {
     method: "PUT",
     body: JSON.stringify(input),
   });
