@@ -744,12 +744,25 @@ app.delete("/api/employees/:id/permanent", async (c) => {
   // 비활성 사원인지 확인
   const { data: employee } = await supabase
     .from("employees")
-    .select("is_active")
+    .select("is_active, full_name")
     .eq("id", id)
     .single();
 
   if (employee?.is_active) {
     return c.json({ error: "활성 사원은 완전 삭제할 수 없습니다" }, 400);
+  }
+
+  // 담당 고객이 있는지 확인
+  const { count: customerCount } = await supabase
+    .from("customers")
+    .select("*", { count: "exact", head: true })
+    .eq("manager_id", id);
+
+  if (customerCount && customerCount > 0) {
+    return c.json(
+      { error: `담당 고객 ${customerCount}건이 있어 삭제할 수 없습니다. 고객을 다른 담당자에게 이관 후 삭제하세요.` },
+      400
+    );
   }
 
   const { error } = await supabase.from("employees").delete().eq("id", id);
