@@ -1056,6 +1056,8 @@ app.put("/api/pending-approvals/:id/approve", async (c) => {
       full_name: body.fullName,
       security_level: body.securityLevel,
       organization_id: body.organizationId,
+      parent_id: body.parentId || null,
+      position_name: body.positionName || null,
     })
     .select()
     .single();
