@@ -662,10 +662,20 @@ export function EmployeesPage() {
                     variant="outline"
                     onClick={async () => {
                       if (!window.confirm(`선택한 ${selectedIds.length}명의 사원을 완전히 삭제하시겠습니까?\n\n⚠️ 이 작업은 되돌릴 수 없습니다.`)) return;
+                      const failed: string[] = [];
                       for (const id of selectedIds) {
-                        await permanentDeleteEmployee.mutateAsync(id);
+                        try {
+                          await permanentDeleteEmployee.mutateAsync(id);
+                        } catch (error) {
+                          const name = inactiveEmployees.find((e) => e.id === id)?.fullName || id;
+                          const reason = error instanceof Error ? error.message : "알 수 없는 오류";
+                          failed.push(`${name}: ${reason}`);
+                        }
                       }
                       setSelectedIds([]);
+                      if (failed.length > 0) {
+                        alert(`삭제 실패:\n\n${failed.join("\n")}`);
+                      }
                     }}
                     className="text-red-500 hover:text-red-600"
                     disabled={permanentDeleteEmployee.isPending}
