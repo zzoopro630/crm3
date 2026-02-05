@@ -124,32 +124,67 @@ export default function AdsWeeklyPage() {
     );
   }
 
+  // 전환단가(CPA) 데이터 계산
+  const cpaData = weeklyData.map((w) => ({
+    name: w.name,
+    cpa: w.inquiries > 0 ? Math.round(w.cost / w.inquiries) : 0,
+    inquiries: w.inquiries,
+  }));
+
   return (
     <div className="space-y-4">
-      {/* 차트 */}
-      <Card>
-        <CardContent className="pt-4 pb-4">
-          <h3 className="font-semibold mb-4">주간 광고비 추이</h3>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={weeklyData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
-                <XAxis dataKey="name" className="text-muted-foreground" fontSize={12} />
-                <YAxis className="text-muted-foreground" fontSize={12} tickFormatter={(val) => `${val / 10000}만`} />
-                <Tooltip
-                  contentStyle={{ borderRadius: "8px" }}
-                  formatter={(value: number | undefined, name: string | undefined) => [
-                    formatNumber(value ?? 0) + (name === "광고비" ? "원" : "건"),
-                    name ?? "",
-                  ]}
-                />
-                <Bar dataKey="cost" fill="hsl(var(--primary))" name="광고비" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="inquiries" fill="hsl(142, 71%, 45%)" name="문의수" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+      {/* 2분할 차트 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* 왼쪽: 주간 광고비 추이 */}
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <h3 className="font-semibold mb-4">주간 광고비 추이</h3>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
+                  <XAxis dataKey="name" className="text-muted-foreground" fontSize={12} />
+                  <YAxis className="text-muted-foreground" fontSize={12} tickFormatter={(val) => `${val / 10000}만`} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: "8px" }}
+                    formatter={(value: number | undefined, name: string | undefined) => [
+                      formatNumber(value ?? 0) + (name === "광고비" ? "원" : "건"),
+                      name ?? "",
+                    ]}
+                  />
+                  <Bar dataKey="cost" fill="hsl(var(--primary))" name="광고비" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="inquiries" fill="hsl(142, 71%, 45%)" name="문의수" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 오른쪽: 주간 전환단가 추이 */}
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <h3 className="font-semibold mb-4">주간 전환단가 추이</h3>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={cpaData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
+                  <XAxis dataKey="name" className="text-muted-foreground" fontSize={12} />
+                  <YAxis className="text-muted-foreground" fontSize={12} tickFormatter={(val) => `${val / 10000}만`} />
+                  <Tooltip
+                    contentStyle={{ borderRadius: "8px" }}
+                    formatter={(value: number | undefined, name: string | undefined) => [
+                      formatNumber(value ?? 0) + (name === "전환단가" ? "원" : "건"),
+                      name ?? "",
+                    ]}
+                  />
+                  <Bar dataKey="cpa" fill="hsl(25, 95%, 53%)" name="전환단가" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="inquiries" fill="hsl(142, 71%, 45%)" name="문의수" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* 비교 테이블 */}
       <Card>
