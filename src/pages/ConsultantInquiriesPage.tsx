@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useOrganizations } from "@/hooks/useOrganizations";
 import { useAuthStore } from "@/stores/authStore";
 import { useMenuLabels } from "@/hooks/useAppSettings";
 import { Input } from "@/components/ui/input";
@@ -29,7 +30,6 @@ export default function ConsultantInquiriesPage() {
   const menuLabels = useMenuLabels();
   const isAdmin =
     employee?.securityLevel === "F1" || employee?.securityLevel === "F2";
-  const isF1 = employee?.securityLevel === "F1";
 
   const [pageSize, setPageSize] = useState(getSavedPageSize);
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,16 +45,22 @@ export default function ConsultantInquiriesPage() {
   ).length;
 
   const { data: employees } = useEmployees();
+  const { data: organizations = [] } = useOrganizations();
   const updateInquiry = useUpdateConsultantInquiry();
 
+  // 직할 조직 ID
+  const directOrgId = useMemo(() => {
+    return organizations.find((org) => org.name === "직할")?.id;
+  }, [organizations]);
+
+  // 담당자 필터용 직원 목록 (직할 소속만)
   const filteredEmployees = useMemo(() => {
-    if (!employees) return [];
+    if (!employees || !directOrgId) return [];
     return employees.filter((emp) => {
       if (!emp.isActive) return false;
-      if (isF1) return true;
-      return emp.organizationId === employee?.organizationId;
+      return emp.organizationId === directOrgId;
     });
-  }, [employees, isF1, employee?.organizationId]);
+  }, [employees, directOrgId]);
 
   useEffect(() => {
     localStorage.setItem("consultantInquiries_pageSize", String(pageSize));
