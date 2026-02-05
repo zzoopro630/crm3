@@ -1835,6 +1835,28 @@ app.post("/api/ads/keyword-details", async (c) => {
   return c.json({ success: true, count: body.length });
 });
 
+// 키워드 상세 데이터 삭제 (날짜 범위)
+app.delete("/api/ads/keyword-details", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const startDate = c.req.query("startDate");
+  const endDate = c.req.query("endDate");
+
+  if (!startDate || !endDate) {
+    return c.json({ error: "startDate and endDate are required" }, 400);
+  }
+
+  const { data, error } = await (supabase as any)
+    .schema("marketing")
+    .from("keyword_details")
+    .delete()
+    .gte("report_date", startDate)
+    .lte("report_date", endDate)
+    .select("id");
+
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json({ success: true, deletedCount: data?.length || 0 });
+});
+
 // 문의 목록 조회
 app.get("/api/ads/inquiries", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
