@@ -103,9 +103,9 @@ export function CustomersPage() {
     employee && ["F1", "F2", "F3", "F4"].includes(employee.securityLevel);
   const activeEmployees = allEmployees?.filter((emp) => emp.isActive) || [];
 
-  // F5 사용자는 자신의 고객만 볼 수 있음
+  // 모든 사용자는 기본적으로 자신의 고객만 볼 수 있음
   const isF5Only = employee?.securityLevel === "F5";
-  const defaultManagerId = isF5Only ? employee?.id : managerFilter || undefined;
+  const defaultManagerId = employee?.id;
 
   const [params, setParams] = useState<CustomerListParams>({
     page: 1,
@@ -155,7 +155,7 @@ export function CustomersPage() {
     }));
   };
 
-  // URL의 manager 파라미터가 변경되면 params 업데이트 (F5는 항상 자신만)
+  // URL의 manager 파라미터가 변경되면 params 업데이트
   useEffect(() => {
     if (isF5Only) {
       // F5 사용자는 항상 자신의 고객만 볼 수 있음
@@ -164,11 +164,10 @@ export function CustomersPage() {
         filters: { ...prev.filters, managerId: employee?.id },
       }));
     } else {
+      // F1~F4: 담당자 필터가 있으면 해당 담당자, 없으면 자신의 고객
       setParams((prev) => ({
         ...prev,
-        filters: managerFilter
-          ? { ...prev.filters, managerId: managerFilter }
-          : { ...prev.filters, managerId: undefined },
+        filters: { ...prev.filters, managerId: managerFilter || employee?.id },
       }));
     }
   }, [managerFilter, isF5Only, employee?.id]);

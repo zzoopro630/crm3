@@ -555,7 +555,7 @@ export function EmployeesPage() {
 
               {/* 조직별 섹션 */}
               {organizationGroups.map((group) => (
-                <div key={group.orgName} className="border rounded-lg overflow-hidden">
+                <div key={group.orgId ?? 'no-org'} className="border rounded-lg overflow-hidden">
                   <button
                     className="w-full bg-muted/50 px-4 py-3 font-semibold text-base flex items-center justify-between hover:bg-muted/70 transition-colors"
                     onClick={() => toggleOrgCollapse(group.orgName)}
