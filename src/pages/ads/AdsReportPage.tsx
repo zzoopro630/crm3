@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ArrowUpDown, PlusCircle, RefreshCw } from "lucide-react";
+import { ArrowUpDown, Calendar, PlusCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,6 +25,11 @@ function getYesterday(): string {
   const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
   kstNow.setDate(kstNow.getDate() - 1);
   return kstNow.toISOString().split("T")[0];
+}
+
+function formatDateKST(date: Date): string {
+  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().split("T")[0];
 }
 
 export default function AdsReportPage() {
@@ -282,14 +287,43 @@ export default function AdsReportPage() {
     refetchInquiries();
   };
 
+  const setSpecificDate = (daysAgo: number) => {
+    const target = new Date();
+    target.setDate(target.getDate() - daysAgo);
+    const dateStr = formatDateKST(target);
+    setStartDate(dateStr);
+    setEndDate(dateStr);
+  };
+
   if (keywordDetails.length === 0) {
     return (
       <div className="space-y-4">
         <Card>
-          <CardContent className="pt-4 pb-4 flex items-center gap-3">
-            <Input type="date" className="w-40" value={startDate} max={getYesterday()} onChange={(e) => setStartDate(e.target.value)} />
-            <span className="text-muted-foreground">~</span>
-            <Input type="date" className="w-40" value={endDate} max={getYesterday()} onChange={(e) => setEndDate(e.target.value)} />
+          <CardContent className="pt-4 pb-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-xs text-muted-foreground">단일:</span>
+              <Input
+                type="date"
+                className="w-40"
+                value={startDate === endDate ? startDate : ""}
+                max={getYesterday()}
+                onChange={(e) => { if (e.target.value) { setStartDate(e.target.value); setEndDate(e.target.value); } }}
+              />
+              <span className="text-muted-foreground">|</span>
+              <span className="text-xs text-muted-foreground">기간:</span>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Input type="date" className="w-40" value={startDate} max={getYesterday()} onChange={(e) => setStartDate(e.target.value)} />
+              <span className="text-muted-foreground">~</span>
+              <Input type="date" className="w-40" value={endDate} max={getYesterday()} onChange={(e) => setEndDate(e.target.value)} />
+            </div>
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              <span className="text-xs text-muted-foreground mr-1">단축:</span>
+              {[1, 2, 3].map((d) => (
+                <Button key={d} variant="outline" size="sm" className="text-xs h-7" onClick={() => setSpecificDate(d)}>
+                  {d}일전
+                </Button>
+              ))}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -305,14 +339,35 @@ export default function AdsReportPage() {
     <div className="space-y-4">
       {/* 날짜 선택 */}
       <Card>
-        <CardContent className="pt-4 pb-4 flex flex-wrap items-center gap-3">
-          <Input type="date" className="w-40" value={startDate} max={getYesterday()} onChange={(e) => setStartDate(e.target.value)} />
-          <span className="text-muted-foreground">~</span>
-          <Input type="date" className="w-40" value={endDate} max={getYesterday()} onChange={(e) => setEndDate(e.target.value)} />
-          <Button size="sm" variant="outline" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4 mr-1" />
-            새로고침
-          </Button>
+        <CardContent className="pt-4 pb-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs text-muted-foreground">단일:</span>
+            <Input
+              type="date"
+              className="w-40"
+              value={startDate === endDate ? startDate : ""}
+              max={getYesterday()}
+              onChange={(e) => { if (e.target.value) { setStartDate(e.target.value); setEndDate(e.target.value); } }}
+            />
+            <span className="text-muted-foreground">|</span>
+            <span className="text-xs text-muted-foreground">기간:</span>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Input type="date" className="w-40" value={startDate} max={getYesterday()} onChange={(e) => setStartDate(e.target.value)} />
+            <span className="text-muted-foreground">~</span>
+            <Input type="date" className="w-40" value={endDate} max={getYesterday()} onChange={(e) => setEndDate(e.target.value)} />
+            <Button size="sm" variant="outline" onClick={handleRefresh}>
+              <RefreshCw className="h-4 w-4 mr-1" />
+              새로고침
+            </Button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <span className="text-xs text-muted-foreground mr-1">단축:</span>
+            {[1, 2, 3].map((d) => (
+              <Button key={d} variant="outline" size="sm" className="text-xs h-7" onClick={() => setSpecificDate(d)}>
+                {d}일전
+              </Button>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
