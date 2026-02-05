@@ -24,7 +24,7 @@ import type { PendingApproval, CreateEmployeeInput } from '@/types/employee'
 import { SECURITY_LEVELS } from '@/types/employee'
 
 export function PendingApprovalsPage() {
-    const { data: approvals, isLoading } = usePendingApprovals()
+    const { data: approvals, isLoading, refetch } = usePendingApprovals()
     const { data: employees } = useEmployees()
     const { data: organizations } = useOrganizations()
     const approveUser = useApproveUser()
@@ -68,10 +68,12 @@ export function PendingApprovalsPage() {
                 approvedBy: user.id,
             })
             setIsDialogOpen(false)
+            refetch()
             alert(`'${formData.fullName}'님 계정이 승인되었습니다.`)
         } catch (error) {
             const reason = error instanceof Error ? error.message : '알 수 없는 오류'
             setIsDialogOpen(false)
+            refetch()
             alert(`승인 실패: ${reason}\n\n이메일: ${selectedApproval.email}`)
         }
     }
@@ -84,8 +86,10 @@ export function PendingApprovalsPage() {
                     approvalId: approval.id,
                     rejectedBy: user.id,
                 })
+                refetch()
             } catch (error) {
                 console.error('Failed to reject user:', error)
+                refetch()
             }
         }
     }
