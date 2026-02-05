@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useEmployees } from "@/hooks/useEmployees";
+import { useOrganizations } from "@/hooks/useOrganizations";
 import { useAuthStore } from "@/stores/authStore";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -66,7 +67,6 @@ export default function DbManagementPage() {
   const { employee } = useAuthStore();
   const isAdmin =
     employee?.securityLevel === "F1" || employee?.securityLevel === "F2";
-  const isF1 = employee?.securityLevel === "F1";
 
   const [activeTab, setActiveTab] = useState<TabType>("inProgress");
   const [pageSize, setPageSize] = useState(getSavedPageSize);
@@ -95,18 +95,23 @@ export default function DbManagementPage() {
   const [formErrors, setFormErrors] = useState<FormErrors>({});
 
   const { data: employees } = useEmployees();
+  const { data: organizations = [] } = useOrganizations();
   const updateInquiry = useUpdateInquiry();
   const createInquiry = useCreateInquiry();
 
-  // 담당자 필터용 직원 목록
+  // 직할 조직 ID
+  const directOrgId = useMemo(() => {
+    return organizations.find((org) => org.name === "직할")?.id;
+  }, [organizations]);
+
+  // 담당자 필터용 직원 목록 (직할 소속만)
   const filteredEmployees = useMemo(() => {
-    if (!employees) return [];
+    if (!employees || !directOrgId) return [];
     return employees.filter((emp) => {
       if (!emp.isActive) return false;
-      if (isF1) return true;
-      return emp.organizationId === employee?.organizationId;
+      return emp.organizationId === directOrgId;
     });
-  }, [employees, isF1, employee?.organizationId]);
+  }, [employees, directOrgId]);
 
   // 페이지 사이즈 저장
   useEffect(() => {
