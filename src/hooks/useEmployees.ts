@@ -111,7 +111,7 @@ export function useApproveUser() {
             employeeData: CreateEmployeeInput
             approvedBy: string
         }) => approveUser(approvalId, employeeData, approvedBy),
-        onSuccess: () => {
+        onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['pending-approvals'] })
             queryClient.invalidateQueries({ queryKey: ['employees'] })
         },
