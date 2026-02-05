@@ -48,3 +48,32 @@ export interface CreateInquiryInput {
   status?: string;
   memo?: string;
 }
+
+export interface RecruitInquiry {
+  id: number;
+  customerName: string;
+  phone: string | null;
+  age: string | null;
+  area: string | null;
+  career: string | null;
+  request: string | null;
+  utmCampaign: string | null;
+  sourceUrl: string | null;
+  refererPage: string | null;
+  inquiryDate: string | null;
+  managerId: string | null;
+  managerName: string | null;
+  status: string;
+  memo: string | null;
+  adminComment: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface RecruitInquiryListResponse {
+  data: RecruitInquiry[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}

@@ -1655,9 +1655,8 @@ app.get("/api/recruit-inquiries", async (c) => {
 
   let query = (supabase as any)
     .schema("marketing")
-    .from("inquiries")
-    .select("*", { count: "exact" })
-    .or("utm_campaign.ilike.%recruit%,source_url.ilike.%contact-forms/456%");
+    .from("recruit_inquiries")
+    .select("*", { count: "exact" });
 
   if (search) {
     query = query.or(`customer_name.ilike.%${search}%,phone.ilike.%${search}%`);
@@ -1702,14 +1701,17 @@ app.get("/api/recruit-inquiries", async (c) => {
     id: row.id,
     customerName: row.customer_name,
     phone: row.phone,
-    productName: row.product_name,
+    age: row.age,
+    area: row.area,
+    career: row.career,
+    request: row.request,
     utmCampaign: row.utm_campaign,
     sourceUrl: row.source_url,
+    refererPage: row.referer_page,
     inquiryDate: row.inquiry_date,
     managerId: row.manager_id,
     managerName: row.manager_id ? managersMap[row.manager_id] || null : null,
     status: row.status || "new",
-    email: row.email,
     memo: row.memo,
     adminComment: row.admin_comment,
     createdAt: row.created_at,
@@ -1737,12 +1739,11 @@ app.put("/api/recruit-inquiries/:id", async (c) => {
   if (body.managerId !== undefined) updateData.manager_id = body.managerId;
   if (body.status !== undefined) updateData.status = body.status;
   if (body.memo !== undefined) updateData.memo = body.memo;
-  if (body.email !== undefined) updateData.email = body.email;
   if (body.adminComment !== undefined) updateData.admin_comment = body.adminComment;
 
   const { data, error } = await (supabase as any)
     .schema("marketing")
-    .from("inquiries")
+    .from("recruit_inquiries")
     .update(updateData)
     .eq("id", id)
     .select("*")
@@ -1756,13 +1757,16 @@ app.put("/api/recruit-inquiries/:id", async (c) => {
     id: data.id,
     customerName: data.customer_name,
     phone: data.phone,
-    productName: data.product_name,
+    age: data.age,
+    area: data.area,
+    career: data.career,
+    request: data.request,
     utmCampaign: data.utm_campaign,
     sourceUrl: data.source_url,
+    refererPage: data.referer_page,
     inquiryDate: data.inquiry_date,
     managerId: data.manager_id,
     status: data.status || "new",
-    email: data.email,
     memo: data.memo,
     adminComment: data.admin_comment,
     createdAt: data.created_at,
