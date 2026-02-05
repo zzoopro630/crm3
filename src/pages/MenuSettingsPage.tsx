@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import {
   LayoutDashboard,
   Users,
-  Database,
   Trash2,
   UsersRound,
   BookUser,
@@ -13,6 +12,7 @@ import {
   UserPlus,
   BarChart3,
   Settings,
+  Headphones,
 } from 'lucide-react';
 
 interface MenuEntry {
@@ -23,13 +23,13 @@ interface MenuEntry {
 
 const menuEntries: MenuEntry[] = [
   { href: '/', defaultTitle: '대시보드', icon: LayoutDashboard },
-  { href: '/customers', defaultTitle: '고객 관리', icon: Users },
-  { href: '/db-management', defaultTitle: '상담관리', icon: Database },
-  { href: '/trash', defaultTitle: '휴지통', icon: Trash2 },
+  { href: '/customers', defaultTitle: '고객리스트', icon: Users },
+  { href: '/customers/trash', defaultTitle: '휴지통', icon: Trash2 },
+  { href: '/inquiries', defaultTitle: '보험문의', icon: Headphones },
+  { href: '/consultant-inquiries', defaultTitle: '더플문의', icon: MessageSquare },
+  { href: '/recruit-inquiries', defaultTitle: '입사문의', icon: UserPlus },
   { href: '/team', defaultTitle: '팀 관리', icon: UsersRound },
   { href: '/contacts-direct', defaultTitle: '연락처', icon: BookUser },
-  { href: '/consultant-inquiries', defaultTitle: 'the-fin 문의', icon: MessageSquare },
-  { href: '/recruit-inquiries', defaultTitle: '입사문의', icon: UserPlus },
   { href: '/ads', defaultTitle: '광고 분석', icon: BarChart3 },
   { href: '/settings', defaultTitle: '설정', icon: Settings },
 ];

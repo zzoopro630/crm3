@@ -19,6 +19,7 @@ import { PendingApprovalsPage } from '@/pages/PendingApprovalsPage'
 import { SystemSettingsPage } from '@/pages/SystemSettingsPage'
 import DbManagementPage from '@/pages/DbManagementPage'
 import TrashPage from '@/pages/TrashPage'
+import MenuPermissionsPage from '@/pages/MenuPermissionsPage'
 import { AdsPage } from '@/pages/AdsPage'
 import AdsNDataPage from '@/pages/ads/AdsNDataPage'
 import AdsReportPage from '@/pages/ads/AdsReportPage'
@@ -77,8 +78,11 @@ function AppContent() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/customers/:id" element={<CustomerDetailPage />} />
-        <Route path="/db-management" element={<DbManagementPage />} />
-        <Route path="/trash" element={<TrashPage />} />
+        <Route path="/inquiries" element={<DbManagementPage />} />
+        <Route path="/customers/trash" element={<TrashPage />} />
+        {/* Legacy routes redirect */}
+        <Route path="/db-management" element={<Navigate to="/inquiries" replace />} />
+        <Route path="/trash" element={<Navigate to="/customers/trash" replace />} />
         <Route path="/team" element={<TeamPage />} />
         <Route path="/contacts-direct" element={<ContactsDirectPage />} />
         <Route path="/consultant-inquiries" element={<ConsultantInquiriesPage />} />
@@ -99,6 +103,7 @@ function AppContent() {
           <Route path="organizations" element={<OrganizationsPage />} />
           <Route path="labels" element={<LabelsPage />} />
           <Route path="menus" element={<MenuSettingsPage />} />
+          <Route path="menu-permissions" element={<MenuPermissionsPage />} />
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="approvals" element={<PendingApprovalsPage />} />
           <Route path="system" element={<SystemSettingsPage />} />
