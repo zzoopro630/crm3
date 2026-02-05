@@ -142,7 +142,7 @@ export default function AdsWeeklyPage() {
             <h3 className="font-semibold mb-4">주간 광고비 추이</h3>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyData}>
+                <BarChart data={weeklyData} margin={{ top: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
                   <XAxis dataKey="name" className="text-muted-foreground" fontSize={12} />
                   <YAxis className="text-muted-foreground" fontSize={12} tickFormatter={(val) => `${val / 10000}만`} />
@@ -171,7 +171,7 @@ export default function AdsWeeklyPage() {
             <h3 className="font-semibold mb-4">주간 전환단가 추이</h3>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={cpaData}>
+                <BarChart data={cpaData} margin={{ top: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
                   <XAxis dataKey="name" className="text-muted-foreground" fontSize={12} />
                   <YAxis className="text-muted-foreground" fontSize={12} tickFormatter={(val) => `${val / 10000}만`} />
