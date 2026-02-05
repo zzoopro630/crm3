@@ -108,6 +108,7 @@ export async function approveUser(
         method: 'PUT',
         body: JSON.stringify({
             ...employeeData,
+            employeeId: approvalId,
             approvedBy,
         }),
     })
