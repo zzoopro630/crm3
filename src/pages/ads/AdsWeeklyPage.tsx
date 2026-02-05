@@ -66,8 +66,14 @@ export default function AdsWeeklyPage() {
           .map((w, i) => {
             const detailsRes = detailsResults[i];
             const inquiryRes = inquiriesResults[i];
-            const rows = detailsRes.success ? detailsRes.data : [];
+            const allRows = detailsRes.success ? detailsRes.data : [];
             const inqRows = inquiryRes.success ? inquiryRes.data : [];
+
+            // 파워링크 광고그룹 제외 (파컨 전용)
+            const rows = allRows.filter((r) => {
+              const ag = r.adGroup.toLowerCase();
+              return !ag.startsWith("파워링크") && !ag.startsWith("파워");
+            });
 
             const totalCost = rows.reduce((sum, r) => sum + r.totalCost, 0);
             const totalImpressions = rows.reduce((sum, r) => sum + r.impressions, 0);
