@@ -7,6 +7,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
 import { ArrowUp, ArrowDown, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -152,8 +153,12 @@ export default function AdsWeeklyPage() {
                       name ?? "",
                     ]}
                   />
-                  <Bar dataKey="cost" fill="hsl(var(--primary))" name="광고비" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="inquiries" fill="hsl(142, 71%, 45%)" name="문의수" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="cost" fill="hsl(var(--primary))" name="광고비" radius={[4, 4, 0, 0]}>
+                    <LabelList dataKey="cost" position="top" fontSize={10} formatter={(v) => `${Math.round(Number(v) / 10000)}만`} />
+                  </Bar>
+                  <Bar dataKey="inquiries" fill="hsl(142, 71%, 45%)" name="문의수" radius={[4, 4, 0, 0]}>
+                    <LabelList dataKey="inquiries" position="top" fontSize={10} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -177,8 +182,12 @@ export default function AdsWeeklyPage() {
                       name ?? "",
                     ]}
                   />
-                  <Bar dataKey="cpa" fill="hsl(25, 95%, 53%)" name="전환단가" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="inquiries" fill="hsl(142, 71%, 45%)" name="문의수" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="cpa" fill="hsl(25, 95%, 53%)" name="전환단가" radius={[4, 4, 0, 0]}>
+                    <LabelList dataKey="cpa" position="top" fontSize={10} formatter={(v) => `${Math.round(Number(v) / 10000)}만`} />
+                  </Bar>
+                  <Bar dataKey="inquiries" fill="hsl(142, 71%, 45%)" name="문의수" radius={[4, 4, 0, 0]}>
+                    <LabelList dataKey="inquiries" position="top" fontSize={10} />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
