@@ -85,9 +85,9 @@ export function EmployeesPage() {
     return organizations.find((o) => o.id === orgId)?.name || "-";
   };
 
-  // 활성/비활성 사원 분리
-  const activeEmployees = employees?.filter((emp) => emp.isActive) || [];
-  const inactiveEmployees = employees?.filter((emp) => !emp.isActive) || [];
+  // 활성/비활성 사원 분리 (isActive가 null인 경우 활성으로 처리)
+  const activeEmployees = employees?.filter((emp) => emp.isActive !== false) || [];
+  const inactiveEmployees = employees?.filter((emp) => emp.isActive === false) || [];
 
   // 직급 우선순위 (낮을수록 상단)
   const getPositionPriority = (position: string | null): number => {
