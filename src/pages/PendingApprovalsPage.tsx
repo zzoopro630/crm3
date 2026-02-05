@@ -71,6 +71,7 @@ export function PendingApprovalsPage() {
             alert(`'${formData.fullName}'님 계정이 승인되었습니다.`)
         } catch (error) {
             const reason = error instanceof Error ? error.message : '알 수 없는 오류'
+            setIsDialogOpen(false)
             alert(`승인 실패: ${reason}\n\n이메일: ${selectedApproval.email}`)
         }
     }
