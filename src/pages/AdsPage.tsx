@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
-import { BarChart3, FileText, TrendingUp } from "lucide-react";
+import { BarChart3, FileText, TrendingUp, Zap } from "lucide-react";
 import { NavLink, Outlet, Navigate } from "react-router-dom";
 
 interface AdsTab {
@@ -11,6 +11,7 @@ interface AdsTab {
 
 const adsTabs: AdsTab[] = [
   { id: "ndata", label: "N-DATA", icon: BarChart3 },
+  { id: "powerlink", label: "파워링크", icon: Zap },
   { id: "report", label: "보고서", icon: FileText },
   { id: "weekly", label: "주간데이터", icon: TrendingUp },
 ];

@@ -23,6 +23,7 @@ import { AdsPage } from '@/pages/AdsPage'
 import AdsNDataPage from '@/pages/ads/AdsNDataPage'
 import AdsReportPage from '@/pages/ads/AdsReportPage'
 import AdsWeeklyPage from '@/pages/ads/AdsWeeklyPage'
+import AdsPowerLinkPage from '@/pages/ads/AdsPowerLinkPage'
 import ContactsDirectPage from '@/pages/ContactsDirectPage'
 import ConsultantInquiriesPage from '@/pages/ConsultantInquiriesPage'
 import RecruitInquiriesPage from '@/pages/RecruitInquiriesPage'
@@ -87,6 +88,7 @@ function AppContent() {
         <Route path="/ads" element={<AdsPage />}>
           <Route index element={<Navigate to="ndata" replace />} />
           <Route path="ndata" element={<AdsNDataPage />} />
+          <Route path="powerlink" element={<AdsPowerLinkPage />} />
           <Route path="report" element={<AdsReportPage />} />
           <Route path="weekly" element={<AdsWeeklyPage />} />
         </Route>
