@@ -52,8 +52,14 @@ export default function AdsReportPage() {
   const fetchEdgeSummary = useFetchGaSummary();
   const fetchEdgeTotalSessions = useFetchGaTotalSessions();
 
-  const keywordDetails = detailsResult?.data || [];
+  const allKeywordDetails = detailsResult?.data || [];
   const inquiries = inquiriesResult?.data || [];
+
+  // 파워링크 광고그룹 제외 (보고서는 파컨 전용)
+  const keywordDetails = allKeywordDetails.filter((row) => {
+    const adGroup = row.adGroup.toLowerCase();
+    return !adGroup.startsWith("파워링크") && !adGroup.startsWith("파워");
+  });
 
   // GA data loading with DB cache → Edge Function fallback
   const loadGaData = useCallback(async () => {
