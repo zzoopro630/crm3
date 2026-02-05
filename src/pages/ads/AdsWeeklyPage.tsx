@@ -183,7 +183,7 @@ export default function AdsWeeklyPage() {
                     ]}
                   />
                   <Bar dataKey="cpa" fill="hsl(25, 95%, 53%)" name="전환단가" radius={[4, 4, 0, 0]}>
-                    <LabelList dataKey="cpa" position="top" fontSize={10} formatter={(v) => `${Math.round(Number(v) / 10000)}만`} />
+                    <LabelList dataKey="cpa" position="top" fontSize={10} formatter={(v) => Math.round(Number(v)).toLocaleString()} />
                   </Bar>
                   <Bar dataKey="inquiries" fill="hsl(142, 71%, 45%)" name="문의수" radius={[4, 4, 0, 0]}>
                     <LabelList dataKey="inquiries" position="top" fontSize={10} />
