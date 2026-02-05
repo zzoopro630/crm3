@@ -1036,14 +1036,18 @@ app.put("/api/pending-approvals/:id/approve", async (c) => {
 
   if (existing) {
     // 이미 등록된 이메일이면 pending_approvals status만 업데이트하고 목록에서 제거
-    await supabase
+    const { error: updateError } = await supabase
       .from("pending_approvals")
       .update({
         status: "approved",
-        processed_by: body.approvedBy,
         processed_at: new Date().toISOString(),
       })
       .eq("id", id);
+
+    if (updateError) {
+      console.error("Failed to update pending_approvals:", updateError);
+    }
+
     return c.json({ error: "이미 등록된 이메일입니다. 대기 목록에서 제거됩니다." }, 409);
   }
 
