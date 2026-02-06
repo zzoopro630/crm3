@@ -2857,6 +2857,94 @@ app.post("/api/rank/url-tracking/check", async (c) => {
   return c.json({ results });
 });
 
+// --- Rank History ---
+app.get("/api/rank/rankings/history", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+
+  const { startDate, endDate, type } = c.req.query();
+
+  if (!startDate || !endDate || !type) {
+    return c.json({ error: "startDate, endDate, type 파라미터가 필요합니다." }, 400);
+  }
+
+  if (type === "keyword") {
+    const { data: rankings, error } = await seo
+      .from("rankings")
+      .select("id, keyword_id, rank_position, checked_at, result_url, result_title")
+      .gte("checked_at", `${startDate}T00:00:00`)
+      .lte("checked_at", `${endDate}T23:59:59`)
+      .order("checked_at", { ascending: false })
+      .limit(500);
+
+    if (error) return c.json({ error: error.message }, 500);
+
+    const result = [];
+    for (const r of rankings || []) {
+      const { data: kw } = await seo
+        .from("keywords")
+        .select("keyword, site_id")
+        .eq("id", r.keyword_id)
+        .single();
+
+      let siteName = "";
+      if (kw?.site_id) {
+        const { data: site } = await seo
+          .from("sites")
+          .select("name")
+          .eq("id", kw.site_id)
+          .single();
+        siteName = site?.name || "";
+      }
+
+      result.push({
+        id: r.id,
+        checkedAt: r.checked_at,
+        siteName,
+        keyword: kw?.keyword || "",
+        rankPosition: r.rank_position,
+        resultUrl: r.result_url,
+        resultTitle: r.result_title,
+      });
+    }
+
+    return c.json(result);
+  } else if (type === "url") {
+    const { data: rankings, error } = await seo
+      .from("url_rankings")
+      .select("id, tracked_url_id, rank_position, section_name, section_rank, checked_at")
+      .gte("checked_at", `${startDate}T00:00:00`)
+      .lte("checked_at", `${endDate}T23:59:59`)
+      .order("checked_at", { ascending: false })
+      .limit(500);
+
+    if (error) return c.json({ error: error.message }, 500);
+
+    const result = [];
+    for (const r of rankings || []) {
+      const { data: tracked } = await seo
+        .from("tracked_urls")
+        .select("keyword, target_url")
+        .eq("id", r.tracked_url_id)
+        .single();
+
+      result.push({
+        id: r.id,
+        checkedAt: r.checked_at,
+        keyword: tracked?.keyword || "",
+        targetUrl: tracked?.target_url || "",
+        rankPosition: r.rank_position,
+        sectionName: r.section_name,
+        sectionRank: r.section_rank,
+      });
+    }
+
+    return c.json(result);
+  }
+
+  return c.json({ error: "type은 keyword 또는 url이어야 합니다." }, 400);
+});
+
 // Cloudflare Pages Functions export
 import { handle } from "hono/cloudflare-pages";
 export const onRequest = handle(app);

@@ -13,6 +13,7 @@ import {
   createTrackedUrl,
   deleteTrackedUrl,
   checkUrlRanking,
+  getRankHistory,
 } from '@/services/ranking';
 import type {
   CreateRankSiteInput,
@@ -144,5 +145,14 @@ export function useCheckUrlRanking() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trackedUrls'] });
     },
+  });
+}
+
+// ===== History =====
+export function useRankHistory(startDate: string, endDate: string, type: 'keyword' | 'url') {
+  return useQuery({
+    queryKey: ['rankHistory', startDate, endDate, type],
+    queryFn: () => getRankHistory(startDate, endDate, type),
+    enabled: !!startDate && !!endDate,
   });
 }

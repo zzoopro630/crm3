@@ -40,8 +40,12 @@ import {
   useCreateRankKeyword,
   useDeleteRankKeyword,
   useCheckRankings,
+  useCreateRankSite,
+  useUpdateRankSite,
+  useDeleteRankSite,
 } from "@/hooks/useRanking";
-import { Plus, Trash2, RefreshCw } from "lucide-react";
+import type { RankSite } from "@/types/ranking";
+import { Plus, Trash2, RefreshCw, Pencil, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,6 +58,13 @@ const keywordSchema = z.object({
 
 type KeywordFormData = z.infer<typeof keywordSchema>;
 
+const siteSchema = z.object({
+  name: z.string().min(1, "이름을 입력해주세요."),
+  url: z.string().min(1, "URL을 입력해주세요."),
+});
+
+type SiteFormData = z.infer<typeof siteSchema>;
+
 export default function RankKeywordsPage() {
   const [filterSiteId, setFilterSiteId] = useState<number | null>(null);
   const { data: keywords, isLoading, refetch } = useRankKeywords(filterSiteId);
@@ -61,13 +72,31 @@ export default function RankKeywordsPage() {
   const createKeyword = useCreateRankKeyword();
   const deleteKeyword = useDeleteRankKeyword();
   const checkRankings = useCheckRankings();
+  const createSite = useCreateRankSite();
+  const updateSite = useUpdateRankSite();
+  const deleteSite = useDeleteRankSite();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [checkingIds, setCheckingIds] = useState<Set<number>>(new Set());
+  const [isCheckingAll, setIsCheckingAll] = useState(false);
+
+  // 사이트 관리 다이얼로그
+  const [isSiteCreateOpen, setIsSiteCreateOpen] = useState(false);
+  const [editingSite, setEditingSite] = useState<RankSite | null>(null);
 
   const form = useForm<KeywordFormData>({
     resolver: zodResolver(keywordSchema),
     defaultValues: { keyword: "", siteId: "" },
+  });
+
+  const siteCreateForm = useForm<SiteFormData>({
+    resolver: zodResolver(siteSchema),
+    defaultValues: { name: "", url: "" },
+  });
+
+  const siteEditForm = useForm<SiteFormData>({
+    resolver: zodResolver(siteSchema),
+    defaultValues: { name: "", url: "" },
   });
 
   const handleCreate = async (data: KeywordFormData) => {
@@ -112,6 +141,63 @@ export default function RankKeywordsPage() {
     }
   };
 
+  const handleCheckAll = async () => {
+    if (!keywords?.length) return;
+    setIsCheckingAll(true);
+    const allIds = keywords.map((k) => k.id);
+    setCheckingIds(new Set(allIds));
+    try {
+      await checkRankings.mutateAsync(allIds);
+      toast.success("전체 랭킹 체크가 완료되었습니다.");
+      refetch();
+    } catch {
+      toast.error("랭킹 체크 중 오류가 발생했습니다.");
+    } finally {
+      setCheckingIds(new Set());
+      setIsCheckingAll(false);
+    }
+  };
+
+  // 사이트 CRUD
+  const handleSiteCreate = async (data: SiteFormData) => {
+    try {
+      await createSite.mutateAsync(data);
+      toast.success("사이트가 등록되었습니다.");
+      setIsSiteCreateOpen(false);
+      siteCreateForm.reset();
+    } catch {
+      toast.error("사이트 등록에 실패했습니다.");
+    }
+  };
+
+  const handleSiteEdit = async (data: SiteFormData) => {
+    if (!editingSite) return;
+    try {
+      await updateSite.mutateAsync({ id: editingSite.id, ...data });
+      toast.success("사이트가 수정되었습니다.");
+      setEditingSite(null);
+      siteEditForm.reset();
+    } catch {
+      toast.error("사이트 수정에 실패했습니다.");
+    }
+  };
+
+  const handleSiteDelete = async (id: number) => {
+    if (!confirm("정말 삭제하시겠습니까? 연결된 키워드와 랭킹 기록도 함께 삭제됩니다."))
+      return;
+    try {
+      await deleteSite.mutateAsync(id);
+      toast.success("사이트가 삭제되었습니다.");
+    } catch {
+      toast.error("사이트 삭제에 실패했습니다.");
+    }
+  };
+
+  const openSiteEdit = (site: RankSite) => {
+    setEditingSite(site);
+    siteEditForm.reset({ name: site.name, url: site.url });
+  };
+
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "-";
     return new Date(dateStr).toLocaleString("ko-KR");
@@ -134,81 +220,248 @@ export default function RankKeywordsPage() {
 
   return (
     <div className="space-y-6">
+      {/* 사이트 관리 섹션 */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <div>
+            <CardTitle className="text-lg">사이트 관리</CardTitle>
+            <CardDescription>랭킹 체크 대상 사이트 목록</CardDescription>
+          </div>
+          <Dialog open={isSiteCreateOpen} onOpenChange={setIsSiteCreateOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline">
+                <Plus className="w-4 h-4 mr-1" />
+                사이트 추가
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <form onSubmit={siteCreateForm.handleSubmit(handleSiteCreate)}>
+                <DialogHeader>
+                  <DialogTitle>사이트 추가</DialogTitle>
+                  <DialogDescription>
+                    랭킹을 체크할 사이트 정보를 입력하세요.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="create-site-name">사이트 이름</Label>
+                    <Input
+                      id="create-site-name"
+                      placeholder="예: 내 블로그"
+                      {...siteCreateForm.register("name")}
+                    />
+                    {siteCreateForm.formState.errors.name && (
+                      <p className="text-sm text-destructive">
+                        {siteCreateForm.formState.errors.name.message}
+                      </p>
+                    )}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="create-site-url">URL</Label>
+                    <Input
+                      id="create-site-url"
+                      placeholder="예: blog.naver.com/myblog"
+                      {...siteCreateForm.register("url")}
+                    />
+                    {siteCreateForm.formState.errors.url && (
+                      <p className="text-sm text-destructive">
+                        {siteCreateForm.formState.errors.url.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={createSite.isPending}>
+                    {createSite.isPending && (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    )}
+                    추가
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent>
+          {sites?.length ? (
+            <div className="flex flex-wrap gap-3">
+              {sites.map((site) => (
+                <div
+                  key={site.id}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/50"
+                >
+                  <span className="font-medium text-sm">{site.name}</span>
+                  <span className="text-xs text-muted-foreground">({site.url})</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {site.keywordCount || 0}개
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-6 h-6"
+                    onClick={() => window.open(`https://${site.url}`, "_blank")}
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-6 h-6"
+                    onClick={() => openSiteEdit(site)}
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="w-6 h-6 text-destructive"
+                    onClick={() => handleSiteDelete(site.id)}
+                    disabled={deleteSite.isPending}
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-4 text-center text-sm text-muted-foreground">
+              등록된 사이트가 없습니다. 사이트를 추가해주세요.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 사이트 수정 다이얼로그 */}
+      <Dialog
+        open={!!editingSite}
+        onOpenChange={(open) => !open && setEditingSite(null)}
+      >
+        <DialogContent>
+          <form onSubmit={siteEditForm.handleSubmit(handleSiteEdit)}>
+            <DialogHeader>
+              <DialogTitle>사이트 수정</DialogTitle>
+              <DialogDescription>사이트 정보를 수정하세요.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-site-name">사이트 이름</Label>
+                <Input id="edit-site-name" {...siteEditForm.register("name")} />
+                {siteEditForm.formState.errors.name && (
+                  <p className="text-sm text-destructive">
+                    {siteEditForm.formState.errors.name.message}
+                  </p>
+                )}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-site-url">URL</Label>
+                <Input id="edit-site-url" {...siteEditForm.register("url")} />
+                {siteEditForm.formState.errors.url && (
+                  <p className="text-sm text-destructive">
+                    {siteEditForm.formState.errors.url.message}
+                  </p>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={updateSite.isPending}>
+                {updateSite.isPending && (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                )}
+                저장
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* 키워드 관리 섹션 */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">키워드 관리</h1>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button disabled={!sites?.length}>
-              <Plus className="w-4 h-4 mr-2" />
-              키워드 추가
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <form onSubmit={form.handleSubmit(handleCreate)}>
-              <DialogHeader>
-                <DialogTitle>키워드 추가</DialogTitle>
-                <DialogDescription>
-                  랭킹을 체크할 키워드를 입력하세요.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="site">사이트</Label>
-                  <Controller
-                    name="siteId"
-                    control={form.control}
-                    render={({ field }) => (
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="사이트 선택" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {sites?.map((site) => (
-                            <SelectItem
-                              key={site.id}
-                              value={String(site.id)}
-                            >
-                              {site.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleCheckAll}
+            disabled={isCheckingAll || !keywords?.length}
+          >
+            {isCheckingAll && (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            )}
+            전체 체크
+          </Button>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button disabled={!sites?.length}>
+                <Plus className="w-4 h-4 mr-2" />
+                키워드 추가
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <form onSubmit={form.handleSubmit(handleCreate)}>
+                <DialogHeader>
+                  <DialogTitle>키워드 추가</DialogTitle>
+                  <DialogDescription>
+                    랭킹을 체크할 키워드를 입력하세요.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="site">사이트</Label>
+                    <Controller
+                      name="siteId"
+                      control={form.control}
+                      render={({ field }) => (
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="사이트 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {sites?.map((site) => (
+                              <SelectItem
+                                key={site.id}
+                                value={String(site.id)}
+                              >
+                                {site.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {form.formState.errors.siteId && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.siteId.message}
+                      </p>
                     )}
-                  />
-                  {form.formState.errors.siteId && (
-                    <p className="text-sm text-destructive">
-                      {form.formState.errors.siteId.message}
-                    </p>
-                  )}
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="keyword">키워드</Label>
+                    <Input
+                      id="keyword"
+                      placeholder="예: 서울 맛집"
+                      {...form.register("keyword")}
+                    />
+                    {form.formState.errors.keyword && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.keyword.message}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="keyword">키워드</Label>
-                  <Input
-                    id="keyword"
-                    placeholder="예: 서울 맛집"
-                    {...form.register("keyword")}
-                  />
-                  {form.formState.errors.keyword && (
-                    <p className="text-sm text-destructive">
-                      {form.formState.errors.keyword.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit" disabled={createKeyword.isPending}>
-                  {createKeyword.isPending && (
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  )}
-                  추가
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <DialogFooter>
+                  <Button type="submit" disabled={createKeyword.isPending}>
+                    {createKeyword.isPending && (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    )}
+                    추가
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* 필터 */}

@@ -7,6 +7,8 @@ import type {
   UpdateRankSiteInput,
   CreateRankKeywordInput,
   CreateTrackedUrlInput,
+  RankHistoryKeywordItem,
+  RankHistoryUrlItem,
 } from '@/types/ranking';
 
 // ============ API Helper ============
@@ -103,4 +105,14 @@ export async function checkUrlRanking(ids: number[]): Promise<{ results: unknown
     method: 'POST',
     body: JSON.stringify({ trackedUrlIds: ids }),
   });
+}
+
+// ===== History =====
+export async function getRankHistory(
+  startDate: string,
+  endDate: string,
+  type: 'keyword' | 'url'
+): Promise<RankHistoryKeywordItem[] | RankHistoryUrlItem[]> {
+  const params = new URLSearchParams({ startDate, endDate, type });
+  return apiRequest(`${BASE}/rankings/history?${params}`);
 }

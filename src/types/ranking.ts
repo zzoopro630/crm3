@@ -93,3 +93,24 @@ export interface CreateTrackedUrlInput {
   section?: string | null;
   memo?: string | null;
 }
+
+// 순위 기록 응답 타입
+export interface RankHistoryKeywordItem {
+  id: number;
+  checkedAt: string;
+  siteName: string;
+  keyword: string;
+  rankPosition: number | null;
+  resultUrl: string | null;
+  resultTitle: string | null;
+}
+
+export interface RankHistoryUrlItem {
+  id: number;
+  checkedAt: string;
+  keyword: string;
+  targetUrl: string;
+  rankPosition: number | null;
+  sectionName: string | null;
+  sectionRank: number | null;
+}
