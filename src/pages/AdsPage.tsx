@@ -1,12 +1,13 @@
 import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
-import { BarChart3, FileText, TrendingUp, Zap } from "lucide-react";
+import { BarChart3, FileText, TrendingUp, Zap, LayoutDashboard, Search, Link2, History } from "lucide-react";
 import { NavLink, Outlet, Navigate } from "react-router-dom";
 
 interface AdsTab {
   id: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  separator?: boolean;
 }
 
 const adsTabs: AdsTab[] = [
@@ -14,6 +15,10 @@ const adsTabs: AdsTab[] = [
   { id: "powerlink", label: "파워링크", icon: Zap },
   { id: "report", label: "보고서", icon: FileText },
   { id: "weekly", label: "주간데이터", icon: TrendingUp },
+  { id: "rank-dashboard", label: "순위 대시보드", icon: LayoutDashboard, separator: true },
+  { id: "rank-keywords", label: "사이트/키워드", icon: Search },
+  { id: "rank-urls", label: "URL 추적", icon: Link2 },
+  { id: "rank-history", label: "순위 기록", icon: History },
 ];
 
 export function AdsPage() {
@@ -31,21 +36,25 @@ export function AdsPage() {
             {adsTabs.map((tab) => {
               const Icon = tab.icon;
               return (
-                <NavLink
-                  key={tab.id}
-                  to={tab.id}
-                  className={({ isActive }) =>
-                    cn(
-                      "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-left",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800",
-                    )
-                  }
-                >
-                  <Icon className="h-5 w-5" />
-                  {tab.label}
-                </NavLink>
+                <div key={tab.id}>
+                  {tab.separator && (
+                    <div className="border-t border-border my-2" />
+                  )}
+                  <NavLink
+                    to={tab.id}
+                    className={({ isActive }) =>
+                      cn(
+                        "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-left",
+                        isActive
+                          ? "bg-primary text-primary-foreground"
+                          : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800",
+                      )
+                    }
+                  >
+                    <Icon className="h-5 w-5" />
+                    {tab.label}
+                  </NavLink>
+                </div>
               );
             })}
           </nav>

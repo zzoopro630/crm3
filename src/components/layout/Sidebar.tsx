@@ -29,8 +29,8 @@ import {
   FolderOpen,
   Headphones,
   Search,
-  Globe,
   Link2,
+  History,
 } from "lucide-react";
 import type { SecurityLevel } from "@/types/employee";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -113,44 +113,6 @@ const navSections: NavSection[] = [
       },
     ],
   },
-  // 순위 추적
-  {
-    items: [
-      {
-        title: "순위 추적",
-        href: "/rank",
-        icon: Search,
-        allowedLevels: ["F1"],
-        isSubmenu: true,
-        submenuItems: [
-          {
-            title: "대시보드",
-            href: "/rank/dashboard",
-            icon: LayoutDashboard,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "사이트",
-            href: "/rank/sites",
-            icon: Globe,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "키워드",
-            href: "/rank/keywords",
-            icon: Search,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "URL 추적",
-            href: "/rank/url-tracking",
-            icon: Link2,
-            allowedLevels: ["F1"],
-          },
-        ],
-      },
-    ],
-  },
   // 광고 분석
   {
     items: [
@@ -183,6 +145,30 @@ const navSections: NavSection[] = [
             title: "파워링크",
             href: "/ads/powerlink",
             icon: Zap,
+            allowedLevels: ["F1"],
+          },
+          {
+            title: "순위 대시보드",
+            href: "/ads/rank-dashboard",
+            icon: LayoutDashboard,
+            allowedLevels: ["F1"],
+          },
+          {
+            title: "사이트/키워드",
+            href: "/ads/rank-keywords",
+            icon: Search,
+            allowedLevels: ["F1"],
+          },
+          {
+            title: "URL 추적",
+            href: "/ads/rank-urls",
+            icon: Link2,
+            allowedLevels: ["F1"],
+          },
+          {
+            title: "순위 기록",
+            href: "/ads/rank-history",
+            icon: History,
             allowedLevels: ["F1"],
           },
         ],
