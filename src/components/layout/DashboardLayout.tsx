@@ -4,11 +4,13 @@ import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { Breadcrumb } from './Breadcrumb'
 import { cn } from '@/lib/utils'
+import { useSessionTimeout } from '@/hooks/useSessionTimeout'
 
 // 서브메뉴가 있는 경로 prefix 목록
 const SUBMENU_PREFIXES = ['/settings', '/ads']
 
 export function DashboardLayout() {
+    useSessionTimeout()
     const location = useLocation()
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
