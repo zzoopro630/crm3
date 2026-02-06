@@ -8,6 +8,7 @@ interface Env {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   JUSO_API_KEY: string;
+  RANKTRACKER_API_URL: string;
 }
 
 // Hono 앱 생성
@@ -2397,6 +2398,462 @@ app.post("/api/contacts/bulk", async (c) => {
     success: inserted.length,
     managersLinked: updated,
   }, 201);
+});
+
+// ============ SEO Rank Tracker API ============
+
+// snake_case → camelCase 변환 헬퍼
+function toCamelCase(obj: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    result[camelKey] = value;
+  }
+  return result;
+}
+
+// --- Rank Sites ---
+app.get("/api/rank/sites", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+
+  const { data: sites, error } = await seo
+    .from("sites")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) return c.json({ error: error.message }, 500);
+
+  const result = [];
+  for (const site of sites || []) {
+    const { count } = await seo
+      .from("keywords")
+      .select("*", { count: "exact", head: true })
+      .eq("site_id", site.id);
+
+    result.push({
+      ...toCamelCase(site as Record<string, unknown>),
+      keywordCount: count || 0,
+    });
+  }
+
+  return c.json(result);
+});
+
+app.post("/api/rank/sites", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+  const { name, url } = await c.req.json();
+
+  if (!name || !url) return c.json({ error: "이름과 URL이 필요합니다." }, 400);
+
+  const { data, error } = await seo
+    .from("sites")
+    .insert({ name, url })
+    .select()
+    .single();
+
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json(toCamelCase(data as Record<string, unknown>), 201);
+});
+
+app.put("/api/rank/sites/:id", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+  const id = c.req.param("id");
+  const { name, url } = await c.req.json();
+
+  const updateData: Record<string, string> = {};
+  if (name) updateData.name = name;
+  if (url) updateData.url = url;
+
+  const { data, error } = await seo
+    .from("sites")
+    .update(updateData)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json(toCamelCase(data as Record<string, unknown>));
+});
+
+app.delete("/api/rank/sites/:id", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+  const id = c.req.param("id");
+
+  const { error } = await seo
+    .from("sites")
+    .delete()
+    .eq("id", id);
+
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json({ message: "삭제되었습니다." });
+});
+
+// --- Rank Keywords ---
+app.get("/api/rank/keywords", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+  const siteId = c.req.query("siteId");
+
+  let query = seo
+    .from("keywords")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (siteId) {
+    query = query.eq("site_id", siteId);
+  }
+
+  const { data: keywords, error } = await query;
+  if (error) return c.json({ error: error.message }, 500);
+
+  const result = [];
+  for (const kw of keywords || []) {
+    const { data: site } = await seo
+      .from("sites")
+      .select("name, url")
+      .eq("id", kw.site_id)
+      .single();
+
+    const { data: latestRanking } = await seo
+      .from("rankings")
+      .select("rank_position, checked_at")
+      .eq("keyword_id", kw.id)
+      .order("checked_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    result.push({
+      ...toCamelCase(kw as Record<string, unknown>),
+      siteName: site?.name || "",
+      siteUrl: site?.url || "",
+      latestRank: latestRanking?.rank_position || null,
+      lastChecked: latestRanking?.checked_at || null,
+    });
+  }
+
+  return c.json(result);
+});
+
+app.post("/api/rank/keywords", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+  const { keyword, siteId } = await c.req.json();
+
+  if (!keyword || !siteId) return c.json({ error: "키워드와 사이트 ID가 필요합니다." }, 400);
+
+  const { data, error } = await seo
+    .from("keywords")
+    .insert({ keyword, site_id: siteId })
+    .select()
+    .single();
+
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json(toCamelCase(data as Record<string, unknown>), 201);
+});
+
+app.delete("/api/rank/keywords/:id", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+  const id = c.req.param("id");
+
+  const { error } = await seo
+    .from("keywords")
+    .delete()
+    .eq("id", id);
+
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json({ message: "삭제되었습니다." });
+});
+
+// --- Rankings ---
+app.get("/api/rank/rankings/dashboard/summary", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+
+  const { count: siteCount } = await seo
+    .from("sites")
+    .select("*", { count: "exact", head: true });
+
+  const { count: keywordCount } = await seo
+    .from("keywords")
+    .select("*", { count: "exact", head: true })
+    .eq("is_active", true);
+
+  const today = new Date().toISOString().split("T")[0];
+  const { count: todayChecks } = await seo
+    .from("rankings")
+    .select("*", { count: "exact", head: true })
+    .gte("checked_at", `${today}T00:00:00`)
+    .lt("checked_at", `${today}T23:59:59`);
+
+  const { data: keywords } = await seo
+    .from("keywords")
+    .select("*")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
+
+  const latestRankings = [];
+  for (const kw of keywords || []) {
+    const { data: site } = await seo
+      .from("sites")
+      .select("name, url")
+      .eq("id", kw.site_id)
+      .single();
+
+    const { data: ranking } = await seo
+      .from("rankings")
+      .select("rank_position, checked_at, result_url, result_title")
+      .eq("keyword_id", kw.id)
+      .order("checked_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    latestRankings.push({
+      keywordId: kw.id,
+      keyword: kw.keyword,
+      siteName: site?.name || "",
+      siteUrl: site?.url || "",
+      rankPosition: ranking?.rank_position || null,
+      checkedAt: ranking?.checked_at || null,
+      resultUrl: ranking?.result_url || null,
+      resultTitle: ranking?.result_title || null,
+    });
+  }
+
+  return c.json({
+    stats: {
+      siteCount: siteCount || 0,
+      keywordCount: keywordCount || 0,
+      todayChecks: todayChecks || 0,
+    },
+    latestRankings,
+  });
+});
+
+// 순위 체크 (Railway 크롤링 서버로 프록시)
+app.post("/api/rank/rankings/check", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+  const { keywordIds } = await c.req.json();
+
+  if (!keywordIds || !Array.isArray(keywordIds) || keywordIds.length === 0) {
+    return c.json({ error: "키워드 ID 배열이 필요합니다." }, 400);
+  }
+
+  const crawlerUrl = c.env.RANKTRACKER_API_URL;
+  if (!crawlerUrl) {
+    return c.json({ error: "크롤링 서버 URL이 설정되지 않았습니다." }, 500);
+  }
+
+  const results = [];
+  for (const keywordId of keywordIds) {
+    const { data: kw } = await seo
+      .from("keywords")
+      .select("*")
+      .eq("id", keywordId)
+      .single();
+
+    if (!kw) {
+      results.push({ keywordId, error: "키워드를 찾을 수 없습니다." });
+      continue;
+    }
+
+    const { data: site } = await seo
+      .from("sites")
+      .select("url")
+      .eq("id", kw.site_id)
+      .single();
+
+    if (!site) {
+      results.push({ keywordId, error: "사이트를 찾을 수 없습니다." });
+      continue;
+    }
+
+    try {
+      const crawlRes = await fetch(`${crawlerUrl}/api/rankings/check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyword_ids: [keywordId] }),
+      });
+
+      if (!crawlRes.ok) throw new Error("크롤링 서버 응답 오류");
+
+      const crawlData = await crawlRes.json() as { results: Array<{ rank?: number; url?: string; title?: string }> };
+      const crawlResult = crawlData.results?.[0];
+
+      await seo
+        .from("rankings")
+        .insert({
+          keyword_id: keywordId,
+          rank_position: crawlResult?.rank || null,
+          search_type: "view",
+          result_url: crawlResult?.url || null,
+          result_title: crawlResult?.title || null,
+        });
+
+      results.push({
+        keywordId,
+        keyword: kw.keyword,
+        rank: crawlResult?.rank || null,
+        url: crawlResult?.url || null,
+        title: crawlResult?.title || null,
+      });
+    } catch (err) {
+      results.push({ keywordId, error: String(err) });
+    }
+  }
+
+  return c.json({ results });
+});
+
+// --- URL Tracking ---
+app.get("/api/rank/url-tracking", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+
+  const { data: tracked, error } = await seo
+    .from("tracked_urls")
+    .select("*")
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
+
+  if (error) return c.json({ error: error.message }, 500);
+
+  const result = [];
+  for (const t of tracked || []) {
+    const { data: latestRanking } = await seo
+      .from("url_rankings")
+      .select("rank_position, section_name, section_rank, checked_at")
+      .eq("tracked_url_id", t.id)
+      .order("checked_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    result.push({
+      ...toCamelCase(t as Record<string, unknown>),
+      latestRank: latestRanking?.rank_position || null,
+      latestSection: latestRanking?.section_name || null,
+      latestSectionRank: latestRanking?.section_rank || null,
+      lastChecked: latestRanking?.checked_at || null,
+    });
+  }
+
+  return c.json(result);
+});
+
+app.post("/api/rank/url-tracking", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+  const { keyword, targetUrl, section, memo } = await c.req.json();
+
+  if (!keyword || !targetUrl) {
+    return c.json({ error: "키워드와 대상 URL은 필수입니다." }, 400);
+  }
+
+  const { data, error } = await seo
+    .from("tracked_urls")
+    .insert({
+      keyword,
+      target_url: targetUrl,
+      section: section || null,
+      memo: memo || null,
+    })
+    .select()
+    .single();
+
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json(toCamelCase(data as Record<string, unknown>), 201);
+});
+
+app.delete("/api/rank/url-tracking/:id", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+  const id = c.req.param("id");
+
+  const { error } = await seo
+    .from("tracked_urls")
+    .delete()
+    .eq("id", id);
+
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json({ message: "삭제되었습니다." });
+});
+
+// URL 순위 체크 (Railway 크롤링 서버로 프록시)
+app.post("/api/rank/url-tracking/check", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+  const { trackedUrlIds } = await c.req.json();
+
+  if (!trackedUrlIds || !Array.isArray(trackedUrlIds) || trackedUrlIds.length === 0) {
+    return c.json({ error: "추적 URL ID 배열이 필요합니다." }, 400);
+  }
+
+  const crawlerUrl = c.env.RANKTRACKER_API_URL;
+  if (!crawlerUrl) {
+    return c.json({ error: "크롤링 서버 URL이 설정되지 않았습니다." }, 500);
+  }
+
+  const results = [];
+  for (const id of trackedUrlIds) {
+    const { data: tracked } = await seo
+      .from("tracked_urls")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (!tracked) {
+      results.push({ trackedUrlId: id, error: "추적 URL을 찾을 수 없습니다." });
+      continue;
+    }
+
+    try {
+      const crawlRes = await fetch(`${crawlerUrl}/api/url-tracking/check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tracked_url_ids: [id] }),
+      });
+
+      if (!crawlRes.ok) throw new Error("크롤링 서버 응답 오류");
+
+      const crawlData = await crawlRes.json() as {
+        results: Array<{
+          rank_position?: number;
+          section_name?: string;
+          section_rank?: number;
+          found?: boolean;
+        }>;
+      };
+      const crawlResult = crawlData.results?.[0];
+
+      await seo
+        .from("url_rankings")
+        .insert({
+          tracked_url_id: id,
+          rank_position: crawlResult?.rank_position || null,
+          section_name: crawlResult?.section_name || null,
+          section_rank: crawlResult?.section_rank || null,
+        });
+
+      results.push({
+        trackedUrlId: id,
+        keyword: tracked.keyword,
+        targetUrl: tracked.target_url,
+        rankPosition: crawlResult?.rank_position || null,
+        sectionName: crawlResult?.section_name || null,
+        sectionRank: crawlResult?.section_rank || null,
+        found: crawlResult?.found || false,
+      });
+    } catch (err) {
+      results.push({ trackedUrlId: id, error: String(err) });
+    }
+  }
+
+  return c.json({ results });
 });
 
 // Cloudflare Pages Functions export
