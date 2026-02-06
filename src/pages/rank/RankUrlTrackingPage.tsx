@@ -189,82 +189,83 @@ export default function RankUrlTrackingPage() {
               </Button>
             </DialogTrigger>
             <DialogContent>
-              <form onSubmit={form.handleSubmit(handleCreate)}>
-                <DialogHeader>
-                  <DialogTitle>URL 추적 추가</DialogTitle>
-                  <DialogDescription>
-                    네이버 통합 검색에서 노출 순위를 추적할 URL을 등록하세요.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="keyword">키워드</Label>
-                    <Input
-                      id="keyword"
-                      placeholder="예: 다이어트 보조제"
-                      {...form.register("keyword")}
-                    />
-                    {form.formState.errors.keyword && (
-                      <p className="text-sm text-destructive">
-                        {form.formState.errors.keyword.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="targetUrl">대상 URL</Label>
-                    <Input
-                      id="targetUrl"
-                      placeholder="예: blog.naver.com/example/12345"
-                      {...form.register("targetUrl")}
-                    />
-                    {form.formState.errors.targetUrl && (
-                      <p className="text-sm text-destructive">
-                        {form.formState.errors.targetUrl.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="section">영역</Label>
-                    <Controller
-                      name="section"
-                      control={form.control}
-                      render={({ field }) => (
-                        <Select
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="전체" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {SECTIONS.map((s) => (
-                              <SelectItem key={s.value} value={s.value}>
-                                {s.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="memo">메모</Label>
-                    <Input
-                      id="memo"
-                      placeholder="메모 (선택사항)"
-                      {...form.register("memo")}
-                    />
-                  </div>
+              <DialogHeader>
+                <DialogTitle>URL 추적 추가</DialogTitle>
+                <DialogDescription>
+                  네이버 통합 검색에서 노출 순위를 추적할 URL을 등록하세요.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="keyword">키워드</Label>
+                  <Input
+                    id="keyword"
+                    placeholder="예: 다이어트 보조제"
+                    {...form.register("keyword")}
+                  />
+                  {form.formState.errors.keyword && (
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.keyword.message}
+                    </p>
+                  )}
                 </div>
-                <DialogFooter>
-                  <Button type="submit" disabled={createTrackedUrl.isPending}>
-                    {createTrackedUrl.isPending && (
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                <div className="grid gap-2">
+                  <Label htmlFor="targetUrl">대상 URL</Label>
+                  <Input
+                    id="targetUrl"
+                    placeholder="예: blog.naver.com/example/12345"
+                    {...form.register("targetUrl")}
+                  />
+                  {form.formState.errors.targetUrl && (
+                    <p className="text-sm text-destructive">
+                      {form.formState.errors.targetUrl.message}
+                    </p>
+                  )}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="section">영역</Label>
+                  <Controller
+                    name="section"
+                    control={form.control}
+                    render={({ field }) => (
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="전체" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SECTIONS.map((s) => (
+                            <SelectItem key={s.value} value={s.value}>
+                              {s.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     )}
-                    추가
-                  </Button>
-                </DialogFooter>
-              </form>
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="memo">메모</Label>
+                  <Input
+                    id="memo"
+                    placeholder="메모 (선택사항)"
+                    {...form.register("memo")}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  onClick={form.handleSubmit(handleCreate)}
+                  disabled={createTrackedUrl.isPending}
+                >
+                  {createTrackedUrl.isPending && (
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  )}
+                  추가
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
