@@ -1,12 +1,16 @@
 import {
   pgTable,
+  pgSchema,
   pgEnum,
   uuid,
   text,
   boolean,
   timestamp,
   integer,
+  bigserial,
+  bigint,
   date,
+  index,
   type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
@@ -234,6 +238,93 @@ export type Contract = typeof contracts.$inferSelect;
 export type NewContract = typeof contracts.$inferInsert;
 export type Contact = typeof contacts.$inferSelect;
 export type NewContact = typeof contacts.$inferInsert;
+
+// ============ SEO Schema (순위 추적) ============
+export const seoSchema = pgSchema("seo");
+
+export const seoSites = seoSchema.table("sites", {
+  id: bigserial("id", { mode: "number" }).primaryKey(),
+  name: text("name").notNull(),
+  url: text("url").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const seoKeywords = seoSchema.table(
+  "keywords",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    keyword: text("keyword").notNull(),
+    siteId: bigint("site_id", { mode: "number" })
+      .notNull()
+      .references(() => seoSites.id, { onDelete: "cascade" }),
+    isActive: boolean("is_active").default(true),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [index("idx_seo_keywords_site_id").on(table.siteId)]
+);
+
+export const seoRankings = seoSchema.table(
+  "rankings",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    keywordId: bigint("keyword_id", { mode: "number" })
+      .notNull()
+      .references(() => seoKeywords.id, { onDelete: "cascade" }),
+    rankPosition: integer("rank_position"),
+    searchType: text("search_type").default("view"),
+    checkedAt: timestamp("checked_at").defaultNow(),
+    resultUrl: text("result_url"),
+    resultTitle: text("result_title"),
+  },
+  (table) => [
+    index("idx_seo_rankings_keyword_id").on(table.keywordId),
+    index("idx_seo_rankings_checked_at").on(table.checkedAt),
+  ]
+);
+
+export const seoTrackedUrls = seoSchema.table(
+  "tracked_urls",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    keyword: text("keyword").notNull(),
+    targetUrl: text("target_url").notNull(),
+    section: text("section"),
+    memo: text("memo"),
+    isActive: boolean("is_active").default(true),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [index("idx_seo_tracked_urls_active").on(table.isActive)]
+);
+
+export const seoUrlRankings = seoSchema.table(
+  "url_rankings",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    trackedUrlId: bigint("tracked_url_id", { mode: "number" })
+      .notNull()
+      .references(() => seoTrackedUrls.id, { onDelete: "cascade" }),
+    rankPosition: integer("rank_position"),
+    sectionName: text("section_name"),
+    sectionRank: integer("section_rank"),
+    checkedAt: timestamp("checked_at").defaultNow(),
+  },
+  (table) => [
+    index("idx_seo_url_rankings_tracked_url_id").on(table.trackedUrlId),
+    index("idx_seo_url_rankings_checked_at").on(table.checkedAt),
+  ]
+);
+
+// SEO Type Exports
+export type SeoSite = typeof seoSites.$inferSelect;
+export type NewSeoSite = typeof seoSites.$inferInsert;
+export type SeoKeyword = typeof seoKeywords.$inferSelect;
+export type NewSeoKeyword = typeof seoKeywords.$inferInsert;
+export type SeoRanking = typeof seoRankings.$inferSelect;
+export type NewSeoRanking = typeof seoRankings.$inferInsert;
+export type SeoTrackedUrl = typeof seoTrackedUrls.$inferSelect;
+export type NewSeoTrackedUrl = typeof seoTrackedUrls.$inferInsert;
+export type SeoUrlRanking = typeof seoUrlRankings.$inferSelect;
+export type NewSeoUrlRanking = typeof seoUrlRankings.$inferInsert;
 
 // ============ ENUM Value Types ============
 export type SecurityLevel = (typeof securityLevelEnum.enumValues)[number];

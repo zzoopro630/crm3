@@ -29,6 +29,11 @@ import ContactsDirectPage from '@/pages/ContactsDirectPage'
 import ConsultantInquiriesPage from '@/pages/ConsultantInquiriesPage'
 import RecruitInquiriesPage from '@/pages/RecruitInquiriesPage'
 import MenuSettingsPage from '@/pages/MenuSettingsPage'
+import { RankPage } from '@/pages/RankPage'
+import RankDashboardPage from '@/pages/rank/RankDashboardPage'
+import RankSitesPage from '@/pages/rank/RankSitesPage'
+import RankKeywordsPage from '@/pages/rank/RankKeywordsPage'
+import RankUrlTrackingPage from '@/pages/rank/RankUrlTrackingPage'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -95,6 +100,15 @@ function AppContent() {
           <Route path="powerlink" element={<AdsPowerLinkPage />} />
           <Route path="report" element={<AdsReportPage />} />
           <Route path="weekly" element={<AdsWeeklyPage />} />
+        </Route>
+
+        {/* Rank Tracker nested routes (F1 only) */}
+        <Route path="/rank" element={<RankPage />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<RankDashboardPage />} />
+          <Route path="sites" element={<RankSitesPage />} />
+          <Route path="keywords" element={<RankKeywordsPage />} />
+          <Route path="url-tracking" element={<RankUrlTrackingPage />} />
         </Route>
 
         {/* Settings nested routes */}

@@ -28,6 +28,9 @@ import {
   ShieldCheck,
   FolderOpen,
   Headphones,
+  Search,
+  Globe,
+  Link2,
 } from "lucide-react";
 import type { SecurityLevel } from "@/types/employee";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -107,6 +110,44 @@ const navSections: NavSection[] = [
         href: "/contacts-direct",
         icon: BookUser,
         allowedOrgs: ["직할"],
+      },
+    ],
+  },
+  // 순위 추적
+  {
+    items: [
+      {
+        title: "순위 추적",
+        href: "/rank",
+        icon: Search,
+        allowedLevels: ["F1"],
+        isSubmenu: true,
+        submenuItems: [
+          {
+            title: "대시보드",
+            href: "/rank/dashboard",
+            icon: LayoutDashboard,
+            allowedLevels: ["F1"],
+          },
+          {
+            title: "사이트",
+            href: "/rank/sites",
+            icon: Globe,
+            allowedLevels: ["F1"],
+          },
+          {
+            title: "키워드",
+            href: "/rank/keywords",
+            icon: Search,
+            allowedLevels: ["F1"],
+          },
+          {
+            title: "URL 추적",
+            href: "/rank/url-tracking",
+            icon: Link2,
+            allowedLevels: ["F1"],
+          },
+        ],
       },
     ],
   },
