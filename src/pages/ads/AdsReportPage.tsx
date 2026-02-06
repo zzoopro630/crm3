@@ -191,9 +191,6 @@ export default function AdsReportPage() {
       }),
       { sessions: 0, keyEvents: 0 },
     );
-    const landingDbRate =
-      gaSummary.sessions > 0 ? Math.round((gaSummary.keyEvents / gaSummary.sessions) * 10000) / 100 : 0;
-
     return {
       keywordCategory: item.keywordCategory,
       impressions: item.impressions,
@@ -205,9 +202,11 @@ export default function AdsReportPage() {
       adGroupCount: item.adGroups.size,
       isDuplicate: item.adGroups.size > 1,
       gaSessions: gaSummary.sessions > 0 ? gaSummary.sessions : null,
-      gaKeyEvents: gaSummary.keyEvents > 0 ? gaSummary.keyEvents : null,
-      gaLandingDbRate: gaSummary.sessions > 0 ? landingDbRate : null,
       gaLandingRate: item.clicks > 0 && gaSummary.sessions > 0 ? (gaSummary.sessions / item.clicks) * 100 : null,
+      // 전환율 = 세션수 / 클릭수
+      conversionRate: item.clicks > 0 && gaSummary.sessions > 0 ? (gaSummary.sessions / item.clicks) * 100 : null,
+      // 랜딩비용 = 총비용 / 세션수
+      landingCost: gaSummary.sessions > 0 ? item.totalCost / gaSummary.sessions : null,
       inquiryCount: inquiries.filter((inq) => inquiryKeywordMap.get(inq.id) === item.keywordCategory).length,
       // 전환단가 = 광고비 / 실제문의 (inquiryCount 기반)
       cpa: (() => {
@@ -273,7 +272,6 @@ export default function AdsReportPage() {
     clicks: csvTotals.clicks,
     totalCost: csvTotals.totalCost,
     gaSessions: gaTotals?.sessions ?? uniqueGaStats.reduce((sum, r) => sum + r.sessions, 0),
-    gaKeyEvents: gaTotals?.conversions ?? uniqueGaStats.reduce((sum, r) => sum + (r.keyEvents ?? 0), 0),
     totalInquiries: inquiries.length,
   };
 
@@ -407,12 +405,12 @@ export default function AdsReportPage() {
                 <SortHeader label={<>평균클릭비용<br />(VAT포함)</>} sortKey="avgCpc" />
                 <SortHeader label={<>총비용<br />(VAT포함)</>} sortKey="totalCost" />
                 <SortHeader label="평균순위" sortKey="avgPosition" />
-                <SortHeader label="DB세션수" sortKey="gaSessions" className="bg-blue-500/5" />
+                <SortHeader label="세션수" sortKey="gaSessions" className="bg-blue-500/5" />
                 <SortHeader label="랜딩율" sortKey="gaLandingRate" className="bg-blue-500/5" />
-                <SortHeader label="전환수" sortKey="gaKeyEvents" className="bg-blue-500/5" />
-                <SortHeader label={<>랜딩조회<br />DB비</>} sortKey="gaLandingDbRate" className="bg-blue-500/5" />
+                <SortHeader label="전환율" sortKey="conversionRate" className="bg-blue-500/5" />
+                <SortHeader label="랜딩비용" sortKey="landingCost" className="bg-blue-500/5" />
                 <SortHeader label="전환단가" sortKey="cpa" className="bg-green-500/5" />
-                <SortHeader label="실제문의" sortKey="inquiryCount" className="bg-green-500/5" />
+                <SortHeader label="DB인입" sortKey="inquiryCount" className="bg-green-500/5" />
               </tr>
             </thead>
             <tbody>
@@ -448,8 +446,8 @@ export default function AdsReportPage() {
                     <td className="py-1.5 px-2 text-right tabular-nums">{formatNumber(row.avgPosition ?? 0)}</td>
                     <td className="py-1.5 px-2 text-right tabular-nums bg-blue-500/5">{row.gaSessions !== null ? formatNumber(row.gaSessions) : "-"}</td>
                     <td className="py-1.5 px-2 text-right tabular-nums bg-blue-500/5">{row.gaLandingRate !== null ? formatPercent(row.gaLandingRate) : "-"}</td>
-                    <td className="py-1.5 px-2 text-right tabular-nums bg-blue-500/5">{row.gaKeyEvents !== null ? formatNumber(row.gaKeyEvents) : "-"}</td>
-                    <td className="py-1.5 px-2 text-right tabular-nums bg-blue-500/5">{row.gaLandingDbRate !== null ? formatPercent(row.gaLandingDbRate) : "-"}</td>
+                    <td className="py-1.5 px-2 text-right tabular-nums bg-blue-500/5">{row.conversionRate !== null ? formatPercent(row.conversionRate) : "-"}</td>
+                    <td className="py-1.5 px-2 text-right tabular-nums bg-blue-500/5">{row.landingCost !== null ? formatNumber(row.landingCost) : "-"}</td>
                     <td className="py-1.5 px-2 text-right tabular-nums bg-green-500/5">{row.cpa !== null ? formatNumber(row.cpa) : "-"}</td>
                     <td className="py-1.5 px-2 text-right tabular-nums bg-green-500/5 font-semibold">
                       {row.inquiryCount > 0 ? formatNumber(row.inquiryCount) : "-"}
@@ -472,9 +470,11 @@ export default function AdsReportPage() {
                 <td className="py-2 px-2 text-right tabular-nums bg-blue-500/5">
                   {totals.clicks > 0 ? formatPercent((totals.gaSessions / totals.clicks) * 100) : "-"}
                 </td>
-                <td className="py-2 px-2 text-right tabular-nums bg-blue-500/5">{formatNumber(totals.gaKeyEvents)}</td>
                 <td className="py-2 px-2 text-right tabular-nums bg-blue-500/5">
-                  {totals.gaSessions > 0 ? formatPercent((totals.gaKeyEvents / totals.gaSessions) * 100) : "-"}
+                  {totals.clicks > 0 && totals.gaSessions > 0 ? formatPercent((totals.gaSessions / totals.clicks) * 100) : "-"}
+                </td>
+                <td className="py-2 px-2 text-right tabular-nums bg-blue-500/5">
+                  {totals.gaSessions > 0 ? formatNumber(totals.totalCost / totals.gaSessions) : "-"}
                 </td>
                 <td className="py-2 px-2 text-right tabular-nums bg-green-500/5">
                   {totals.totalInquiries > 0 ? formatNumber(totals.totalCost / totals.totalInquiries) : "-"}
@@ -488,7 +488,7 @@ export default function AdsReportPage() {
             <p>※ 선택하신 기간 ({startDate} ~ {endDate}) 동안의 데이터를 키워드별로 합산한 보고서입니다.</p>
             <p>※ '중복' 표시는 동일한 키워드 카테고리가 여러 광고그룹에 나누어 집행되고 있음을 의미합니다.</p>
             <p className="text-blue-500/80">※ 파란색 배경 컬럼은 Google Analytics 데이터입니다.</p>
-            <p className="text-green-500/80">※ 녹색 배경 컬럼은 실제 문의 데이터입니다. 전환단가 = 광고비 ÷ 실제문의</p>
+            <p className="text-green-500/80">※ 녹색 배경 컬럼은 DB인입 데이터입니다. 전환단가 = 광고비 ÷ DB인입</p>
           </div>
         </CardContent>
       </Card>
