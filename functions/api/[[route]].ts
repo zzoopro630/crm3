@@ -2674,16 +2674,15 @@ app.post("/api/rank/rankings/check", async (c) => {
     }
 
     try {
-      const crawlRes = await fetch(`${crawlerUrl}/api/rankings/check`, {
+      const crawlRes = await fetch(`${crawlerUrl}/api/crawl/keyword-rank`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keyword_ids: [keywordId] }),
+        body: JSON.stringify({ keyword: kw.keyword, siteUrl: site.url }),
       });
 
       if (!crawlRes.ok) throw new Error("크롤링 서버 응답 오류");
 
-      const crawlData = await crawlRes.json() as { results: Array<{ rank?: number; url?: string; title?: string }> };
-      const crawlResult = crawlData.results?.[0];
+      const crawlResult = await crawlRes.json() as { rank?: number | null; url?: string | null; title?: string | null };
 
       await seo
         .from("rankings")
@@ -2812,40 +2811,42 @@ app.post("/api/rank/url-tracking/check", async (c) => {
     }
 
     try {
-      const crawlRes = await fetch(`${crawlerUrl}/api/url-tracking/check`, {
+      const crawlRes = await fetch(`${crawlerUrl}/api/crawl/url-exposure`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tracked_url_ids: [id] }),
+        body: JSON.stringify({ keyword: tracked.keyword, targetUrl: tracked.target_url }),
       });
 
       if (!crawlRes.ok) throw new Error("크롤링 서버 응답 오류");
 
-      const crawlData = await crawlRes.json() as {
-        results: Array<{
-          rank_position?: number;
-          section_name?: string;
-          section_rank?: number;
-          found?: boolean;
-        }>;
+      const crawlResult = await crawlRes.json() as {
+        found?: boolean;
+        sectionName?: string | null;
+        sectionRank?: number | null;
+        overallRank?: number | null;
       };
-      const crawlResult = crawlData.results?.[0];
+
+      // section 필터: 지정된 영역이 있으면 해당 영역 순위 사용
+      const rankPosition = tracked.section && crawlResult?.sectionName === tracked.section
+        ? crawlResult?.overallRank || null
+        : crawlResult?.overallRank || null;
 
       await seo
         .from("url_rankings")
         .insert({
           tracked_url_id: id,
-          rank_position: crawlResult?.rank_position || null,
-          section_name: crawlResult?.section_name || null,
-          section_rank: crawlResult?.section_rank || null,
+          rank_position: rankPosition,
+          section_name: crawlResult?.sectionName || null,
+          section_rank: crawlResult?.sectionRank || null,
         });
 
       results.push({
         trackedUrlId: id,
         keyword: tracked.keyword,
         targetUrl: tracked.target_url,
-        rankPosition: crawlResult?.rank_position || null,
-        sectionName: crawlResult?.section_name || null,
-        sectionRank: crawlResult?.section_rank || null,
+        rankPosition,
+        sectionName: crawlResult?.sectionName || null,
+        sectionRank: crawlResult?.sectionRank || null,
         found: crawlResult?.found || false,
       });
     } catch (err) {
