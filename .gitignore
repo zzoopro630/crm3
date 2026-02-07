@@ -54,3 +54,4 @@ docs/inquiry-system-plan.md
 !package-lock.json
 !tsconfig*.json
 !drizzle.config.json
+!public/_routes.json
