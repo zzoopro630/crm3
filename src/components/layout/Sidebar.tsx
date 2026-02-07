@@ -124,18 +124,6 @@ const navSections: NavSection[] = [
         isSubmenu: true,
         submenuItems: [
           {
-            title: "보고서",
-            href: "/ads/report",
-            icon: FileText,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "주간데이터",
-            href: "/ads/weekly",
-            icon: TrendingUp,
-            allowedLevels: ["F1"],
-          },
-          {
             title: "N-DATA",
             href: "/ads/ndata",
             icon: BarChart3,
@@ -145,6 +133,18 @@ const navSections: NavSection[] = [
             title: "파워링크",
             href: "/ads/powerlink",
             icon: Zap,
+            allowedLevels: ["F1"],
+          },
+          {
+            title: "보고서",
+            href: "/ads/report",
+            icon: FileText,
+            allowedLevels: ["F1"],
+          },
+          {
+            title: "주간데이터",
+            href: "/ads/weekly",
+            icon: TrendingUp,
             allowedLevels: ["F1"],
           },
           {
