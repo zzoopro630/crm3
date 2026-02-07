@@ -10,10 +10,6 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-    DropdownMenuSub,
-    DropdownMenuSubTrigger,
-    DropdownMenuSubContent,
-    DropdownMenuPortal,
 } from '@/components/ui/dropdown-menu'
 import {
     Settings,
@@ -21,10 +17,7 @@ import {
     User,
     Moon,
     Sun,
-    Monitor,
     ChevronDown,
-    Palette,
-    Check,
     Bell,
     CircleUser,
 } from 'lucide-react'
@@ -50,12 +43,10 @@ export function Header({ onSidebarToggle }: HeaderProps) {
         document.documentElement.style.fontSize = `${14 * fontScale / 100}px`
     }, [fontScale])
 
-    const getThemeLabel = () => {
-        switch (theme) {
-            case 'light': return '라이트'
-            case 'dark': return '다크'
-            default: return '시스템'
-        }
+    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+
+    const toggleTheme = () => {
+        setTheme(isDark ? 'light' : 'dark')
     }
 
     return (
@@ -97,6 +88,11 @@ export function Header({ onSidebarToggle }: HeaderProps) {
                         </button>
                     </div>
 
+                    {/* 테마 토글 */}
+                    <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-muted-foreground w-9 h-9">
+                        {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                    </Button>
+
                     {/* 알림 버튼 */}
                     <Button variant="ghost" size="icon" className="text-muted-foreground w-9 h-9">
                         <Bell className="h-5 w-5" />
@@ -136,32 +132,6 @@ export function Header({ onSidebarToggle }: HeaderProps) {
                                 <Settings className="mr-2 h-4 w-4" />
                                 설정
                             </DropdownMenuItem>
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>
-                                    <Palette className="mr-2 h-4 w-4" />
-                                    테마: {getThemeLabel()}
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuPortal>
-                                    <DropdownMenuSubContent>
-                                        <DropdownMenuItem onClick={() => setTheme('light')}>
-                                            <Sun className="mr-2 h-4 w-4" />
-                                            라이트
-                                            {theme === 'light' && <Check className="ml-auto h-4 w-4" />}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setTheme('dark')}>
-                                            <Moon className="mr-2 h-4 w-4" />
-                                            다크
-                                            {theme === 'dark' && <Check className="ml-auto h-4 w-4" />}
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem onClick={() => setTheme('system')}>
-                                            <Monitor className="mr-2 h-4 w-4" />
-                                            시스템
-                                            {theme === 'system' && <Check className="ml-auto h-4 w-4" />}
-                                        </DropdownMenuItem>
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuPortal>
-                            </DropdownMenuSub>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                                 <LogOut className="mr-2 h-4 w-4" />
