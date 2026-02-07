@@ -27,8 +27,6 @@ import {
     Check,
     Bell,
     CircleUser,
-    Minus,
-    Plus,
 } from 'lucide-react'
 import { SidebarTrigger } from './Sidebar'
 import { Breadcrumb } from './Breadcrumb'
@@ -40,17 +38,17 @@ interface HeaderProps {
 
 export function Header({ onSidebarToggle }: HeaderProps) {
     const navigate = useNavigate()
-    const { theme, setTheme, fontSize, increaseFontSize, decreaseFontSize } = useThemeStore()
+    const { theme, setTheme, fontScale, increaseFontScale, decreaseFontScale } = useThemeStore()
     const { signOut, user, employee } = useAuthStore()
     const handleSignOut = async () => {
         await signOut()
         navigate('/login')
     }
 
-    // fontSize 적용
+    // fontScale 적용 (기본 14px 기준)
     useEffect(() => {
-        document.documentElement.style.fontSize = `${fontSize}px`
-    }, [fontSize])
+        document.documentElement.style.fontSize = `${14 * fontScale / 100}px`
+    }, [fontScale])
 
     const getThemeLabel = () => {
         switch (theme) {
@@ -79,28 +77,24 @@ export function Header({ onSidebarToggle }: HeaderProps) {
 
                 <div className="flex items-center gap-2 shrink-0">
                     {/* 텍스트 배율 조절 */}
-                    <div className="hidden md:flex items-center gap-1">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={decreaseFontSize}
-                            disabled={fontSize <= 12}
-                            className="text-muted-foreground w-8 h-8"
+                    <div className="hidden md:flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-hidden">
+                        <button
+                            onClick={decreaseFontScale}
+                            disabled={fontScale <= 80}
+                            className="px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 transition-colors"
                         >
-                            <Minus className="h-4 w-4" />
-                        </Button>
-                        <span className="text-xs text-muted-foreground w-8 text-center tabular-nums">
-                            {fontSize}
+                            가
+                        </button>
+                        <span className="px-2 py-1.5 text-xs font-medium text-foreground tabular-nums min-w-[3rem] text-center border-x border-zinc-200 dark:border-zinc-700">
+                            {fontScale}%
                         </span>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={increaseFontSize}
-                            disabled={fontSize >= 18}
-                            className="text-muted-foreground w-8 h-8"
+                        <button
+                            onClick={increaseFontScale}
+                            disabled={fontScale >= 150}
+                            className="px-2.5 py-1.5 text-base font-medium text-muted-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 transition-colors"
                         >
-                            <Plus className="h-4 w-4" />
-                        </Button>
+                            가
+                        </button>
                     </div>
 
                     {/* 알림 버튼 */}
