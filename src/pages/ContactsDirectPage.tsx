@@ -170,11 +170,12 @@ export default function ContactsDirectPage() {
           <TabsTrigger value="tree">조직도</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list" className="space-y-6 mt-4">
+        <TabsContent value="list" className="mt-4">
           {teamGroups.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">연락처가 없습니다</p>
           ) : (
-            teamGroups.map(({ team, members }) => (
+            <div className="grid gap-4 lg:grid-cols-2">
+            {teamGroups.map(({ team, members }) => (
               <div key={team} className="border rounded-lg overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-2 bg-muted/50">
                   <h2 className="text-sm font-semibold">{team}</h2>
@@ -200,7 +201,8 @@ export default function ContactsDirectPage() {
                   </TableBody>
                 </Table>
               </div>
-            ))
+            ))}
+            </div>
           )}
         </TabsContent>
 
