@@ -34,7 +34,7 @@ export function ExcelUpload({ onUpload, isLoading }: Props) {
 
   return (
     <div className="flex gap-2">
-      <Button variant="outline" size="sm" onClick={downloadTemplate}>
+      <Button variant="outline" size="sm" onClick={async () => await downloadTemplate()}>
         <Download className="h-4 w-4 mr-1" />
         템플릿
       </Button>

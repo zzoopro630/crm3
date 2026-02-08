@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import type { ContactInput, JobTitle } from '@/types/contact'
 import { JOB_TITLES } from '@/types/contact'
 
@@ -13,14 +13,6 @@ export function formatPhone(phone: string): string {
   return phone
 }
 
-interface ExcelRow {
-  이름: string
-  직급?: string
-  팀?: string
-  전화번호: string
-  상위자?: string
-}
-
 /**
  * 2-pass Excel parsing:
  * Pass 1: Create contacts without managerId
@@ -31,34 +23,52 @@ export function parseExcelUpload(
 ): Promise<{ contacts: ContactInput[]; managerNames: Map<number, string> }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
-        const data = new Uint8Array(e.target!.result as ArrayBuffer)
-        const workbook = XLSX.read(data, { type: 'array' })
-        const sheet = workbook.Sheets[workbook.SheetNames[0]]
-        const rows = XLSX.utils.sheet_to_json<ExcelRow>(sheet)
+        const buffer = e.target!.result as ArrayBuffer
+        const workbook = new ExcelJS.Workbook()
+        await workbook.xlsx.load(buffer)
+        const sheet = workbook.worksheets[0]
 
         const contacts: ContactInput[] = []
         const managerNames = new Map<number, string>()
 
-        for (let i = 0; i < rows.length; i++) {
-          const row = rows[i]
-          if (!row.이름 || !row.전화번호) continue
+        // 첫 행은 헤더
+        const headers: string[] = []
+        sheet.getRow(1).eachCell((cell, colNumber) => {
+          headers[colNumber] = String(cell.value || '').trim()
+        })
 
-          const title = row.직급 as JobTitle | undefined
-          const validTitle = title && JOB_TITLES.includes(title) ? title : null
+        const colMap = {
+          name: headers.indexOf('이름') + 1 || headers.findIndex(h => h === '이름') + 1,
+          title: headers.indexOf('직급') + 1 || headers.findIndex(h => h === '직급') + 1,
+          team: headers.indexOf('팀') + 1 || headers.findIndex(h => h === '팀') + 1,
+          phone: headers.indexOf('전화번호') + 1 || headers.findIndex(h => h === '전화번호') + 1,
+          manager: headers.indexOf('상위자') + 1 || headers.findIndex(h => h === '상위자') + 1,
+        }
+
+        sheet.eachRow((row, rowNumber) => {
+          if (rowNumber === 1) return // 헤더 스킵
+
+          const name = String(row.getCell(colMap.name).value || '').trim()
+          const phone = String(row.getCell(colMap.phone).value || '').trim()
+          if (!name || !phone) return
+
+          const title = String(row.getCell(colMap.title).value || '').trim() as JobTitle | ''
+          const validTitle = title && JOB_TITLES.includes(title as JobTitle) ? (title as JobTitle) : null
 
           contacts.push({
-            name: row.이름.trim(),
+            name,
             title: validTitle,
-            team: row.팀?.trim() || '미지정',
-            phone: row.전화번호.toString().trim(),
+            team: String(row.getCell(colMap.team).value || '').trim() || '미지정',
+            phone,
           })
 
-          if (row.상위자?.trim()) {
-            managerNames.set(contacts.length - 1, row.상위자.trim())
+          const managerName = String(row.getCell(colMap.manager).value || '').trim()
+          if (managerName) {
+            managerNames.set(contacts.length - 1, managerName)
           }
-        }
+        })
 
         resolve({ contacts, managerNames })
       } catch (err) {
@@ -70,13 +80,29 @@ export function parseExcelUpload(
   })
 }
 
-export function downloadTemplate() {
-  const data = [
-    { 이름: '홍길동', 직급: '대표', 팀: '경영지원', 전화번호: '01012345678', 상위자: '' },
-    { 이름: '김철수', 직급: '팀장', 팀: '영업1팀', 전화번호: '01098765432', 상위자: '홍길동' },
+export async function downloadTemplate() {
+  const workbook = new ExcelJS.Workbook()
+  const sheet = workbook.addWorksheet('연락처')
+
+  sheet.columns = [
+    { header: '이름', key: 'name', width: 15 },
+    { header: '직급', key: 'title', width: 12 },
+    { header: '팀', key: 'team', width: 15 },
+    { header: '전화번호', key: 'phone', width: 18 },
+    { header: '상위자', key: 'manager', width: 15 },
   ]
-  const ws = XLSX.utils.json_to_sheet(data)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, '연락처')
-  XLSX.writeFile(wb, '연락처_템플릿.xlsx')
+
+  sheet.addRow({ name: '홍길동', title: '대표', team: '경영지원', phone: '01012345678', manager: '' })
+  sheet.addRow({ name: '김철수', title: '팀장', team: '영업1팀', phone: '01098765432', manager: '홍길동' })
+
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = '연락처_템플릿.xlsx'
+  a.click()
+  URL.revokeObjectURL(url)
 }
