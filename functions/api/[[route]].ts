@@ -9,6 +9,8 @@ interface Env {
   SUPABASE_SERVICE_ROLE_KEY: string;
   JUSO_API_KEY: string;
   RANKTRACKER_API_URL: string;
+  SUPER_ADMIN_EMAIL?: string;
+  ENVIRONMENT?: string;
 }
 
 // Hono 앱 생성
@@ -35,6 +37,96 @@ app.use("*", async (c, next) => {
   await next();
 });
 
+// ============ 인증 미들웨어 ============
+
+const PUBLIC_ROUTES = [
+  { method: "GET", path: "/api/health" },
+  { method: "POST", path: "/api/pending-approvals" },
+];
+
+app.use("*", async (c, next) => {
+  const isPublic = PUBLIC_ROUTES.some(
+    (r) => r.method === c.req.method && c.req.path === r.path
+  );
+  if (isPublic) return await next();
+
+  const authHeader = c.req.header("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return c.json({ error: "인증이 필요합니다." }, 401);
+  }
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser(authHeader.slice(7));
+
+  if (error || !user) {
+    return c.json({ error: "유효하지 않은 인증 토큰입니다." }, 401);
+  }
+
+  c.set("user" as never, user);
+  c.set("userEmail" as never, user.email);
+  await next();
+});
+
+// ============ 인가 헬퍼 ============
+
+async function getAuthEmployee(c: any) {
+  const cached = c.get("employee" as never);
+  if (cached) return cached;
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const email = c.get("userEmail" as never) as string;
+
+  const { data } = await supabase
+    .from("employees")
+    .select("id, security_level, organization_id")
+    .eq("email", email)
+    .eq("is_active", true)
+    .single();
+
+  if (data) c.set("employee" as never, data);
+  return data;
+}
+
+async function requireSecurityLevel(c: any, levels: string[]) {
+  const emp = await getAuthEmployee(c);
+  if (!emp)
+    return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+  if (!levels.includes(emp.security_level))
+    return c.json({ error: "권한이 부족합니다." }, 403);
+  return null;
+}
+
+// ============ 에러 헬퍼 ============
+
+function safeError(c: any, error: any, status: number = 500) {
+  console.error("[API Error]", error?.message || error);
+  if (status >= 400 && status < 500) {
+    return c.json(
+      { error: error?.message || "요청 처리 실패" },
+      status as any
+    );
+  }
+  const isDev = (c.env as any).ENVIRONMENT === "development";
+  return c.json(
+    { error: isDev ? error.message : "서버 오류가 발생했습니다." },
+    500
+  );
+}
+
+// ============ 페이지네이션 헬퍼 ============
+
+function parsePagination(c: any) {
+  let page = parseInt(c.req.query("page") || "1");
+  let limit = parseInt(c.req.query("limit") || "20");
+  if (isNaN(page) || page < 1) page = 1;
+  if (isNaN(limit) || limit < 1) limit = 20;
+  if (limit > 100) limit = 100;
+  return { page, limit, offset: (page - 1) * limit };
+}
+
 // 헬스 체크 엔드포인트
 app.get("/api/health", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -44,16 +136,13 @@ app.get("/api/health", (c) => {
 app.get("/api/customers", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
-  const page = parseInt(c.req.query("page") || "1");
-  const limit = parseInt(c.req.query("limit") || "20");
+  const { page, limit, offset } = parsePagination(c);
   const search = c.req.query("search") || "";
   const status = c.req.query("status") || "";
   const managerId = c.req.query("managerId") || "";
   const type = c.req.query("type") || "";
   const sortBy = c.req.query("sortBy") || "created_at";
   const sortOrder = c.req.query("sortOrder") || "desc";
-
-  const offset = (page - 1) * limit;
 
   let query = supabase.from("customers").select("*", { count: "exact" }).is("deleted_at", null);
 
@@ -87,7 +176,7 @@ app.get("/api/customers", async (c) => {
   const { data, count, error } = await query;
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   // 담당자 ID 목록 수집
@@ -144,10 +233,8 @@ app.get("/api/customers", async (c) => {
 // 휴지통 목록 (`:id` 라우트보다 먼저 정의해야 함)
 app.get("/api/customers/trash", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
-  const page = parseInt(c.req.query("page") || "1");
-  const limit = parseInt(c.req.query("limit") || "20");
+  const { page, limit, offset } = parsePagination(c);
   const search = c.req.query("search") || "";
-  const offset = (page - 1) * limit;
 
   let query = supabase.from("customers").select("*", { count: "exact" }).not("deleted_at", "is", null);
 
@@ -161,7 +248,7 @@ app.get("/api/customers/trash", async (c) => {
   const { data, count, error } = await query;
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   const managerIds = [...new Set((data || []).map((c) => c.manager_id).filter(Boolean))];
@@ -242,6 +329,10 @@ app.post("/api/customers", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
+  if (!body.name) {
+    return c.json({ error: "name은 필수입니다." }, 400);
+  }
+
   const dbInput = {
     name: body.name,
     phone: body.phone,
@@ -267,7 +358,7 @@ app.post("/api/customers", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json(data, 201);
@@ -316,7 +407,7 @@ app.put("/api/customers/:id", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json(data);
@@ -333,7 +424,7 @@ app.delete("/api/customers/:id", async (c) => {
     .eq("id", id);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({ success: true });
@@ -347,7 +438,7 @@ app.delete("/api/customers/:id/permanent", async (c) => {
   const { error } = await supabase.from("customers").delete().eq("id", id);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({ success: true });
@@ -364,7 +455,7 @@ app.post("/api/customers/:id/restore", async (c) => {
     .eq("id", id);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({ success: true });
@@ -382,7 +473,7 @@ app.get("/api/contracts/:customerId", async (c) => {
     .order("created_at", { ascending: false });
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -422,7 +513,7 @@ app.post("/api/contracts", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json(data, 201);
@@ -454,7 +545,7 @@ app.put("/api/contracts/:id", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json(data);
@@ -467,7 +558,7 @@ app.delete("/api/contracts/:id", async (c) => {
   const { error } = await supabase.from("contracts").delete().eq("id", id);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({ success: true });
@@ -485,7 +576,7 @@ app.get("/api/notes/:customerId", async (c) => {
     .order("created_at", { ascending: false });
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -517,7 +608,7 @@ app.post("/api/notes", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json(data, 201);
@@ -539,7 +630,7 @@ app.put("/api/notes/:id", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json(data);
@@ -552,7 +643,7 @@ app.delete("/api/notes/:id", async (c) => {
   const { error } = await supabase.from("customer_notes").delete().eq("id", id);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({ success: true });
@@ -568,7 +659,7 @@ app.get("/api/employees", async (c) => {
     .order("full_name", { ascending: true });
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -619,8 +710,19 @@ app.get("/api/employees/email/:email", async (c) => {
 });
 
 app.post("/api/employees", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
+
+  const VALID_LEVELS = ["F1", "F2", "F3", "F4", "F5"];
+  if (!body.email || !body.fullName || !body.securityLevel) {
+    return c.json({ error: "email, fullName, securityLevel은 필수입니다." }, 400);
+  }
+  if (!VALID_LEVELS.includes(body.securityLevel)) {
+    return c.json({ error: "유효하지 않은 보안 등급입니다." }, 400);
+  }
 
   // 이메일 중복 체크
   const { data: existing } = await supabase
@@ -647,13 +749,16 @@ app.post("/api/employees", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json(data, 201);
 });
 
 app.put("/api/employees/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
@@ -696,13 +801,16 @@ app.put("/api/employees/:id", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json(data);
 });
 
 app.delete("/api/employees/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
@@ -713,13 +821,16 @@ app.delete("/api/employees/:id", async (c) => {
     .eq("id", id);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({ success: true });
 });
 
 app.put("/api/employees/:id/restore", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
@@ -731,7 +842,7 @@ app.put("/api/employees/:id/restore", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json(data);
@@ -739,6 +850,9 @@ app.put("/api/employees/:id/restore", async (c) => {
 
 // 완전 삭제 (비활성 사원만)
 app.delete("/api/employees/:id/permanent", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
@@ -769,7 +883,7 @@ app.delete("/api/employees/:id/permanent", async (c) => {
   const { error } = await supabase.from("employees").delete().eq("id", id);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({ success: true });
@@ -785,7 +899,7 @@ app.get("/api/sources", async (c) => {
     .order("name", { ascending: true });
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -809,7 +923,7 @@ app.post("/api/sources", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json(
@@ -831,7 +945,7 @@ app.put("/api/sources/:id", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({ id: data.id, name: data.name, createdAt: data.created_at });
@@ -844,7 +958,7 @@ app.delete("/api/sources/:id", async (c) => {
   const { error } = await supabase.from("sources").delete().eq("id", id);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({ success: true });
@@ -938,6 +1052,9 @@ app.get("/api/dashboard", async (c) => {
 
 // ============ Pending Approvals API ============
 app.get("/api/pending-approvals", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { data, error } = await supabase
@@ -947,7 +1064,7 @@ app.get("/api/pending-approvals", async (c) => {
     .order("requested_at", { ascending: true });
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1018,16 +1135,27 @@ app.post("/api/pending-approvals", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json(data, 201);
 });
 
 app.put("/api/pending-approvals/:id/approve", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
+
+  const VALID_LEVELS = ["F1", "F2", "F3", "F4", "F5"];
+  if (!body.email || !body.fullName || !body.securityLevel) {
+    return c.json({ error: "email, fullName, securityLevel은 필수입니다." }, 400);
+  }
+  if (!VALID_LEVELS.includes(body.securityLevel)) {
+    return c.json({ error: "유효하지 않은 보안 등급입니다." }, 400);
+  }
 
   // 이메일 중복 체크
   const { data: existing } = await supabase
@@ -1086,6 +1214,9 @@ app.put("/api/pending-approvals/:id/approve", async (c) => {
 });
 
 app.put("/api/pending-approvals/:id/reject", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
@@ -1100,7 +1231,7 @@ app.put("/api/pending-approvals/:id/reject", async (c) => {
     .eq("id", id);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({ success: true });
@@ -1116,7 +1247,7 @@ app.get("/api/organizations", async (c) => {
     .order("name", { ascending: true });
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1192,6 +1323,9 @@ app.get("/api/organizations/:id", async (c) => {
 });
 
 app.post("/api/organizations", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
@@ -1206,13 +1340,16 @@ app.post("/api/organizations", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json(data, 201);
 });
 
 app.put("/api/organizations/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
@@ -1233,20 +1370,23 @@ app.put("/api/organizations/:id", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json(data);
 });
 
 app.delete("/api/organizations/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
   const { error } = await supabase.from("organizations").delete().eq("id", id);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({ success: true });
@@ -1267,7 +1407,7 @@ app.post("/api/team/members", async (c) => {
       .eq("is_active", true);
 
     if (error) {
-      return c.json({ error: error.message }, 500);
+      return safeError(c, error);
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     employeeIds = (allEmployees || []).map((e: any) => e.id);
@@ -1329,7 +1469,7 @@ app.post("/api/team/stats", async (c) => {
     .in("manager_id", memberIds);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   const byStatus = { new: 0, contacted: 0, consulting: 0, closed: 0 };
@@ -1361,7 +1501,7 @@ app.put("/api/customers/:id/transfer", async (c) => {
     .eq("id", id);
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({ success: true });
@@ -1372,13 +1512,10 @@ app.put("/api/customers/:id/transfer", async (c) => {
 app.get("/api/inquiries", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
-  const page = parseInt(c.req.query("page") || "1");
-  const limit = parseInt(c.req.query("limit") || "15");
+  const { page, limit, offset } = parsePagination(c);
   const search = c.req.query("search") || "";
   const status = c.req.query("status") || "";
   const managerId = c.req.query("managerId") || "";
-
-  const offset = (page - 1) * limit;
 
   let query = (supabase as any)
     .schema("marketing")
@@ -1407,7 +1544,7 @@ app.get("/api/inquiries", async (c) => {
   const { data, count, error } = await query;
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   // 담당자 이름 조회
@@ -1478,7 +1615,7 @@ app.put("/api/inquiries/:id", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({
@@ -1521,7 +1658,7 @@ app.post("/api/inquiries", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({
@@ -1543,13 +1680,10 @@ app.post("/api/inquiries", async (c) => {
 app.get("/api/consultant-inquiries", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
-  const page = parseInt(c.req.query("page") || "1");
-  const limit = parseInt(c.req.query("limit") || "15");
+  const { page, limit, offset } = parsePagination(c);
   const search = c.req.query("search") || "";
   const status = c.req.query("status") || "";
   const managerId = c.req.query("managerId") || "";
-
-  const offset = (page - 1) * limit;
 
   let query = (supabase as any)
     .schema("marketing")
@@ -1576,7 +1710,7 @@ app.get("/api/consultant-inquiries", async (c) => {
   const { data, count, error } = await query;
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   const managerIds = [
@@ -1647,7 +1781,7 @@ app.put("/api/consultant-inquiries/:id", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({
@@ -1675,13 +1809,10 @@ app.put("/api/consultant-inquiries/:id", async (c) => {
 app.get("/api/recruit-inquiries", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
-  const page = parseInt(c.req.query("page") || "1");
-  const limit = parseInt(c.req.query("limit") || "15");
+  const { page, limit, offset } = parsePagination(c);
   const search = c.req.query("search") || "";
   const status = c.req.query("status") || "";
   const managerId = c.req.query("managerId") || "";
-
-  const offset = (page - 1) * limit;
 
   let query = (supabase as any)
     .schema("marketing")
@@ -1708,7 +1839,7 @@ app.get("/api/recruit-inquiries", async (c) => {
   const { data, count, error } = await query;
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   const managerIds = [
@@ -1780,7 +1911,7 @@ app.put("/api/recruit-inquiries/:id", async (c) => {
     .single();
 
   if (error) {
-    return c.json({ error: error.message }, 500);
+    return safeError(c, error);
   }
 
   return c.json({
@@ -1824,7 +1955,7 @@ app.get("/api/ads/keyword-details", async (c) => {
   }
 
   const { data, error } = await query;
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
 
   const formattedData = (data || []).map((item: any) => ({
     id: item.id,
@@ -1865,7 +1996,7 @@ app.post("/api/ads/keyword-details", async (c) => {
     .from("keyword_details")
     .upsert(dbData, { onConflict: "ad_group,keyword,report_date", ignoreDuplicates: false });
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json({ success: true, count: body.length });
 });
 
@@ -1887,7 +2018,7 @@ app.delete("/api/ads/keyword-details", async (c) => {
     .lte("report_date", endDate)
     .select("id");
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json({ success: true, deletedCount: data?.length || 0 });
 });
 
@@ -1911,7 +2042,7 @@ app.get("/api/ads/inquiries", async (c) => {
   }
 
   const { data, error } = await query;
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
 
   const formattedData = (data || []).map((item: any) => ({
     id: item.id,
@@ -1937,7 +2068,7 @@ app.post("/api/ads/inquiries", async (c) => {
     .from("inquiries")
     .insert(body);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json({ success: true });
 });
 
@@ -1954,7 +2085,7 @@ app.get("/api/ads/ga-summary", async (c) => {
     .gte("report_date", startDate)
     .lte("report_date", endDate);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
 
   if (!data || data.length === 0) {
     return c.json({ success: true, data: [], fromDb: false });
@@ -2006,7 +2137,7 @@ app.post("/api/ads/ga-summary", async (c) => {
     .from("ga_summary")
     .upsert(dbData, { onConflict: "insurance_name,report_date", ignoreDuplicates: false });
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json({ success: true, count: bodyData.length });
 });
 
@@ -2023,7 +2154,7 @@ app.get("/api/ads/ga-totals", async (c) => {
     .gte("report_date", startDate)
     .lte("report_date", endDate);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
 
   if (!data || data.length === 0) {
     return c.json({ success: true, totals: null, fromDb: false });
@@ -2062,7 +2193,7 @@ app.post("/api/ads/ga-totals", async (c) => {
     .from("ga_totals")
     .upsert(dbData, { onConflict: "report_date", ignoreDuplicates: false });
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json({ success: true });
 });
 
@@ -2076,7 +2207,7 @@ app.post("/api/ads/ga/edge-summary", async (c) => {
     body,
   });
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json(data);
 });
 
@@ -2090,7 +2221,7 @@ app.post("/api/ads/ga/edge-total-sessions", async (c) => {
     body,
   });
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json(data);
 });
 
@@ -2102,7 +2233,7 @@ app.get("/api/settings", async (c) => {
     .from("app_settings")
     .select("key, value");
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
 
   return c.json(
     (data || []).map((row: any) => ({ key: row.key, value: row.value }))
@@ -2110,6 +2241,9 @@ app.get("/api/settings", async (c) => {
 });
 
 app.put("/api/settings", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
   const items = body.items as Array<{ key: string; value: string | null }>;
@@ -2171,7 +2305,7 @@ app.get("/api/contacts", async (c) => {
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
 
   const contacts = (data || []).map((row: Record<string, unknown>) => ({
     id: row.id,
@@ -2206,7 +2340,7 @@ app.post("/api/contacts", async (c) => {
     .select()
     .single();
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
 
   return c.json({
     id: data.id,
@@ -2242,7 +2376,7 @@ app.put("/api/contacts/:id", async (c) => {
     .select()
     .single();
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
 
   return c.json({
     id: data.id,
@@ -2267,7 +2401,7 @@ app.delete("/api/contacts/:id", async (c) => {
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json({ success: true });
 });
 
@@ -2281,7 +2415,7 @@ app.get("/api/contacts/trash", async (c) => {
     .not("deleted_at", "is", null)
     .order("deleted_at", { ascending: false });
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
 
   const contacts = (data || []).map((row: Record<string, unknown>) => ({
     id: row.id,
@@ -2308,7 +2442,7 @@ app.post("/api/contacts/:id/restore", async (c) => {
     .update({ deleted_at: null })
     .eq("id", id);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json({ success: true });
 });
 
@@ -2322,7 +2456,7 @@ app.delete("/api/contacts/:id/permanent", async (c) => {
     .delete()
     .eq("id", id);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json({ success: true });
 });
 
@@ -2335,7 +2469,7 @@ app.delete("/api/contacts/trash/empty", async (c) => {
     .delete()
     .not("deleted_at", "is", null);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json({ success: true });
 });
 
@@ -2423,7 +2557,7 @@ app.get("/api/rank/sites", async (c) => {
     .select("*")
     .order("created_at", { ascending: false });
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
 
   const result = [];
   for (const site of sites || []) {
@@ -2454,7 +2588,7 @@ app.post("/api/rank/sites", async (c) => {
     .select()
     .single();
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json(toCamelCase(data as Record<string, unknown>), 201);
 });
 
@@ -2475,7 +2609,7 @@ app.put("/api/rank/sites/:id", async (c) => {
     .select()
     .single();
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json(toCamelCase(data as Record<string, unknown>));
 });
 
@@ -2489,7 +2623,7 @@ app.delete("/api/rank/sites/:id", async (c) => {
     .delete()
     .eq("id", id);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json({ message: "삭제되었습니다." });
 });
 
@@ -2509,7 +2643,7 @@ app.get("/api/rank/keywords", async (c) => {
   }
 
   const { data: keywords, error } = await query;
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
 
   const result = [];
   for (const kw of keywords || []) {
@@ -2552,7 +2686,7 @@ app.post("/api/rank/keywords", async (c) => {
     .select()
     .single();
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json(toCamelCase(data as Record<string, unknown>), 201);
 });
 
@@ -2566,7 +2700,7 @@ app.delete("/api/rank/keywords/:id", async (c) => {
     .delete()
     .eq("id", id);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json({ message: "삭제되었습니다." });
 });
 
@@ -2721,7 +2855,7 @@ app.get("/api/rank/url-tracking", async (c) => {
     .eq("is_active", true)
     .order("created_at", { ascending: false });
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
 
   const result = [];
   for (const t of tracked || []) {
@@ -2765,7 +2899,7 @@ app.post("/api/rank/url-tracking", async (c) => {
     .select()
     .single();
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json(toCamelCase(data as Record<string, unknown>), 201);
 });
 
@@ -2779,7 +2913,7 @@ app.delete("/api/rank/url-tracking/:id", async (c) => {
     .delete()
     .eq("id", id);
 
-  if (error) return c.json({ error: error.message }, 500);
+  if (error) return safeError(c, error);
   return c.json({ message: "삭제되었습니다." });
 });
 
@@ -2878,7 +3012,7 @@ app.get("/api/rank/rankings/history", async (c) => {
       .order("checked_at", { ascending: false })
       .limit(500);
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return safeError(c, error);
 
     const result = [];
     for (const r of rankings || []) {
@@ -2919,7 +3053,7 @@ app.get("/api/rank/rankings/history", async (c) => {
       .order("checked_at", { ascending: false })
       .limit(500);
 
-    if (error) return c.json({ error: error.message }, 500);
+    if (error) return safeError(c, error);
 
     const result = [];
     for (const r of rankings || []) {
