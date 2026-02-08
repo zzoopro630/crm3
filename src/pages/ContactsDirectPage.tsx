@@ -3,6 +3,7 @@ import { useMenuLabels } from '@/hooks/useAppSettings'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Plus,
@@ -174,28 +175,30 @@ export default function ContactsDirectPage() {
             <p className="text-center text-muted-foreground py-8">연락처가 없습니다</p>
           ) : (
             teamGroups.map(({ team, members }) => (
-              <div key={team}>
-                <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                  {team}
-                  <Badge variant="secondary">{members.length}</Badge>
-                </h2>
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {members.map((c) => (
-                    <ContactCard
-                      key={c.id}
-                      contact={c}
-                      isAdmin={isAdmin}
-                      onCall={handleCall}
-                      onSms={handleSms}
-                      onCopy={handleCopy}
-                      onEdit={(contact) => {
-                        setEditingContact(contact)
-                        setFormOpen(true)
-                      }}
-                      onDelete={handleDelete}
-                    />
-                  ))}
+              <div key={team} className="border rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2 bg-muted/50">
+                  <h2 className="text-sm font-semibold">{team}</h2>
+                  <Badge variant="secondary" className="text-xs">{members.length}</Badge>
                 </div>
+                <Table>
+                  <TableBody>
+                    {members.map((c) => (
+                      <ContactRow
+                        key={c.id}
+                        contact={c}
+                        isAdmin={isAdmin}
+                        onCall={handleCall}
+                        onSms={handleSms}
+                        onCopy={handleCopy}
+                        onEdit={(contact) => {
+                          setEditingContact(contact)
+                          setFormOpen(true)
+                        }}
+                        onDelete={handleDelete}
+                      />
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             ))
           )}
@@ -238,7 +241,7 @@ export default function ContactsDirectPage() {
   )
 }
 
-// --- Contact Card Sub-Component ---
+// --- Contact Row Sub-Component ---
 
 const TITLE_COLORS: Record<string, string> = {
   대표: 'text-amber-600 dark:text-amber-400',
@@ -251,7 +254,7 @@ const TITLE_COLORS: Record<string, string> = {
   대리: 'text-slate-500 dark:text-slate-400',
 }
 
-function ContactCard({
+function ContactRow({
   contact,
   isAdmin,
   onCall,
@@ -269,73 +272,59 @@ function ContactCard({
   onDelete: (id: string) => void
 }) {
   return (
-    <div className="border rounded-lg p-3 hover:shadow-sm transition-shadow group">
-      <div className="flex items-start justify-between">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-medium truncate">{contact.name}</span>
-            {contact.title && (
-              <span className={`text-xs font-medium shrink-0 ${TITLE_COLORS[contact.title] || 'text-muted-foreground'}`}>
-                {contact.title}
-              </span>
-            )}
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">
-            {formatPhone(contact.phone)}
-          </p>
-        </div>
+    <TableRow className="group">
+      {/* 이름 + 모바일 직급 */}
+      <TableCell className="py-2 px-4 font-medium">
+        {contact.name}
+        {contact.title && (
+          <span className={`sm:hidden ml-1.5 text-xs font-medium ${TITLE_COLORS[contact.title] || 'text-muted-foreground'}`}>
+            {contact.title}
+          </span>
+        )}
+      </TableCell>
 
-        {isAdmin && (
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => onEdit(contact)}
-            >
+      {/* 직급 (데스크톱) */}
+      <TableCell className="hidden sm:table-cell py-2 px-4">
+        {contact.title && (
+          <span className={`text-xs font-medium ${TITLE_COLORS[contact.title] || 'text-muted-foreground'}`}>
+            {contact.title}
+          </span>
+        )}
+      </TableCell>
+
+      {/* 전화번호 */}
+      <TableCell className="py-2 px-4 text-sm text-muted-foreground">
+        {formatPhone(contact.phone)}
+      </TableCell>
+
+      {/* 전화/SMS/복사 버튼 */}
+      <TableCell className="py-2 px-4">
+        <div className="flex gap-0.5 justify-end">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onCall(contact.phone)}>
+            <Phone className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onSms(contact.phone)}>
+            <MessageSquare className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7 hidden sm:inline-flex" onClick={() => onCopy(contact.phone)}>
+            <Copy className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </TableCell>
+
+      {/* 수정/삭제 (F1 전용, hover 시 표시) */}
+      {isAdmin && (
+        <TableCell className="py-2 px-2 w-[72px]">
+          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(contact)}>
               <Pencil className="h-3.5 w-3.5" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => onDelete(contact.id)}
-            >
-              <Trash className="h-3.5 w-3.5 text-destructive" />
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(contact.id)}>
+              <Trash className="h-3.5 w-3.5" />
             </Button>
           </div>
-        )}
-      </div>
-
-      <div className="flex gap-1 mt-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 text-xs"
-          onClick={() => onCall(contact.phone)}
-        >
-          <Phone className="h-3 w-3 mr-1" />
-          전화
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 text-xs"
-          onClick={() => onSms(contact.phone)}
-        >
-          <MessageSquare className="h-3 w-3 mr-1" />
-          SMS
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 text-xs"
-          onClick={() => onCopy(contact.phone)}
-        >
-          <Copy className="h-3 w-3 mr-1" />
-          복사
-        </Button>
-      </div>
-    </div>
+        </TableCell>
+      )}
+    </TableRow>
   )
 }
