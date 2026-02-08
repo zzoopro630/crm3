@@ -20,7 +20,7 @@ const app = new Hono<{ Bindings: Env }>();
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:5173", "https://crm3.pages.dev"],
+    origin: ["http://localhost:5173", "https://crm3.pages.dev", "https://crm.thefirst.co.kr"],
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
