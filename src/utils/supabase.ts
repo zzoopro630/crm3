@@ -4,14 +4,14 @@ import { createClient } from "@supabase/supabase-js";
 declare const __SUPABASE_URL__: string | undefined;
 declare const __SUPABASE_ANON_KEY__: string | undefined;
 
-// Fallback for Cloudflare Pages Preview deployments
-const DEFAULT_SUPABASE_URL = "https://tawhqrixlhovysmrtgag.supabase.co";
-
 // @ts-ignore
 const supabaseUrl =
   (typeof __SUPABASE_URL__ !== "undefined" ? __SUPABASE_URL__ : undefined) ||
-  import.meta.env.VITE_SUPABASE_URL ||
-  DEFAULT_SUPABASE_URL;
+  import.meta.env.VITE_SUPABASE_URL;
+
+if (!supabaseUrl) {
+  throw new Error("Missing VITE_SUPABASE_URL environment variable");
+}
 // @ts-ignore
 const supabaseAnonKey =
   (typeof __SUPABASE_ANON_KEY__ !== "undefined"
