@@ -78,7 +78,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     checkEmployeeStatus: async (email: string) => {
         // 최고관리자 폴백 (API 실패해도 로그인 허용)
-        const SUPER_ADMIN_EMAIL = 'imnakjoo@gmail.com'
+        const SUPER_ADMIN_EMAIL = import.meta.env.VITE_SUPER_ADMIN_EMAIL || ''
 
         try {
             const employee = await getEmployeeByEmail(email)

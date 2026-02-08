@@ -980,7 +980,8 @@ app.post("/api/pending-approvals", async (c) => {
   }
 
   // [New] 최고관리자 자동 승인 처리
-  if (body.email === "imnakjoo@gmail.com") {
+  const superAdminEmail = (c.env as Record<string, string>).SUPER_ADMIN_EMAIL;
+  if (superAdminEmail && body.email === superAdminEmail) {
     // Check if already in employees
     const { data: existingEmp } = await supabase
       .from("employees")
