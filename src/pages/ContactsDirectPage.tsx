@@ -174,9 +174,9 @@ export default function ContactsDirectPage() {
           {teamGroups.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">연락처가 없습니다</p>
           ) : (
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="lg:columns-2 gap-4">
             {teamGroups.map(({ team, members }) => (
-              <div key={team} className="border rounded-lg overflow-hidden">
+              <div key={team} className="border rounded-lg overflow-hidden mb-4 break-inside-avoid">
                 <div className="flex items-center justify-between px-4 py-2 bg-muted/50">
                   <h2 className="text-sm font-semibold">{team}</h2>
                   <Badge variant="secondary" className="text-xs">{members.length}</Badge>
