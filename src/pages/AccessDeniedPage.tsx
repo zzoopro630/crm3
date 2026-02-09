@@ -7,7 +7,11 @@ export function AccessDeniedPage() {
     const { signOut, user } = useAuthStore()
 
     const handleSignOut = async () => {
-        await signOut()
+        try {
+            await signOut()
+        } catch {
+            // signOut 실패해도 로그인 페이지로 이동
+        }
         window.location.href = '/login'
     }
 
