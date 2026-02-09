@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
@@ -39,6 +39,7 @@ export function DashboardLayout() {
     }, [])
 
     const showEdgeTrigger = hasHover && isSmallScreen && !sidebarOpen
+    const openedByHoverRef = useRef(false)
 
     // 현재 경로가 서브메뉴 영역인지 확인
     const isInSubmenuArea = SUBMENU_PREFIXES.some(
@@ -61,7 +62,10 @@ export function DashboardLayout() {
         setManualCollapse(null)
     }, [])
 
-    const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
+    const toggleSidebar = () => {
+        if (sidebarOpen) openedByHoverRef.current = false
+        setSidebarOpen(!sidebarOpen)
+    }
     const toggleSidebarCollapse = () => {
         const newValue = !sidebarCollapsed
         setSidebarCollapsed(newValue)
@@ -74,7 +78,10 @@ export function DashboardLayout() {
             {showEdgeTrigger && (
                 <div
                     className="fixed left-0 top-0 z-40 h-full w-2 cursor-pointer"
-                    onMouseEnter={() => setSidebarOpen(true)}
+                    onMouseEnter={() => {
+                        openedByHoverRef.current = true
+                        setSidebarOpen(true)
+                    }}
                 />
             )}
 
@@ -84,6 +91,10 @@ export function DashboardLayout() {
                 isCollapsed={sidebarCollapsed}
                 onCollapseToggle={toggleSidebarCollapse}
                 onNavigateToMainMenu={handleNavigateToMainMenu}
+                onMouseLeave={openedByHoverRef.current ? () => {
+                    openedByHoverRef.current = false
+                    setSidebarOpen(false)
+                } : undefined}
             />
 
             {/* Main content area */}

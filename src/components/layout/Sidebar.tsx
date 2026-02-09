@@ -235,6 +235,7 @@ interface SidebarProps {
   isCollapsed?: boolean;
   onCollapseToggle?: () => void;
   onNavigateToMainMenu?: () => void;
+  onMouseLeave?: () => void;
 }
 
 export function Sidebar({
@@ -243,6 +244,7 @@ export function Sidebar({
   isCollapsed = false,
   onCollapseToggle,
   onNavigateToMainMenu,
+  onMouseLeave,
 }: SidebarProps) {
   const location = useLocation();
   const { employee } = useAuthStore();
@@ -491,6 +493,7 @@ export function Sidebar({
         }}
         onMouseLeave={() => {
           if (isCollapsed && isDesktop) setHoverExpanded(false);
+          if (onMouseLeave) onMouseLeave();
         }}
         className={cn(
           "fixed left-0 top-0 z-50 h-full bg-card border-r border-border transition-all duration-300 ease-in-out lg:translate-x-0",
