@@ -1,0 +1,11 @@
+# index.html과 version.json은 항상 최신 버전을 받도록 캐시 비활성화
+/
+  Cache-Control: no-cache, no-store, must-revalidate
+/index.html
+  Cache-Control: no-cache, no-store, must-revalidate
+/version.json
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# JS/CSS 등 해시 파일명 자산은 장기 캐시 허용
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
