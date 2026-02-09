@@ -34,7 +34,11 @@ export function Header({ onSidebarToggle }: HeaderProps) {
     const { theme, setTheme, fontScale, increaseFontScale, decreaseFontScale } = useThemeStore()
     const { signOut, user, employee } = useAuthStore()
     const handleSignOut = async () => {
-        await signOut()
+        try {
+            await signOut()
+        } catch {
+            // signOut 실패해도 로컬 상태 클리어 후 로그인 페이지로 이동
+        }
         navigate('/login')
     }
 
@@ -124,16 +128,16 @@ export function Header({ onSidebarToggle }: HeaderProps) {
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => navigate('/settings/profile')}>
+                            <DropdownMenuItem onSelect={() => navigate('/settings/profile')}>
                                 <User className="mr-2 h-4 w-4" />
                                 내 계정
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate('/settings')}>
+                            <DropdownMenuItem onSelect={() => navigate('/settings')}>
                                 <Settings className="mr-2 h-4 w-4" />
                                 설정
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                            <DropdownMenuItem onSelect={handleSignOut} className="text-destructive focus:text-destructive">
                                 <LogOut className="mr-2 h-4 w-4" />
                                 로그아웃
                             </DropdownMenuItem>
