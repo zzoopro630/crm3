@@ -19,6 +19,27 @@ export function DashboardLayout() {
     // 사용자가 수동으로 축소/확장을 설정했는지 여부
     const [manualCollapse, setManualCollapse] = useState<boolean | null>(null)
 
+    // 왼쪽 가장자리 호버로 사이드바 열기 (마우스 환경 + 사이드바 숨김 상태)
+    const [hasHover, setHasHover] = useState(false)
+    const [isSmallScreen, setIsSmallScreen] = useState(false)
+
+    useEffect(() => {
+        const hoverMq = window.matchMedia('(hover: hover)')
+        const screenMq = window.matchMedia('(max-width: 1023px)')
+        setHasHover(hoverMq.matches)
+        setIsSmallScreen(screenMq.matches)
+        const onHoverChange = (e: MediaQueryListEvent) => setHasHover(e.matches)
+        const onScreenChange = (e: MediaQueryListEvent) => setIsSmallScreen(e.matches)
+        hoverMq.addEventListener('change', onHoverChange)
+        screenMq.addEventListener('change', onScreenChange)
+        return () => {
+            hoverMq.removeEventListener('change', onHoverChange)
+            screenMq.removeEventListener('change', onScreenChange)
+        }
+    }, [])
+
+    const showEdgeTrigger = hasHover && isSmallScreen && !sidebarOpen
+
     // 현재 경로가 서브메뉴 영역인지 확인
     const isInSubmenuArea = SUBMENU_PREFIXES.some(
         prefix => location.pathname === prefix || location.pathname.startsWith(prefix + '/')
@@ -49,6 +70,14 @@ export function DashboardLayout() {
 
     return (
         <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950">
+            {/* 왼쪽 가장자리 호버 존: 마우스 환경 + 소형 화면 + 사이드바 닫힘 */}
+            {showEdgeTrigger && (
+                <div
+                    className="fixed left-0 top-0 z-40 h-full w-2 cursor-pointer"
+                    onMouseEnter={() => setSidebarOpen(true)}
+                />
+            )}
+
             <Sidebar
                 isOpen={sidebarOpen}
                 onToggle={toggleSidebar}
