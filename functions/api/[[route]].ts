@@ -2199,30 +2199,46 @@ app.post("/api/ads/ga-totals", async (c) => {
 
 // GA Edge Function 프록시: Summary
 app.post("/api/ads/ga/edge-summary", async (c) => {
-  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
-  const body = await c.req.json();
+  try {
+    const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+    const body = await c.req.json();
 
-  const { data, error } = await (supabase as any).functions.invoke("google-analytics/summary", {
-    method: "POST",
-    body,
-  });
+    const { data, error } = await (supabase as any).functions.invoke("google-analytics/summary", {
+      method: "POST",
+      body,
+    });
 
-  if (error) return safeError(c, error);
-  return c.json(data);
+    if (error) {
+      console.error("[GA Edge] summary error:", error?.message || error);
+      return c.json({ success: false, count: 0, data: [] });
+    }
+    return c.json(data);
+  } catch (err: unknown) {
+    console.error("[GA Edge] summary exception:", err);
+    return c.json({ success: false, count: 0, data: [] });
+  }
 });
 
 // GA Edge Function 프록시: Total Sessions
 app.post("/api/ads/ga/edge-total-sessions", async (c) => {
-  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
-  const body = await c.req.json();
+  try {
+    const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+    const body = await c.req.json();
 
-  const { data, error } = await (supabase as any).functions.invoke("google-analytics/total-sessions", {
-    method: "POST",
-    body,
-  });
+    const { data, error } = await (supabase as any).functions.invoke("google-analytics/total-sessions", {
+      method: "POST",
+      body,
+    });
 
-  if (error) return safeError(c, error);
-  return c.json(data);
+    if (error) {
+      console.error("[GA Edge] total-sessions error:", error?.message || error);
+      return c.json({ success: false, totals: null });
+    }
+    return c.json(data);
+  } catch (err: unknown) {
+    console.error("[GA Edge] total-sessions exception:", err);
+    return c.json({ success: false, totals: null });
+  }
 });
 
 // ============ Settings API ============
