@@ -2200,21 +2200,29 @@ app.post("/api/ads/ga-totals", async (c) => {
 // GA Edge Function 프록시: Summary
 app.post("/api/ads/ga/edge-summary", async (c) => {
   try {
-    const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
     const body = await c.req.json();
+    const fnUrl = `${c.env.SUPABASE_URL}/functions/v1/google-analytics/summary`;
 
-    const { data, error } = await (supabase as any).functions.invoke("google-analytics/summary", {
+    const res = await fetch(fnUrl, {
       method: "POST",
-      body,
+      headers: {
+        "Content-Type": "application/json",
+        apikey: c.env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${c.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify(body),
     });
 
-    if (error) {
-      console.error("[GA Edge] summary error:", error?.message || error);
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("[GA Edge] summary error:", res.status, errText);
       return c.json({ success: false, count: 0, data: [] });
     }
-    return c.json(data);
+
+    const data = await res.json();
+    return c.json(data as Record<string, unknown>);
   } catch (err: unknown) {
-    console.error("[GA Edge] summary exception:", err);
+    console.error("[GA Edge] summary exception:", (err as Error).message);
     return c.json({ success: false, count: 0, data: [] });
   }
 });
@@ -2222,21 +2230,29 @@ app.post("/api/ads/ga/edge-summary", async (c) => {
 // GA Edge Function 프록시: Total Sessions
 app.post("/api/ads/ga/edge-total-sessions", async (c) => {
   try {
-    const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
     const body = await c.req.json();
+    const fnUrl = `${c.env.SUPABASE_URL}/functions/v1/google-analytics/total-sessions`;
 
-    const { data, error } = await (supabase as any).functions.invoke("google-analytics/total-sessions", {
+    const res = await fetch(fnUrl, {
       method: "POST",
-      body,
+      headers: {
+        "Content-Type": "application/json",
+        apikey: c.env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${c.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify(body),
     });
 
-    if (error) {
-      console.error("[GA Edge] total-sessions error:", error?.message || error);
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error("[GA Edge] total-sessions error:", res.status, errText);
       return c.json({ success: false, totals: null });
     }
-    return c.json(data);
+
+    const data = await res.json();
+    return c.json(data as Record<string, unknown>);
   } catch (err: unknown) {
-    console.error("[GA Edge] total-sessions exception:", err);
+    console.error("[GA Edge] total-sessions exception:", (err as Error).message);
     return c.json({ success: false, totals: null });
   }
 });
