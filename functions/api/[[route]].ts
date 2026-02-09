@@ -39,14 +39,17 @@ app.use("*", async (c, next) => {
 
 // ============ 인증 미들웨어 ============
 
-const PUBLIC_ROUTES = [
+const PUBLIC_ROUTES: Array<{ method: string; path?: string; prefix?: string }> = [
   { method: "GET", path: "/api/health" },
   { method: "POST", path: "/api/pending-approvals" },
+  { method: "GET", prefix: "/api/employees/email/" },
 ];
 
 app.use("*", async (c, next) => {
   const isPublic = PUBLIC_ROUTES.some(
-    (r) => r.method === c.req.method && c.req.path === r.path
+    (r) =>
+      r.method === c.req.method &&
+      (r.path ? c.req.path === r.path : r.prefix ? c.req.path.startsWith(r.prefix) : false)
   );
   if (isPublic) return await next();
 

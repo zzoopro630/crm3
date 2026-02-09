@@ -162,19 +162,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     signOut: async () => {
+        // 상태를 먼저 클리어 (API 실패해도 로그아웃 보장)
+        set({
+            user: null,
+            session: null,
+            employee: null,
+            isAuthenticated: false,
+            isApproved: false,
+        })
         try {
-            const { error } = await supabase.auth.signOut()
-            if (error) throw error
-            set({
-                user: null,
-                session: null,
-                employee: null,
-                isAuthenticated: false,
-                isApproved: false,
-            })
+            await supabase.auth.signOut()
         } catch (error) {
             console.error('Sign out error:', error)
-            throw error
         }
     },
 }))
