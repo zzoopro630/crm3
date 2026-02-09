@@ -1833,7 +1833,7 @@ app.get("/api/recruit-inquiries", async (c) => {
     query = query.eq("manager_id", managerId);
   }
 
-  query = query.order("created_at", { ascending: false });
+  query = query.order("inquiry_date", { ascending: false, nullsFirst: false });
   query = query.range(offset, offset + limit - 1);
 
   const { data, count, error } = await query;
