@@ -33,7 +33,7 @@ export function useSessionTimeout() {
     const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
     events.forEach((e) => window.addEventListener(e, updateActivity, { passive: true }));
 
-    const timer = setInterval(() => {
+    const checkTimeout = () => {
       const last = Number(localStorage.getItem(STORAGE_KEY) || Date.now());
       const elapsed = Date.now() - last;
 
@@ -52,11 +52,22 @@ export function useSessionTimeout() {
           duration: 10000,
         });
       }
-    }, CHECK_INTERVAL_MS);
+    };
+
+    const timer = setInterval(checkTimeout, CHECK_INTERVAL_MS);
+
+    // 모바일: 백그라운드→포그라운드 복귀 시 즉시 타임아웃 체크
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkTimeout();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       clearInterval(timer);
       events.forEach((e) => window.removeEventListener(e, updateActivity));
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isAuthenticated, signOut, updateActivity]);
 }
