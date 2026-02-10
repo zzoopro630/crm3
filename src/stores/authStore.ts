@@ -28,6 +28,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     isApproved: false,
 
     initialize: async () => {
+        // 10초 타임아웃: getSession()이 행(hang)하면 로딩 해제
+        const timeout = setTimeout(() => {
+            if (get().isLoading) {
+                console.warn('Auth initialization timeout (10s) - forcing loading complete')
+                set({ isLoading: false })
+            }
+        }, 10000)
+
         try {
             const { data: { session } } = await supabase.auth.getSession()
 
@@ -73,6 +81,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         } catch (error) {
             console.error('Auth initialization error:', error)
             set({ isLoading: false })
+        } finally {
+            clearTimeout(timeout)
         }
     },
 
