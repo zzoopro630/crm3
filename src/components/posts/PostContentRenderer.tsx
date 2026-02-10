@@ -34,7 +34,7 @@ export default function PostContentRenderer({
   if (!content) return null;
 
   if (isHtmlContent(content)) {
-    return <HtmlRenderer content={content} />;
+    return <HtmlRenderer key={content} content={content} />;
   }
 
   // 평문: 기존 방식 유지
