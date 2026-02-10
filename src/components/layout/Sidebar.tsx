@@ -60,6 +60,14 @@ const navSections: NavSection[] = [
       { title: "대시보드", href: "/", icon: LayoutDashboard },
     ],
   },
+  // 게시판
+  {
+    title: "게시판",
+    items: [
+      { title: "공지사항", href: "/notices", icon: Megaphone },
+      { title: "자료실", href: "/resources", icon: FolderOpen },
+    ],
+  },
   // 고객관리 섹션
   {
     title: "고객관리",
@@ -174,14 +182,6 @@ const navSections: NavSection[] = [
           },
         ],
       },
-    ],
-  },
-  // 게시판
-  {
-    title: "게시판",
-    items: [
-      { title: "공지사항", href: "/notices", icon: Megaphone },
-      { title: "자료실", href: "/resources", icon: FolderOpen },
     ],
   },
   // 설정
