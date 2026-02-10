@@ -33,6 +33,8 @@ import RankDashboardPage from '@/pages/rank/RankDashboardPage'
 import RankKeywordsPage from '@/pages/rank/RankKeywordsPage'
 import RankUrlTrackingPage from '@/pages/rank/RankUrlTrackingPage'
 import RankHistoryPage from '@/pages/rank/RankHistoryPage'
+import PostListPage from '@/pages/posts/PostListPage'
+import PostDetailPage from '@/pages/posts/PostDetailPage'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -91,6 +93,12 @@ function AppContent() {
         <Route path="/contacts-direct" element={<ContactsDirectPage />} />
         <Route path="/consultant-inquiries" element={<ConsultantInquiriesPage />} />
         <Route path="/recruit-inquiries" element={<RecruitInquiriesPage />} />
+
+        {/* 게시판 */}
+        <Route path="/notices" element={<PostListPage category="notice" />} />
+        <Route path="/notices/:id" element={<PostDetailPage category="notice" />} />
+        <Route path="/resources" element={<PostListPage category="resource" />} />
+        <Route path="/resources/:id" element={<PostDetailPage category="resource" />} />
 
         {/* Ads nested routes (F1 only) */}
         <Route path="/ads" element={<AdsPage />}>

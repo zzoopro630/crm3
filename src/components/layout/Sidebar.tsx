@@ -19,6 +19,7 @@ import {
   UserPlus,
   FileText,
   TrendingUp,
+  Megaphone,
   Building2,
   Tag,
   LayoutList,
@@ -173,6 +174,14 @@ const navSections: NavSection[] = [
           },
         ],
       },
+    ],
+  },
+  // 게시판
+  {
+    title: "게시판",
+    items: [
+      { title: "공지사항", href: "/notices", icon: Megaphone },
+      { title: "자료실", href: "/resources", icon: FolderOpen },
     ],
   },
   // 설정
