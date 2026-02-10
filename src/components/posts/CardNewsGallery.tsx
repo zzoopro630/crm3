@@ -76,7 +76,7 @@ export default function CardNewsGallery({
               onClick={() => openViewer(post)}
             >
               {/* 썸네일 */}
-              <div className="aspect-[3/4] bg-muted">
+              <div className="aspect-square bg-muted">
                 {thumbnail ? (
                   <img
                     src={thumbnail}
@@ -144,7 +144,7 @@ export default function CardNewsGallery({
         onOpenChange={(open) => !open && setSelectedPost(null)}
       >
         <DialogContent
-          className="max-w-3xl p-0 gap-0 overflow-hidden"
+          className="max-w-5xl p-0 gap-0 overflow-hidden"
           aria-describedby={undefined}
         >
           <DialogHeader className="px-4 pt-4 pb-2">
@@ -154,11 +154,15 @@ export default function CardNewsGallery({
           </DialogHeader>
 
           {selectedImages && selectedImages.length > 0 && (
-            <div className="px-12 pb-4">
-              <Carousel setApi={setApi} className="w-full">
+            <div className="px-4 pb-4">
+              <Carousel
+                setApi={setApi}
+                opts={{ align: "start", slidesToScroll: 1 }}
+                className="w-full"
+              >
                 <CarouselContent>
                   {selectedImages.map((url, i) => (
-                    <CarouselItem key={url}>
+                    <CarouselItem key={url} className="basis-[75%]">
                       <div className="flex items-center justify-center bg-muted rounded-md overflow-hidden">
                         <img
                           src={url}
@@ -169,8 +173,8 @@ export default function CardNewsGallery({
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious />
-                <CarouselNext />
+                <CarouselPrevious className="left-2" />
+                <CarouselNext className="right-2" />
               </Carousel>
 
               {/* 페이지 표시 */}
