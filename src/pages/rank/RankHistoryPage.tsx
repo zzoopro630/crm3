@@ -92,7 +92,8 @@ export default function RankHistoryPage() {
   );
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString("ko-KR");
+    const utc = dateStr.endsWith("Z") || dateStr.includes("+") ? dateStr : dateStr + "Z";
+    return new Date(utc).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
   };
 
   const getRankBadgeVariant = (rank: number | null): "default" | "secondary" | "outline" => {
