@@ -21,6 +21,9 @@ export const securityLevelEnum = pgEnum("security_level_enum", [
   "F3",
   "F4",
   "F5",
+  "M1",
+  "M2",
+  "M3",
 ]);
 export const customerStatusEnum = pgEnum("customer_status_enum", [
   "new",
@@ -362,6 +365,21 @@ export type SeoTrackedUrl = typeof seoTrackedUrls.$inferSelect;
 export type NewSeoTrackedUrl = typeof seoTrackedUrls.$inferInsert;
 export type SeoUrlRanking = typeof seoUrlRankings.$inferSelect;
 export type NewSeoUrlRanking = typeof seoUrlRankings.$inferInsert;
+
+// ============ Employee Menu Overrides Table ============
+export const employeeMenuOverrides = pgTable("employee_menu_overrides", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  employeeId: uuid("employee_id")
+    .notNull()
+    .references(() => employees.id, { onDelete: "cascade" }),
+  menuPath: text("menu_path").notNull(),
+  role: text("role").notNull(), // 'none' | 'viewer' | 'editor'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type EmployeeMenuOverride = typeof employeeMenuOverrides.$inferSelect;
+export type NewEmployeeMenuOverride = typeof employeeMenuOverrides.$inferInsert;
 
 // ============ ENUM Value Types ============
 export type SecurityLevel = (typeof securityLevelEnum.enumValues)[number];

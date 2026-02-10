@@ -3328,6 +3328,169 @@ app.delete("/api/posts/:id", async (c) => {
   }
 });
 
+// ============ Menu Roles API ============
+
+// 기본 권한 매핑 (시드 데이터와 동일)
+const DEFAULT_MENU_ROLES: Record<string, Record<string, string>> = {
+  "/":                          { F1:"editor",F2:"editor",F3:"editor",F4:"editor",F5:"editor",M1:"editor",M2:"editor",M3:"editor" },
+  "/notices":                   { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" },
+  "/resources":                 { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" },
+  "/customers":                 { F1:"editor",F2:"editor",F3:"editor",F4:"editor",F5:"editor",M1:"none",M2:"none",M3:"none" },
+  "/customers/trash":           { F1:"editor",F2:"editor",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
+  "/inquiries":                 { F1:"editor",F2:"editor",F3:"editor",F4:"editor",F5:"viewer",M1:"editor",M2:"editor",M3:"viewer" },
+  "/consultant-inquiries":      { F1:"editor",F2:"editor",F3:"editor",F4:"editor",F5:"viewer",M1:"editor",M2:"editor",M3:"viewer" },
+  "/recruit-inquiries":         { F1:"editor",F2:"editor",F3:"none",F4:"none",F5:"none",M1:"editor",M2:"none",M3:"none" },
+  "/team":                      { F1:"editor",F2:"editor",F3:"editor",F4:"editor",F5:"viewer",M1:"editor",M2:"viewer",M3:"viewer" },
+  "/contacts-direct":           { F1:"editor",F2:"editor",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
+  "/ads/ndata":                 { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"editor",M2:"viewer",M3:"none" },
+  "/ads/powerlink":             { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"editor",M2:"viewer",M3:"none" },
+  "/ads/report":                { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"editor",M2:"viewer",M3:"none" },
+  "/ads/weekly":                { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"editor",M2:"viewer",M3:"none" },
+  "/ads/rank-dashboard":        { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"editor",M2:"viewer",M3:"none" },
+  "/ads/rank-keywords":         { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"editor",M2:"viewer",M3:"none" },
+  "/ads/rank-urls":             { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"editor",M2:"viewer",M3:"none" },
+  "/ads/rank-history":          { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"editor",M2:"viewer",M3:"none" },
+  "/settings/organizations":    { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"none",M2:"none",M3:"none" },
+  "/settings/labels":           { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
+  "/settings/menus":            { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
+  "/settings/menu-permissions": { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
+  "/settings/employees":        { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
+  "/settings/approvals":        { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
+};
+
+// 메뉴 role 조회 헬퍼: 오버라이드 > app_settings > 하드코딩 기본값
+async function getMenuRoleMap(c: any): Promise<Record<string, string>> {
+  const emp = await getAuthEmployee(c);
+  if (!emp) return {};
+
+  // F1은 항상 전 메뉴 editor
+  if (emp.security_level === "F1") {
+    const result: Record<string, string> = {};
+    for (const path of Object.keys(DEFAULT_MENU_ROLES)) {
+      result[path] = "editor";
+    }
+    return result;
+  }
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const level = emp.security_level;
+
+  // 1. app_settings에서 등급별 기본값 로드
+  const { data: settings } = await supabase
+    .from("app_settings")
+    .select("key, value")
+    .like("key", "menu_role:%");
+
+  const roleMap: Record<string, string> = {};
+  for (const path of Object.keys(DEFAULT_MENU_ROLES)) {
+    // 하드코딩 기본값
+    roleMap[path] = DEFAULT_MENU_ROLES[path]?.[level] || "none";
+  }
+
+  // app_settings 오버라이드 (등급별)
+  if (settings) {
+    for (const s of settings) {
+      const menuPath = s.key.replace("menu_role:", "");
+      try {
+        const parsed = JSON.parse(s.value || "{}");
+        if (parsed[level] !== undefined) {
+          roleMap[menuPath] = parsed[level];
+        }
+      } catch { /* ignore */ }
+    }
+  }
+
+  // 2. 개별 직원 오버라이드
+  const { data: overrides } = await supabase
+    .from("employee_menu_overrides")
+    .select("menu_path, role")
+    .eq("employee_id", emp.id);
+
+  if (overrides) {
+    for (const o of overrides) {
+      roleMap[o.menu_path] = o.role;
+    }
+  }
+
+  return roleMap;
+}
+
+// GET /api/menu-roles/me - 현재 사용자의 전 메뉴 role 맵
+app.get("/api/menu-roles/me", async (c) => {
+  try {
+    const roleMap = await getMenuRoleMap(c);
+    return c.json(roleMap);
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
+// GET /api/menu-overrides?employeeId=xxx - F1 전용, 특정 직원 오버라이드 조회
+app.get("/api/menu-overrides", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const employeeId = c.req.query("employeeId");
+  if (!employeeId) {
+    return c.json({ error: "employeeId 파라미터가 필요합니다." }, 400);
+  }
+
+  const { data, error } = await supabase
+    .from("employee_menu_overrides")
+    .select("menu_path, role")
+    .eq("employee_id", employeeId);
+
+  if (error) return safeError(c, error);
+  return c.json(data || []);
+});
+
+// PUT /api/menu-overrides - F1 전용, 오버라이드 일괄 저장
+app.put("/api/menu-overrides", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const body = await c.req.json();
+  const { employeeId, overrides } = body as {
+    employeeId: string;
+    overrides: Array<{ menuPath: string; role: string }>;
+  };
+
+  if (!employeeId || !Array.isArray(overrides)) {
+    return c.json({ error: "employeeId와 overrides 배열이 필요합니다." }, 400);
+  }
+
+  // 기존 오버라이드 전체 삭제 후 재삽입
+  const { error: delError } = await supabase
+    .from("employee_menu_overrides")
+    .delete()
+    .eq("employee_id", employeeId);
+
+  if (delError) return safeError(c, delError);
+
+  // none이 아닌 오버라이드만 저장 (기본값과 다른 것만)
+  const toInsert = overrides
+    .filter((o) => o.role && o.menuPath)
+    .map((o) => ({
+      employee_id: employeeId,
+      menu_path: o.menuPath,
+      role: o.role,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }));
+
+  if (toInsert.length > 0) {
+    const { error: insError } = await supabase
+      .from("employee_menu_overrides")
+      .insert(toInsert);
+
+    if (insError) return safeError(c, insError);
+  }
+
+  return c.json({ success: true });
+});
+
 // Cloudflare Pages Functions export
 import { handle } from "hono/cloudflare-pages";
 export const onRequest = handle(app);

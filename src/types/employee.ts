@@ -18,6 +18,9 @@ export const SECURITY_LEVELS = [
   { value: "F3", label: "F3" },
   { value: "F4", label: "F4" },
   { value: "F5", label: "F5" },
+  { value: "M1", label: "M1" },
+  { value: "M2", label: "M2" },
+  { value: "M3", label: "M3" },
 ] as const;
 
 export type SecurityLevelValue = (typeof SECURITY_LEVELS)[number]["value"];
