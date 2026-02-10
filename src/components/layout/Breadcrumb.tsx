@@ -19,6 +19,8 @@ const ROUTE_TITLES: Record<string, string> = {
   "/contacts-direct": "연락처",
   "/consultant-inquiries": "the-fin 문의",
   "/recruit-inquiries": "입사문의",
+  "/notices": "공지사항",
+  "/resources": "자료실",
   "/ads": "광고 분석",
   "/ads/ndata": "N-DATA",
   "/ads/report": "보고서",

@@ -3115,6 +3115,219 @@ app.get("/api/rank/rankings/history", async (c) => {
   return c.json({ error: "type은 keyword 또는 url이어야 합니다." }, 400);
 });
 
+// ============ Posts (게시판) API ============
+
+// 게시글 목록
+app.get("/api/posts", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const { page, limit, offset } = parsePagination(c);
+  const category = c.req.query("category") || "";
+  const search = c.req.query("search") || "";
+
+  try {
+    let query = supabase
+      .from("posts")
+      .select("*, author:employees!author_id(id, full_name)", { count: "exact" })
+      .is("deleted_at", null);
+
+    if (category) query = query.eq("category", category);
+    if (search) query = query.ilike("title", `%${search}%`);
+
+    // 상단 고정 우선, 그 다음 최신순
+    query = query
+      .order("is_pinned", { ascending: false })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    const { data, count, error } = await query;
+    if (error) return safeError(c, error);
+
+    const posts = (data || []).map((p: any) => ({
+      id: p.id,
+      category: p.category,
+      title: p.title,
+      content: p.content,
+      isPinned: p.is_pinned,
+      authorId: p.author_id,
+      authorName: p.author?.full_name || "",
+      viewCount: p.view_count,
+      createdAt: p.created_at,
+      updatedAt: p.updated_at,
+    }));
+
+    return c.json({
+      data: posts,
+      total: count || 0,
+      page,
+      limit,
+    });
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
+// 게시글 상세
+app.get("/api/posts/:id", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const id = parseInt(c.req.param("id"));
+  if (isNaN(id)) return c.json({ error: "유효하지 않은 ID" }, 400);
+
+  try {
+    // view_count 증가
+    await supabase.rpc("increment_post_view_count" as any, { p_post_id: id });
+
+    const { data: post, error } = await supabase
+      .from("posts")
+      .select("*, author:employees!author_id(id, full_name)")
+      .eq("id", id)
+      .is("deleted_at", null)
+      .single();
+
+    if (error || !post) return c.json({ error: "게시글을 찾을 수 없습니다." }, 404);
+
+    const { data: attachments } = await supabase
+      .from("post_attachments")
+      .select("*")
+      .eq("post_id", id)
+      .order("id");
+
+    return c.json({
+      id: post.id,
+      category: (post as any).category,
+      title: (post as any).title,
+      content: (post as any).content,
+      isPinned: (post as any).is_pinned,
+      authorId: (post as any).author_id,
+      authorName: (post as any).author?.full_name || "",
+      viewCount: (post as any).view_count + 1,
+      createdAt: (post as any).created_at,
+      updatedAt: (post as any).updated_at,
+      attachments: (attachments || []).map((a: any) => ({
+        id: a.id,
+        fileName: a.file_name,
+        fileUrl: a.file_url,
+      })),
+    });
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
+// 게시글 생성 (F1)
+app.post("/api/posts", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const emp = await getAuthEmployee(c);
+  const body = await c.req.json();
+  const { title, content, category, isPinned, attachments } = body;
+
+  if (!title || !content || !category) {
+    return c.json({ error: "제목, 내용, 카테고리는 필수입니다." }, 400);
+  }
+
+  try {
+    const { data: post, error } = await supabase
+      .from("posts")
+      .insert({
+        title,
+        content,
+        category,
+        is_pinned: isPinned || false,
+        author_id: emp.id,
+      })
+      .select()
+      .single();
+
+    if (error) return safeError(c, error);
+
+    // 첨부파일 저장
+    if (attachments?.length > 0) {
+      const rows = attachments.map((a: any) => ({
+        post_id: post.id,
+        file_name: a.fileName,
+        file_url: a.fileUrl,
+      }));
+      await supabase.from("post_attachments").insert(rows);
+    }
+
+    return c.json(post, 201);
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
+// 게시글 수정 (F1)
+app.put("/api/posts/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const id = parseInt(c.req.param("id"));
+  if (isNaN(id)) return c.json({ error: "유효하지 않은 ID" }, 400);
+
+  const body = await c.req.json();
+  const { title, content, isPinned, attachments } = body;
+
+  try {
+    const updateData: any = { updated_at: new Date().toISOString() };
+    if (title !== undefined) updateData.title = title;
+    if (content !== undefined) updateData.content = content;
+    if (isPinned !== undefined) updateData.is_pinned = isPinned;
+
+    const { data: post, error } = await supabase
+      .from("posts")
+      .update(updateData)
+      .eq("id", id)
+      .is("deleted_at", null)
+      .select()
+      .single();
+
+    if (error) return safeError(c, error, 404);
+
+    // 첨부파일 교체: 기존 삭제 후 재삽입
+    if (attachments !== undefined) {
+      await supabase.from("post_attachments").delete().eq("post_id", id);
+      if (attachments.length > 0) {
+        const rows = attachments.map((a: any) => ({
+          post_id: id,
+          file_name: a.fileName,
+          file_url: a.fileUrl,
+        }));
+        await supabase.from("post_attachments").insert(rows);
+      }
+    }
+
+    return c.json(post);
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
+// 게시글 삭제 (F1, soft delete)
+app.delete("/api/posts/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const id = parseInt(c.req.param("id"));
+  if (isNaN(id)) return c.json({ error: "유효하지 않은 ID" }, 400);
+
+  try {
+    const { error } = await supabase
+      .from("posts")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", id)
+      .is("deleted_at", null);
+
+    if (error) return safeError(c, error);
+    return c.json({ success: true });
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
 // Cloudflare Pages Functions export
 import { handle } from "hono/cloudflare-pages";
 export const onRequest = handle(app);

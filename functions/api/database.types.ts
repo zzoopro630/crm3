@@ -339,6 +339,69 @@ export type Database = {
         };
         Relationships: [];
       };
+      posts: {
+        Row: {
+          id: number;
+          category: "notice" | "resource";
+          title: string;
+          content: string;
+          is_pinned: boolean | null;
+          author_id: string;
+          view_count: number | null;
+          created_at: string | null;
+          updated_at: string | null;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: never;
+          category: "notice" | "resource";
+          title: string;
+          content: string;
+          is_pinned?: boolean | null;
+          author_id: string;
+          view_count?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: never;
+          category?: "notice" | "resource";
+          title?: string;
+          content?: string;
+          is_pinned?: boolean | null;
+          author_id?: string;
+          view_count?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      post_attachments: {
+        Row: {
+          id: number;
+          post_id: number;
+          file_name: string;
+          file_url: string;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: never;
+          post_id: number;
+          file_name: string;
+          file_url: string;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: never;
+          post_id?: number;
+          file_name?: string;
+          file_url?: string;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
       customer_labels: {
         Row: {
           id: string;
@@ -387,6 +450,7 @@ export type Database = {
       gender_enum: "남성" | "여성" | "법인";
       approval_status_enum: "pending" | "approved" | "rejected";
       customer_type_enum: "personal" | "db";
+      post_category_enum: "notice" | "resource";
     };
     CompositeTypes: {
       [_ in never]: never;
