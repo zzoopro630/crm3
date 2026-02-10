@@ -33,15 +33,15 @@ import {
   Link2,
   History,
 } from "lucide-react";
-import type { SecurityLevel } from "@/types/employee";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useMenuLabels } from "@/hooks/useAppSettings";
+import { useMenuRoles } from "@/hooks/useMenuRole";
+import type { MenuRoleMap } from "@/types/menuRole";
 
 interface NavItem {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  allowedLevels?: SecurityLevel[];
   allowedOrgs?: string[];
   isSubmenu?: boolean;
   submenuItems?: NavItem[];
@@ -73,47 +73,22 @@ const navSections: NavSection[] = [
     title: "고객관리",
     items: [
       { title: "고객리스트", href: "/customers", icon: Users },
-      {
-        title: "휴지통",
-        href: "/customers/trash",
-        icon: Trash2,
-        allowedLevels: ["F1", "F2"],
-      },
+      { title: "휴지통", href: "/customers/trash", icon: Trash2 },
     ],
   },
   // 상담관리 섹션
   {
     title: "상담관리",
     items: [
-      {
-        title: "보험문의",
-        href: "/inquiries",
-        icon: Headphones,
-        allowedLevels: ["F1", "F2", "F3", "F4", "F5"],
-      },
-      {
-        title: "더플문의",
-        href: "/consultant-inquiries",
-        icon: MessageSquare,
-        allowedLevels: ["F1", "F2", "F3", "F4", "F5"],
-      },
-      {
-        title: "입사문의",
-        href: "/recruit-inquiries",
-        icon: UserPlus,
-        allowedLevels: ["F1", "F2"],
-      },
+      { title: "보험문의", href: "/inquiries", icon: Headphones },
+      { title: "더플문의", href: "/consultant-inquiries", icon: MessageSquare },
+      { title: "입사문의", href: "/recruit-inquiries", icon: UserPlus },
     ],
   },
   // 팀 관리
   {
     items: [
-      {
-        title: "팀 관리",
-        href: "/team",
-        icon: UsersRound,
-        allowedLevels: ["F1", "F2", "F3", "F4", "F5"],
-      },
+      { title: "팀 관리", href: "/team", icon: UsersRound },
       {
         title: "연락처",
         href: "/contacts-direct",
@@ -129,57 +104,16 @@ const navSections: NavSection[] = [
         title: "광고 분석",
         href: "/ads",
         icon: BarChart3,
-        allowedLevels: ["F1"],
         isSubmenu: true,
         submenuItems: [
-          {
-            title: "N-DATA",
-            href: "/ads/ndata",
-            icon: BarChart3,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "파워링크",
-            href: "/ads/powerlink",
-            icon: Zap,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "보고서",
-            href: "/ads/report",
-            icon: FileText,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "주간데이터",
-            href: "/ads/weekly",
-            icon: TrendingUp,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "순위 대시보드",
-            href: "/ads/rank-dashboard",
-            icon: LayoutDashboard,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "사이트/키워드",
-            href: "/ads/rank-keywords",
-            icon: Search,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "URL 추적",
-            href: "/ads/rank-urls",
-            icon: Link2,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "순위 기록",
-            href: "/ads/rank-history",
-            icon: History,
-            allowedLevels: ["F1"],
-          },
+          { title: "N-DATA", href: "/ads/ndata", icon: BarChart3 },
+          { title: "파워링크", href: "/ads/powerlink", icon: Zap },
+          { title: "보고서", href: "/ads/report", icon: FileText },
+          { title: "주간데이터", href: "/ads/weekly", icon: TrendingUp },
+          { title: "순위 대시보드", href: "/ads/rank-dashboard", icon: LayoutDashboard },
+          { title: "사이트/키워드", href: "/ads/rank-keywords", icon: Search },
+          { title: "URL 추적", href: "/ads/rank-urls", icon: Link2 },
+          { title: "순위 기록", href: "/ads/rank-history", icon: History },
         ],
       },
     ],
@@ -193,42 +127,12 @@ const navSections: NavSection[] = [
         icon: Settings,
         isSubmenu: true,
         submenuItems: [
-          {
-            title: "조직 관리",
-            href: "/settings/organizations",
-            icon: Building2,
-            allowedLevels: ["F1", "F2", "F3", "F4", "F5"],
-          },
-          {
-            title: "라벨 관리",
-            href: "/settings/labels",
-            icon: Tag,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "메뉴 관리",
-            href: "/settings/menus",
-            icon: LayoutList,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "메뉴 권한",
-            href: "/settings/menu-permissions",
-            icon: ShieldCheck,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "사원 관리",
-            href: "/settings/employees",
-            icon: UserCog,
-            allowedLevels: ["F1"],
-          },
-          {
-            title: "승인 대기",
-            href: "/settings/approvals",
-            icon: Clock,
-            allowedLevels: ["F1"],
-          },
+          { title: "조직 관리", href: "/settings/organizations", icon: Building2 },
+          { title: "라벨 관리", href: "/settings/labels", icon: Tag },
+          { title: "메뉴 관리", href: "/settings/menus", icon: LayoutList },
+          { title: "메뉴 권한", href: "/settings/menu-permissions", icon: ShieldCheck },
+          { title: "사원 관리", href: "/settings/employees", icon: UserCog },
+          { title: "승인 대기", href: "/settings/approvals", icon: Clock },
         ],
       },
     ],
@@ -259,6 +163,7 @@ export function Sidebar({
   const { employee } = useAuthStore();
   const { data: organizations = [] } = useOrganizations();
   const menuLabels = useMenuLabels();
+  const { data: menuRoles } = useMenuRoles();
 
   // 모바일에서는 축소 상태를 무시하고 항상 풀 메뉴 표시
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
@@ -312,21 +217,28 @@ export function Sidebar({
     ? organizations.find((o) => o.id === employee.organizationId)?.name || ''
     : '';
 
+  // 메뉴 role 기반 필터링
+  const hasMenuAccess = (href: string, roles: MenuRoleMap | undefined): boolean => {
+    if (!roles) return true; // 로딩 중에는 모두 표시
+    const role = roles[href];
+    return role !== undefined ? role !== "none" : false;
+  };
+
   // 아이템 필터링 함수
   const filterItem = (item: NavItem): boolean => {
     if (!employee) return false;
-    if (
-      item.allowedLevels &&
-      !item.allowedLevels.includes(employee.securityLevel)
-    )
-      return false;
+
     // allowedOrgs: F1은 무조건 통과, 그 외는 소속 조직명 매칭
     if (item.allowedOrgs) {
-      if (employee.securityLevel === 'F1') return true;
-      if (!item.allowedOrgs.some((org) => employeeOrgName.includes(org)))
+      if (employee.securityLevel === 'F1') {
+        // F1은 조직 필터 통과, 아래 menuRoles로 체크
+      } else if (!item.allowedOrgs.some((org) => employeeOrgName.includes(org))) {
         return false;
+      }
     }
-    return true;
+
+    // menuRoles 기반 필터링
+    return hasMenuAccess(item.href, menuRoles);
   };
 
   // 섹션별 필터링
@@ -334,7 +246,14 @@ export function Sidebar({
     .map((section) => ({
       ...section,
       items: section.items
-        .filter(filterItem)
+        .filter((item) => {
+          // 서브메뉴 부모: 자식 중 하나라도 접근 가능하면 표시
+          if (item.submenuItems) {
+            const visibleChildren = item.submenuItems.filter(filterItem);
+            return visibleChildren.length > 0;
+          }
+          return filterItem(item);
+        })
         .map((item) => {
           if (item.submenuItems) {
             return {
@@ -343,8 +262,7 @@ export function Sidebar({
             };
           }
           return item;
-        })
-        .filter((item) => !item.submenuItems || item.submenuItems.length > 0),
+        }),
     }))
     .filter((section) => section.items.length > 0);
 

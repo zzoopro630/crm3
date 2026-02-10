@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useEmployees,
   useCreateEmployee,
@@ -38,10 +38,16 @@ import {
   UserX,
   ChevronDown,
   ChevronRight,
+  ShieldCheck,
 } from "lucide-react";
 import { EmployeeExcelUpload } from "@/components/employees/EmployeeExcelUpload";
 import type { Employee, CreateEmployeeInput } from "@/types/employee";
 import { SECURITY_LEVELS } from "@/types/employee";
+import {
+  useEmployeeOverrides,
+  useUpdateEmployeeOverrides,
+} from "@/hooks/useMenuRole";
+import type { MenuRole, EmployeeMenuOverride } from "@/types/menuRole";
 
 export function EmployeesPage() {
   const { employee: currentEmployee } = useAuthStore();
@@ -361,6 +367,88 @@ export function EmployeesPage() {
     }
   };
 
+  // 메뉴 권한 오버라이드 Dialog
+  const [overrideEmployeeId, setOverrideEmployeeId] = useState<string | null>(null);
+  const [overrideEmployeeName, setOverrideEmployeeName] = useState("");
+  const [overrideEmployeeLevel, setOverrideEmployeeLevel] = useState("");
+  const [localOverrides, setLocalOverrides] = useState<EmployeeMenuOverride[]>([]);
+  const { data: fetchedOverrides } = useEmployeeOverrides(overrideEmployeeId);
+  const updateOverrides = useUpdateEmployeeOverrides();
+
+  const OVERRIDE_MENUS = [
+    "/", "/notices", "/resources", "/customers", "/customers/trash",
+    "/inquiries", "/consultant-inquiries", "/recruit-inquiries",
+    "/team", "/contacts-direct",
+    "/ads/ndata", "/ads/powerlink", "/ads/report", "/ads/weekly",
+    "/ads/rank-dashboard", "/ads/rank-keywords", "/ads/rank-urls", "/ads/rank-history",
+    "/settings/organizations", "/settings/labels", "/settings/menus",
+    "/settings/menu-permissions", "/settings/employees", "/settings/approvals",
+  ];
+
+  const MENU_LABELS: Record<string, string> = {
+    "/": "대시보드", "/notices": "공지사항", "/resources": "자료실",
+    "/customers": "고객리스트", "/customers/trash": "휴지통",
+    "/inquiries": "보험문의", "/consultant-inquiries": "더플문의",
+    "/recruit-inquiries": "입사문의", "/team": "팀 관리",
+    "/contacts-direct": "연락처",
+    "/ads/ndata": "N-DATA", "/ads/powerlink": "파워링크",
+    "/ads/report": "보고서", "/ads/weekly": "주간데이터",
+    "/ads/rank-dashboard": "순위 대시보드", "/ads/rank-keywords": "사이트/키워드",
+    "/ads/rank-urls": "URL 추적", "/ads/rank-history": "순위 기록",
+    "/settings/organizations": "조직 관리", "/settings/labels": "라벨 관리",
+    "/settings/menus": "메뉴 관리", "/settings/menu-permissions": "메뉴 권한",
+    "/settings/employees": "사원 관리", "/settings/approvals": "승인 대기",
+  };
+
+  const openOverrideDialog = (emp: Employee) => {
+    setOverrideEmployeeId(emp.id);
+    setOverrideEmployeeName(emp.fullName);
+    setOverrideEmployeeLevel(emp.securityLevel);
+    setLocalOverrides([]);
+  };
+
+  // fetchedOverrides가 로드되면 localOverrides 동기화
+  useEffect(() => {
+    if (fetchedOverrides && overrideEmployeeId) {
+      setLocalOverrides(fetchedOverrides);
+    }
+  }, [fetchedOverrides, overrideEmployeeId]);
+
+  const handleOverrideDialogOpen = (open: boolean) => {
+    if (!open) {
+      setOverrideEmployeeId(null);
+      setLocalOverrides([]);
+    }
+  };
+
+  const getOverrideRole = (menuPath: string): MenuRole | "" => {
+    const found = localOverrides.find((o) => o.menuPath === menuPath);
+    return found ? found.role : "";
+  };
+
+  const setOverrideRole = (menuPath: string, role: MenuRole | "") => {
+    setLocalOverrides((prev) => {
+      if (role === "") {
+        return prev.filter((o) => o.menuPath !== menuPath);
+      }
+      const existing = prev.find((o) => o.menuPath === menuPath);
+      if (existing) {
+        return prev.map((o) => (o.menuPath === menuPath ? { ...o, role } : o));
+      }
+      return [...prev, { menuPath, role }];
+    });
+  };
+
+  const handleSaveOverrides = async () => {
+    if (!overrideEmployeeId) return;
+    await updateOverrides.mutateAsync({
+      employeeId: overrideEmployeeId,
+      overrides: localOverrides,
+    });
+    setOverrideEmployeeId(null);
+    setLocalOverrides([]);
+  };
+
   const getSecurityLevelBadge = (level: string) => {
     const colors: Record<string, string> = {
       F1: "bg-red-500/10 text-red-500 border-red-500/20",
@@ -368,6 +456,9 @@ export function EmployeesPage() {
       F3: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
       F4: "bg-green-500/10 text-green-500 border-green-500/20",
       F5: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+      M1: "bg-purple-500/10 text-purple-500 border-purple-500/20",
+      M2: "bg-violet-500/10 text-violet-500 border-violet-500/20",
+      M3: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
     };
     return colors[level] || colors.F5;
   };
@@ -511,6 +602,7 @@ export function EmployeesPage() {
                         <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">직급</th>
                         <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[70px]">보안등급</th>
                         <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400">이메일</th>
+                        {isF1 && <th className="text-center py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[60px]">권한</th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -546,6 +638,19 @@ export function EmployeesPage() {
                           <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 truncate">
                             {employee.email}
                           </td>
+                          {isF1 && (
+                            <td className="py-2 px-2 text-center">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={() => openOverrideDialog(employee)}
+                                title="메뉴 권한 오버라이드"
+                              >
+                                <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -590,6 +695,7 @@ export function EmployeesPage() {
                           <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[80px]">상위자</th>
                           <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[70px]">보안등급</th>
                           <th className="text-left py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400">이메일</th>
+                          {isF1 && <th className="text-center py-2 px-2 font-medium text-zinc-500 dark:text-zinc-400 w-[60px]">권한</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -628,6 +734,19 @@ export function EmployeesPage() {
                             <td className="py-2 px-2 text-zinc-600 dark:text-zinc-400 truncate">
                               {employee.email}
                             </td>
+                            {isF1 && (
+                              <td className="py-2 px-2 text-center">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => openOverrideDialog(employee)}
+                                  title="메뉴 권한 오버라이드"
+                                >
+                                  <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </tbody>
@@ -877,6 +996,70 @@ export function EmployeesPage() {
         isOpen={isExcelUploadOpen}
         onClose={() => setIsExcelUploadOpen(false)}
       />
+
+      {/* Menu Override Dialog */}
+      <Dialog
+        open={!!overrideEmployeeId}
+        onOpenChange={handleOverrideDialogOpen}
+      >
+        <DialogContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-zinc-900 dark:text-white">
+              메뉴 권한 오버라이드 - {overrideEmployeeName} ({overrideEmployeeLevel})
+            </DialogTitle>
+            <DialogDescription>
+              등급 기본값과 다르게 설정할 메뉴만 변경하세요. "기본값"은 등급 설정을 따릅니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 space-y-1">
+            {OVERRIDE_MENUS.map((menuPath) => {
+              const currentRole = getOverrideRole(menuPath);
+              return (
+                <div
+                  key={menuPath}
+                  className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted/30"
+                >
+                  <span className="text-sm truncate mr-4">
+                    {MENU_LABELS[menuPath] || menuPath}
+                  </span>
+                  <select
+                    value={currentRole}
+                    onChange={(e) =>
+                      setOverrideRole(menuPath, e.target.value as MenuRole | "")
+                    }
+                    className="w-28 h-8 text-xs px-2 rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800"
+                  >
+                    <option value="">기본값</option>
+                    <option value="none">접근불가</option>
+                    <option value="viewer">뷰어</option>
+                    <option value="editor">편집자</option>
+                  </select>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOverrideEmployeeId(null)}
+              className="flex-1"
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleSaveOverrides}
+              className="flex-1"
+              disabled={updateOverrides.isPending}
+            >
+              {updateOverrides.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              저장
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Bulk Edit Dialog */}
       <Dialog open={isBulkEditOpen} onOpenChange={setIsBulkEditOpen}>

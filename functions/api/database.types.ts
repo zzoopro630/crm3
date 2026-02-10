@@ -134,7 +134,7 @@ export type Database = {
           id: string;
           email: string;
           full_name: string;
-          security_level: "F1" | "F2" | "F3" | "F4" | "F5";
+          security_level: "F1" | "F2" | "F3" | "F4" | "F5" | "M1" | "M2" | "M3";
           parent_id: string | null;
           organization_id: number | null;
           position_name: string | null;
@@ -147,7 +147,7 @@ export type Database = {
           id?: string;
           email: string;
           full_name: string;
-          security_level?: "F1" | "F2" | "F3" | "F4" | "F5";
+          security_level?: "F1" | "F2" | "F3" | "F4" | "F5" | "M1" | "M2" | "M3";
           parent_id?: string | null;
           organization_id?: number | null;
           position_name?: string | null;
@@ -160,7 +160,7 @@ export type Database = {
           id?: string;
           email?: string;
           full_name?: string;
-          security_level?: "F1" | "F2" | "F3" | "F4" | "F5";
+          security_level?: "F1" | "F2" | "F3" | "F4" | "F5" | "M1" | "M2" | "M3";
           parent_id?: string | null;
           organization_id?: number | null;
           position_name?: string | null;
@@ -402,6 +402,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      employee_menu_overrides: {
+        Row: {
+          id: number;
+          employee_id: string;
+          menu_path: string;
+          role: string;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: never;
+          employee_id: string;
+          menu_path: string;
+          role: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: never;
+          employee_id?: string;
+          menu_path?: string;
+          role?: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
       customer_labels: {
         Row: {
           id: string;
@@ -434,7 +461,8 @@ export type Database = {
       [_ in never]: never;
     };
     Enums: {
-      security_level_enum: "F1" | "F2" | "F3" | "F4" | "F5";
+      security_level_enum: "F1" | "F2" | "F3" | "F4" | "F5" | "M1" | "M2" | "M3";
+      menu_role_enum: "none" | "viewer" | "editor";
       customer_status_enum:
         | "new"
         | "contacted"
