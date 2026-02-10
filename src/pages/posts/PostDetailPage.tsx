@@ -5,7 +5,8 @@ import { useIsEditor } from "@/hooks/useMenuRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "@/components/posts/RichTextEditor";
+import PostContentRenderer from "@/components/posts/PostContentRenderer";
 import {
   Dialog,
   DialogContent,
@@ -74,8 +75,13 @@ export default function PostDetailPage() {
     setEditOpen(true);
   };
 
+  const isContentEmpty = (html: string) => {
+    const text = html.replace(/<[^>]*>/g, "").trim();
+    return text.length === 0 && !html.includes("<img");
+  };
+
   const handleUpdate = async () => {
-    if (!post || !form.title.trim() || !form.content.trim()) return;
+    if (!post || !form.title.trim() || isContentEmpty(form.content)) return;
     const input: UpdatePostInput = {
       title: form.title,
       content: form.content,
@@ -180,8 +186,8 @@ export default function PostDetailPage() {
 
         <hr />
 
-        <div className="whitespace-pre-wrap leading-relaxed min-h-[200px]">
-          {post.content}
+        <div className="min-h-[200px]">
+          <PostContentRenderer content={post.content} />
         </div>
 
         {/* 첨부파일 */}
@@ -227,14 +233,12 @@ export default function PostDetailPage() {
               />
             </div>
             <div>
-              <Label htmlFor="edit-content">내용</Label>
-              <Textarea
-                id="edit-content"
-                value={form.content}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, content: e.target.value }))
+              <Label>내용</Label>
+              <RichTextEditor
+                content={form.content}
+                onChange={(html) =>
+                  setForm((prev) => ({ ...prev, content: html }))
                 }
-                rows={10}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -303,7 +307,7 @@ export default function PostDetailPage() {
                 onClick={handleUpdate}
                 disabled={
                   !form.title.trim() ||
-                  !form.content.trim() ||
+                  isContentEmpty(form.content) ||
                   updatePost.isPending
                 }
               >
