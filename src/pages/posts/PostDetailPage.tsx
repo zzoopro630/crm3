@@ -217,7 +217,7 @@ export default function PostDetailPage() {
 
       {/* 수정 다이얼로그 */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>게시글 수정</DialogTitle>
           </DialogHeader>
