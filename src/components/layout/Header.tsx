@@ -108,7 +108,7 @@ export function Header({ onSidebarToggle }: HeaderProps) {
                 <div className="flex h-full items-center justify-between px-4 gap-4">
                     <div className="flex items-center gap-4 shrink-0">
                         <SidebarTrigger onToggle={onSidebarToggle} />
-                        <div className="flex md:hidden flex-col">
+                        <div className="flex lg:hidden flex-col">
                             <h1 className="text-lg font-semibold text-zinc-900 dark:text-white">
                                 CRM
                             </h1>
@@ -116,7 +116,7 @@ export function Header({ onSidebarToggle }: HeaderProps) {
                     </div>
 
                     {/* 중앙 Breadcrumb - 모바일에서는 숨김 처리하거나 타이틀 대신 보여줄 수도 있음 */}
-                    <div className="flex-1 hidden md:block overflow-hidden">
+                    <div className="flex-1 hidden lg:block overflow-hidden">
                         <Breadcrumb />
                     </div>
 
