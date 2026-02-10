@@ -2753,7 +2753,7 @@ app.get("/api/rank/rankings/dashboard/summary", async (c) => {
     .select("*", { count: "exact", head: true })
     .eq("is_active", true);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Seoul" });
   const { count: todayChecks } = await seo
     .from("rankings")
     .select("*", { count: "exact", head: true })
