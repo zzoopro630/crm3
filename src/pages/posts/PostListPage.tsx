@@ -6,7 +6,7 @@ import { useIsEditor } from "@/hooks/useMenuRole";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import RichTextEditor from "@/components/posts/RichTextEditor";
 import {
   Dialog,
   DialogContent,
@@ -106,8 +106,13 @@ export default function PostListPage() {
     setDialogOpen(true);
   };
 
+  const isContentEmpty = (html: string) => {
+    const text = html.replace(/<[^>]*>/g, "").trim();
+    return text.length === 0 && !html.includes("<img");
+  };
+
   const handleSubmit = async () => {
-    if (!form.title.trim() || !form.content.trim()) return;
+    if (!form.title.trim() || isContentEmpty(form.content)) return;
 
     if (editingPost) {
       const input: UpdatePostInput = {
@@ -324,15 +329,12 @@ export default function PostListPage() {
               />
             </div>
             <div>
-              <Label htmlFor="content">내용</Label>
-              <Textarea
-                id="content"
-                value={form.content}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, content: e.target.value }))
+              <Label>내용</Label>
+              <RichTextEditor
+                content={form.content}
+                onChange={(html) =>
+                  setForm((prev) => ({ ...prev, content: html }))
                 }
-                placeholder="내용을 입력하세요"
-                rows={10}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -405,7 +407,7 @@ export default function PostListPage() {
                 onClick={handleSubmit}
                 disabled={
                   !form.title.trim() ||
-                  !form.content.trim() ||
+                  isContentEmpty(form.content) ||
                   createPost.isPending ||
                   updatePost.isPending
                 }
