@@ -3139,6 +3139,7 @@ app.get("/api/board-categories", async (c) => {
       name: cat.name,
       icon: cat.icon,
       sortOrder: cat.sort_order,
+      displayType: cat.display_type || "table",
       isActive: cat.is_active,
     }));
 

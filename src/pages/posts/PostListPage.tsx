@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import RichTextEditor from "@/components/posts/RichTextEditor";
+import CardNewsUploader from "@/components/posts/CardNewsUploader";
+import CardNewsGallery, { parseCardNewsImages } from "@/components/posts/CardNewsGallery";
 import {
   Dialog,
   DialogContent,
@@ -46,6 +48,8 @@ export default function PostListPage() {
   const { data: categories = [] } = useBoardCategories();
   const categoryInfo = categories.find((c) => c.slug === slug);
   const categoryLabel = categoryInfo?.name || slug || "게시판";
+  const displayType = categoryInfo?.displayType || "table";
+  const isGallery = displayType === "gallery";
 
   const isEditor = useIsEditor(`/board/${slug}`);
 
@@ -62,6 +66,8 @@ export default function PostListPage() {
     isPinned: false,
     attachments: [] as { fileName: string; fileUrl: string }[],
   });
+  // 갤러리 모드용 이미지 상태
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
 
   // 삭제 확인
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -89,6 +95,7 @@ export default function PostListPage() {
   const openCreateDialog = () => {
     setEditingPost(null);
     setForm({ title: "", content: "", isPinned: false, attachments: [] });
+    setGalleryImages([]);
     setDialogOpen(true);
   };
 
@@ -103,6 +110,11 @@ export default function PostListPage() {
         fileUrl: a.fileUrl,
       })) || [],
     });
+    // 갤러리 모드: content에서 이미지 배열 복원
+    if (isGallery) {
+      const imgs = parseCardNewsImages(post.content);
+      setGalleryImages(imgs || []);
+    }
     setDialogOpen(true);
   };
 
@@ -111,24 +123,35 @@ export default function PostListPage() {
     return text.length === 0 && !html.includes("<img");
   };
 
+  const isFormValid = () => {
+    if (!form.title.trim()) return false;
+    if (isGallery) return galleryImages.length > 0;
+    return !isContentEmpty(form.content);
+  };
+
   const handleSubmit = async () => {
-    if (!form.title.trim() || isContentEmpty(form.content)) return;
+    if (!isFormValid()) return;
+
+    // 갤러리 모드: 이미지 배열을 JSON으로 content에 저장
+    const content = isGallery
+      ? JSON.stringify({ images: galleryImages })
+      : form.content;
 
     if (editingPost) {
       const input: UpdatePostInput = {
         title: form.title,
-        content: form.content,
+        content,
         isPinned: form.isPinned,
-        attachments: form.attachments,
+        attachments: isGallery ? [] : form.attachments,
       };
       await updatePost.mutateAsync({ id: editingPost.id, input });
     } else {
       const input: CreatePostInput = {
         title: form.title,
-        content: form.content,
+        content,
         category,
         isPinned: form.isPinned,
-        attachments: form.attachments,
+        attachments: isGallery ? [] : form.attachments,
       };
       await createPost.mutateAsync(input);
     }
@@ -207,7 +230,16 @@ export default function PostListPage() {
         <div className="text-center py-12 text-muted-foreground">
           등록된 게시글이 없습니다.
         </div>
+      ) : isGallery ? (
+        /* 갤러리 모드 */
+        <CardNewsGallery
+          posts={posts}
+          isEditor={isEditor}
+          onEdit={openEditDialog}
+          onDelete={(id) => setDeleteId(id)}
+        />
       ) : (
+        /* 테이블 모드 */
         <div className="border rounded-lg overflow-hidden">
           <table className="w-full text-sm">
             <thead>
@@ -328,15 +360,77 @@ export default function PostListPage() {
                 placeholder="제목을 입력하세요"
               />
             </div>
-            <div>
-              <Label>내용</Label>
-              <RichTextEditor
-                content={form.content}
-                onChange={(html) =>
-                  setForm((prev) => ({ ...prev, content: html }))
-                }
-              />
-            </div>
+
+            {isGallery ? (
+              /* 갤러리 모드: 이미지 업로더 */
+              <div>
+                <Label>카드뉴스 이미지</Label>
+                <div className="mt-1">
+                  <CardNewsUploader
+                    images={galleryImages}
+                    onChange={setGalleryImages}
+                  />
+                </div>
+              </div>
+            ) : (
+              /* 테이블 모드: 리치 텍스트 에디터 */
+              <>
+                <div>
+                  <Label>내용</Label>
+                  <RichTextEditor
+                    content={form.content}
+                    onChange={(html) =>
+                      setForm((prev) => ({ ...prev, content: html }))
+                    }
+                  />
+                </div>
+
+                {/* 첨부링크 */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>첨부 링크</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addAttachment}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      추가
+                    </Button>
+                  </div>
+                  {form.attachments.map((att, i) => (
+                    <div key={i} className="flex gap-2 mb-2">
+                      <Input
+                        placeholder="파일명"
+                        value={att.fileName}
+                        onChange={(e) =>
+                          updateAttachment(i, "fileName", e.target.value)
+                        }
+                        className="flex-1"
+                      />
+                      <Input
+                        placeholder="URL (Google Drive 등)"
+                        value={att.fileUrl}
+                        onChange={(e) =>
+                          updateAttachment(i, "fileUrl", e.target.value)
+                        }
+                        className="flex-[2]"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeAttachment(i)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -352,50 +446,6 @@ export default function PostListPage() {
               </Label>
             </div>
 
-            {/* 첨부링크 */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label>첨부 링크</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addAttachment}
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  추가
-                </Button>
-              </div>
-              {form.attachments.map((att, i) => (
-                <div key={i} className="flex gap-2 mb-2">
-                  <Input
-                    placeholder="파일명"
-                    value={att.fileName}
-                    onChange={(e) =>
-                      updateAttachment(i, "fileName", e.target.value)
-                    }
-                    className="flex-1"
-                  />
-                  <Input
-                    placeholder="URL (Google Drive 등)"
-                    value={att.fileUrl}
-                    onChange={(e) =>
-                      updateAttachment(i, "fileUrl", e.target.value)
-                    }
-                    className="flex-[2]"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeAttachment(i)}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
@@ -406,8 +456,7 @@ export default function PostListPage() {
               <Button
                 onClick={handleSubmit}
                 disabled={
-                  !form.title.trim() ||
-                  isContentEmpty(form.content) ||
+                  !isFormValid() ||
                   createPost.isPending ||
                   updatePost.isPending
                 }

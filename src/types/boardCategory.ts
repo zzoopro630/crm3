@@ -4,6 +4,7 @@ export interface BoardCategory {
   name: string;
   icon: string | null;
   sortOrder: number;
+  displayType: string;
   isActive: boolean;
 }
 
