@@ -249,6 +249,7 @@ export const boardCategories = pgTable("board_categories", {
   name: text("name").notNull(),
   icon: text("icon"),
   sortOrder: integer("sort_order").default(0),
+  displayType: text("display_type").default("table"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
