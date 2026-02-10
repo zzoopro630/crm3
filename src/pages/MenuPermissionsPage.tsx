@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAppSettings, useUpdateSettings } from '@/hooks/useAppSettings';
+import { useBoardCategories } from '@/hooks/useBoardCategories';
 import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
@@ -11,10 +12,8 @@ import {
   UserPlus,
   BarChart3,
   Headphones,
-  Megaphone,
-  FolderOpen,
-  Zap,
   FileText,
+  Zap,
   TrendingUp,
   Search,
   Link2,
@@ -25,6 +24,7 @@ import {
   UserCog,
   Clock,
   ShieldCheck,
+  ClipboardList,
 } from 'lucide-react';
 import type { MenuRole, LevelRoleMap } from '@/types/menuRole';
 import { ALL_SECURITY_LEVELS } from '@/types/menuRole';
@@ -33,13 +33,13 @@ interface MenuEntry {
   href: string;
   defaultTitle: string;
   icon: React.ComponentType<{ className?: string }>;
-  indent?: boolean; // 서브메뉴 들여쓰기
+  indent?: boolean;
 }
 
-const menuEntries: MenuEntry[] = [
+// 정적 메뉴 (게시판 제외)
+const staticMenuEntries: MenuEntry[] = [
   { href: '/', defaultTitle: '대시보드', icon: LayoutDashboard },
-  { href: '/notices', defaultTitle: '공지사항', icon: Megaphone },
-  { href: '/resources', defaultTitle: '자료실', icon: FolderOpen },
+  // 게시판은 동적으로 삽입
   { href: '/customers', defaultTitle: '고객리스트', icon: Users },
   { href: '/customers/trash', defaultTitle: '휴지통', icon: Trash2, indent: true },
   { href: '/inquiries', defaultTitle: '보험문의', icon: Headphones },
@@ -59,15 +59,14 @@ const menuEntries: MenuEntry[] = [
   { href: '/settings/labels', defaultTitle: '라벨 관리', icon: Tag, indent: true },
   { href: '/settings/menus', defaultTitle: '메뉴 관리', icon: LayoutList, indent: true },
   { href: '/settings/menu-permissions', defaultTitle: '메뉴 권한', icon: ShieldCheck, indent: true },
+  { href: '/settings/board-categories', defaultTitle: '게시판 관리', icon: ClipboardList, indent: true },
   { href: '/settings/employees', defaultTitle: '사원 관리', icon: UserCog, indent: true },
   { href: '/settings/approvals', defaultTitle: '승인 대기', icon: Clock, indent: true },
 ];
 
 // 기본 권한 (API의 DEFAULT_MENU_ROLES와 동일)
-const DEFAULT_ROLES: Record<string, LevelRoleMap> = {
+const STATIC_DEFAULT_ROLES: Record<string, LevelRoleMap> = {
   "/":                          { F1:"editor",F2:"editor",F3:"editor",F4:"editor",F5:"editor",M1:"editor",M2:"editor",M3:"editor" },
-  "/notices":                   { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" },
-  "/resources":                 { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" },
   "/customers":                 { F1:"editor",F2:"editor",F3:"editor",F4:"editor",F5:"editor",M1:"none",M2:"none",M3:"none" },
   "/customers/trash":           { F1:"editor",F2:"editor",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/inquiries":                 { F1:"editor",F2:"editor",F3:"editor",F4:"editor",F5:"viewer",M1:"editor",M2:"editor",M3:"viewer" },
@@ -87,9 +86,12 @@ const DEFAULT_ROLES: Record<string, LevelRoleMap> = {
   "/settings/labels":           { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/menus":            { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/menu-permissions": { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
+  "/settings/board-categories": { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/employees":        { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/approvals":        { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
 };
+
+const BOARD_DEFAULT_ROLE: LevelRoleMap = { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" };
 
 const ROLE_OPTIONS: { value: MenuRole; label: string; short: string }[] = [
   { value: 'none', label: '접근불가', short: 'N' },
@@ -105,22 +107,44 @@ const ROLE_COLORS: Record<MenuRole, string> = {
 
 export default function MenuPermissionsPage() {
   const { data: settings = [], isLoading } = useAppSettings();
+  const { data: boardCategories = [] } = useBoardCategories(false);
   const updateSettings = useUpdateSettings();
-  // roles: { [href]: { [level]: MenuRole } }
   const [roles, setRoles] = useState<Record<string, LevelRoleMap>>({});
   const initialized = useRef(false);
+
+  // 동적 메뉴 엔트리 생성
+  const menuEntries = useMemo<MenuEntry[]>(() => {
+    const boardEntries: MenuEntry[] = boardCategories.map((cat) => ({
+      href: `/board/${cat.slug}`,
+      defaultTitle: cat.name,
+      icon: FileText,
+    }));
+
+    // 대시보드 뒤에 게시판 삽입
+    const result = [...staticMenuEntries];
+    const dashIdx = result.findIndex((e) => e.href === '/');
+    result.splice(dashIdx + 1, 0, ...boardEntries);
+    return result;
+  }, [boardCategories]);
+
+  // 기본 권한 맵 (동적 게시판 포함)
+  const DEFAULT_ROLES = useMemo<Record<string, LevelRoleMap>>(() => {
+    const map = { ...STATIC_DEFAULT_ROLES };
+    for (const cat of boardCategories) {
+      map[`/board/${cat.slug}`] = { ...BOARD_DEFAULT_ROLE };
+    }
+    return map;
+  }, [boardCategories]);
 
   useEffect(() => {
     if (initialized.current || settings.length === 0) return;
     initialized.current = true;
 
-    // 기본값으로 초기화
     const map: Record<string, LevelRoleMap> = {};
     for (const entry of menuEntries) {
       map[entry.href] = { ...(DEFAULT_ROLES[entry.href] || {}) };
     }
 
-    // app_settings에서 menu_role: 키 로드
     for (const s of settings) {
       if (s.key.startsWith('menu_role:') && s.value) {
         const href = s.key.replace('menu_role:', '');
@@ -134,12 +158,25 @@ export default function MenuPermissionsPage() {
     }
 
     setRoles(map);
-  }, [settings]);
+  }, [settings, menuEntries, DEFAULT_ROLES]);
+
+  // 게시판 카테고리 변경 시 새 항목 추가
+  useEffect(() => {
+    if (!initialized.current) return;
+    setRoles((prev) => {
+      const next = { ...prev };
+      for (const cat of boardCategories) {
+        const path = `/board/${cat.slug}`;
+        if (!next[path]) {
+          next[path] = { ...BOARD_DEFAULT_ROLE };
+        }
+      }
+      return next;
+    });
+  }, [boardCategories]);
 
   const setRole = (href: string, level: string, role: MenuRole) => {
-    // F1은 항상 editor 강제
     if (level === 'F1') return;
-
     setRoles((prev) => ({
       ...prev,
       [href]: { ...prev[href], [level]: role },

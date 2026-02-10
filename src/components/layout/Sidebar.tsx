@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
@@ -32,11 +32,38 @@ import {
   Search,
   Link2,
   History,
+  ClipboardList,
+  HelpCircle,
+  BookOpen,
+  Newspaper,
+  type LucideIcon,
 } from "lucide-react";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useMenuLabels } from "@/hooks/useAppSettings";
 import { useMenuRoles } from "@/hooks/useMenuRole";
+import { useBoardCategories } from "@/hooks/useBoardCategories";
 import type { MenuRoleMap } from "@/types/menuRole";
+
+// Lucide 아이콘 룩업 맵
+const ICON_MAP: Record<string, LucideIcon> = {
+  Megaphone,
+  FolderOpen,
+  FileText,
+  ClipboardList,
+  HelpCircle,
+  BookOpen,
+  Newspaper,
+  LayoutDashboard,
+  Users,
+  Headphones,
+  MessageSquare,
+  UserPlus,
+  BookUser,
+  BarChart3,
+  Tag,
+  Settings,
+  Search,
+};
 
 interface NavItem {
   title: string;
@@ -53,21 +80,14 @@ interface NavSection {
   items: NavItem[];
 }
 
-const navSections: NavSection[] = [
+const staticNavSections: NavSection[] = [
   // 대시보드 (섹션 제목 없음)
   {
     items: [
       { title: "대시보드", href: "/", icon: LayoutDashboard },
     ],
   },
-  // 게시판
-  {
-    title: "게시판",
-    items: [
-      { title: "공지사항", href: "/notices", icon: Megaphone },
-      { title: "자료실", href: "/resources", icon: FolderOpen },
-    ],
-  },
+  // 게시판 - placeholder, 동적으로 교체됨
   // 고객관리 섹션
   {
     title: "고객관리",
@@ -131,6 +151,7 @@ const navSections: NavSection[] = [
           { title: "라벨 관리", href: "/settings/labels", icon: Tag },
           { title: "메뉴 관리", href: "/settings/menus", icon: LayoutList },
           { title: "메뉴 권한", href: "/settings/menu-permissions", icon: ShieldCheck },
+          { title: "게시판 관리", href: "/settings/board-categories", icon: ClipboardList },
           { title: "사원 관리", href: "/settings/employees", icon: UserCog },
           { title: "승인 대기", href: "/settings/approvals", icon: Clock },
         ],
@@ -139,8 +160,7 @@ const navSections: NavSection[] = [
   },
 ];
 
-// 기존 navItems 형태로 변환 (호환성 유지)
-const navItems: NavItem[] = navSections.flatMap((section) => section.items);
+// navItems는 컴포넌트 내에서 동적으로 생성
 
 interface SidebarProps {
   isOpen: boolean;
@@ -164,6 +184,33 @@ export function Sidebar({
   const { data: organizations = [] } = useOrganizations();
   const menuLabels = useMenuLabels();
   const { data: menuRoles } = useMenuRoles();
+  const { data: boardCategories = [] } = useBoardCategories();
+
+  // 동적 게시판 섹션 생성
+  const navSections = useMemo<NavSection[]>(() => {
+    const boardItems: NavItem[] = boardCategories.map((cat) => ({
+      title: cat.name,
+      href: `/board/${cat.slug}`,
+      icon: ICON_MAP[cat.icon || ""] || FileText,
+    }));
+
+    const boardSection: NavSection = {
+      title: "게시판",
+      items: boardItems,
+    };
+
+    // staticNavSections의 첫 번째(대시보드) 뒤에 게시판 섹션 삽입
+    const result = [...staticNavSections];
+    if (boardItems.length > 0) {
+      result.splice(1, 0, boardSection);
+    }
+    return result;
+  }, [boardCategories]);
+
+  const navItems: NavItem[] = useMemo(
+    () => navSections.flatMap((section) => section.items),
+    [navSections]
+  );
 
   // 모바일에서는 축소 상태를 무시하고 항상 풀 메뉴 표시
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);

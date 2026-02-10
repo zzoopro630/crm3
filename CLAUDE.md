@@ -138,3 +138,9 @@ JUSO_API_KEY=...  # 주소 검색 API
 - **RLS 오류**: `npx tsx src/db/disable-rls.ts` (개발용)
 - **외래키 조인 실패**: `npx tsx src/db/add-foreign-keys.ts`
 - **무한 로딩**: 브라우저 콘솔 확인, Supabase 연결 상태 점검
+
+## 작업 규칙
+
+- SQL Editor 명령이 필요한 경우 Drizzle ORM으로 처리
+- Playwright MCP 사용 금지
+- curl 명령 대신 psql 명령 사용

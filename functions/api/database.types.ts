@@ -339,10 +339,43 @@ export type Database = {
         };
         Relationships: [];
       };
+      board_categories: {
+        Row: {
+          id: number;
+          slug: string;
+          name: string;
+          icon: string | null;
+          sort_order: number | null;
+          is_active: boolean | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: never;
+          slug: string;
+          name: string;
+          icon?: string | null;
+          sort_order?: number | null;
+          is_active?: boolean | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: never;
+          slug?: string;
+          name?: string;
+          icon?: string | null;
+          sort_order?: number | null;
+          is_active?: boolean | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
       posts: {
         Row: {
           id: number;
-          category: "notice" | "resource";
+          category: string;
           title: string;
           content: string;
           is_pinned: boolean | null;
@@ -354,7 +387,7 @@ export type Database = {
         };
         Insert: {
           id?: never;
-          category: "notice" | "resource";
+          category: string;
           title: string;
           content: string;
           is_pinned?: boolean | null;
@@ -366,7 +399,7 @@ export type Database = {
         };
         Update: {
           id?: never;
-          category?: "notice" | "resource";
+          category?: string;
           title?: string;
           content?: string;
           is_pinned?: boolean | null;
@@ -478,7 +511,6 @@ export type Database = {
       gender_enum: "남성" | "여성" | "법인";
       approval_status_enum: "pending" | "approved" | "rejected";
       customer_type_enum: "personal" | "db";
-      post_category_enum: "notice" | "resource";
     };
     CompositeTypes: {
       [_ in never]: never;
