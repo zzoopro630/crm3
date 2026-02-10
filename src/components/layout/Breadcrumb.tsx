@@ -1,6 +1,7 @@
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ChevronRight, Home } from "lucide-react";
 import { useMenuLabels } from "@/hooks/useAppSettings";
+import { useBoardCategories } from "@/hooks/useBoardCategories";
 
 // 경로 → 타이틀 매핑
 const ROUTE_TITLES: Record<string, string> = {
@@ -15,12 +16,14 @@ const ROUTE_TITLES: Record<string, string> = {
   "/settings/employees": "사원 관리",
   "/settings/approvals": "승인 대기",
   "/settings/system": "시스템 설정",
+  "/settings/board-categories": "게시판 관리",
   "/trash": "휴지통",
   "/contacts-direct": "연락처",
   "/consultant-inquiries": "the-fin 문의",
   "/recruit-inquiries": "입사문의",
   "/notices": "공지사항",
   "/resources": "자료실",
+  "/board": "게시판",
   "/ads": "광고 분석",
   "/ads/ndata": "N-DATA",
   "/ads/report": "보고서",
@@ -40,10 +43,18 @@ export function useBreadcrumbs(): {
   const location = useLocation();
   const params = useParams();
   const menuLabels = useMenuLabels();
+  const { data: boardCategories = [] } = useBoardCategories();
   const pathname = location.pathname;
 
-  // 커스텀 이름이 있으면 우선, 없으면 기본 매핑
-  const getTitle = (path: string) => menuLabels[path] || ROUTE_TITLES[path];
+  // 동적 게시판 카테고리 매핑 (slug → name)
+  const boardTitles: Record<string, string> = {};
+  for (const cat of boardCategories) {
+    boardTitles[`/board/${cat.slug}`] = cat.name;
+  }
+
+  // 커스텀 이름 > 게시판 카테고리 > 기본 매핑
+  const getTitle = (path: string) =>
+    menuLabels[path] || boardTitles[path] || ROUTE_TITLES[path];
 
   // 최상위 경로의 타이틀 (예: /settings/labels → "설정")
   const topSegment = "/" + (pathname.split("/").filter(Boolean)[0] || "");
