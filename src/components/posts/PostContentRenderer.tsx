@@ -17,7 +17,7 @@ function isHtmlContent(content: string): boolean {
 function HtmlRenderer({ content }: { content: string }) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ link: false } as never),
       Image.configure({ inline: false }),
       Link.configure({ openOnClick: true }),
     ],

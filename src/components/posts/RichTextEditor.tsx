@@ -18,6 +18,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { Editor } from "@tiptap/react";
 
 interface RichTextEditorProps {
   content: string;
@@ -31,158 +32,110 @@ export default function RichTextEditor({
   placeholder = "내용을 입력하세요",
 }: RichTextEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const uploadingCountRef = useRef(0);
+  const editorRef = useRef<Editor | null>(null);
+
+  const handleImageUpload = useCallback(async (file: File) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const placeholderId = `upload-${Date.now()}`;
+    editor
+      .chain()
+      .focus()
+      .setImage({
+        src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='40'%3E%3Crect width='200' height='40' fill='%23f0f0f0' rx='4'/%3E%3Ctext x='50%25' y='55%25' text-anchor='middle' fill='%23999' font-size='13'%3E업로드 중...%3C/text%3E%3C/svg%3E",
+        alt: placeholderId,
+      })
+      .run();
+
+    try {
+      const url = await uploadPostImage(file);
+
+      const { doc } = editor.state;
+      let placeholderPos: number | null = null;
+      doc.descendants((node, pos) => {
+        if (node.type.name === "image" && node.attrs.alt === placeholderId) {
+          placeholderPos = pos;
+          return false;
+        }
+      });
+
+      if (placeholderPos !== null) {
+        const tr = editor.state.tr;
+        tr.setNodeMarkup(placeholderPos, undefined, { src: url, alt: "" });
+        editor.view.dispatch(tr);
+      }
+    } catch (err) {
+      const { doc } = editor.state;
+      let placeholderPos: number | null = null;
+      doc.descendants((node, pos) => {
+        if (node.type.name === "image" && node.attrs.alt === placeholderId) {
+          placeholderPos = pos;
+          return false;
+        }
+      });
+
+      if (placeholderPos !== null) {
+        const tr = editor.state.tr;
+        tr.delete(placeholderPos, placeholderPos + 1);
+        editor.view.dispatch(tr);
+      }
+
+      alert(
+        err instanceof Error ? err.message : "이미지 업로드에 실패했습니다."
+      );
+    }
+  }, []);
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({ link: false } as never),
       Image.configure({ inline: false, allowBase64: false }),
       Link.configure({ openOnClick: false, autolink: true }),
       Placeholder.configure({ placeholder }),
     ],
     content,
+    editorProps: {
+      handlePaste: (_view, event) => {
+        const items = (event as ClipboardEvent).clipboardData?.items;
+        if (!items) return false;
+        for (const item of items) {
+          if (item.type.startsWith("image/")) {
+            event.preventDefault();
+            const file = item.getAsFile();
+            if (file) handleImageUpload(file);
+            return true;
+          }
+        }
+        return false;
+      },
+      handleDrop: (_view, event) => {
+        const files = (event as DragEvent).dataTransfer?.files;
+        if (!files || files.length === 0) return false;
+        const imageFiles = Array.from(files).filter((f) =>
+          f.type.startsWith("image/")
+        );
+        if (imageFiles.length === 0) return false;
+        event.preventDefault();
+        imageFiles.forEach(handleImageUpload);
+        return true;
+      },
+    },
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
   });
 
-  const handleImageUpload = useCallback(
-    async (file: File) => {
-      if (!editor) return;
-
-      uploadingCountRef.current++;
-
-      // placeholder 삽입
-      const placeholderId = `upload-${Date.now()}`;
-      editor
-        .chain()
-        .focus()
-        .setImage({
-          src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='40'%3E%3Crect width='200' height='40' fill='%23f0f0f0' rx='4'/%3E%3Ctext x='50%25' y='55%25' text-anchor='middle' fill='%23999' font-size='13'%3E업로드 중...%3C/text%3E%3C/svg%3E",
-          alt: placeholderId,
-        })
-        .run();
-
-      try {
-        const url = await uploadPostImage(file);
-
-        // placeholder를 실제 이미지로 교체
-        const { doc } = editor.state;
-        let placeholderPos: number | null = null;
-        doc.descendants((node, pos) => {
-          if (
-            node.type.name === "image" &&
-            node.attrs.alt === placeholderId
-          ) {
-            placeholderPos = pos;
-            return false;
-          }
-        });
-
-        if (placeholderPos !== null) {
-          const tr = editor.state.tr;
-          tr.setNodeMarkup(placeholderPos, undefined, {
-            src: url,
-            alt: "",
-          });
-          editor.view.dispatch(tr);
-        }
-      } catch (err) {
-        // placeholder 제거
-        const { doc } = editor.state;
-        let placeholderPos: number | null = null;
-        doc.descendants((node, pos) => {
-          if (
-            node.type.name === "image" &&
-            node.attrs.alt === placeholderId
-          ) {
-            placeholderPos = pos;
-            return false;
-          }
-        });
-
-        if (placeholderPos !== null) {
-          const tr = editor.state.tr;
-          tr.delete(placeholderPos, placeholderPos + 1);
-          editor.view.dispatch(tr);
-        }
-
-        alert(
-          err instanceof Error ? err.message : "이미지 업로드에 실패했습니다."
-        );
-      } finally {
-        uploadingCountRef.current--;
-      }
-    },
-    [editor]
-  );
-
-  const handleFileSelect = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files;
-      if (!files) return;
-      Array.from(files).forEach(handleImageUpload);
-      e.target.value = "";
-    },
-    [handleImageUpload]
-  );
-
-  const handlePaste = useCallback(
-    (_view: unknown, event: ClipboardEvent) => {
-      const items = event.clipboardData?.items;
-      if (!items) return false;
-
-      for (const item of items) {
-        if (item.type.startsWith("image/")) {
-          event.preventDefault();
-          const file = item.getAsFile();
-          if (file) handleImageUpload(file);
-          return true;
-        }
-      }
-      return false;
-    },
-    [handleImageUpload]
-  );
-
-  const handleDrop = useCallback(
-    (_view: unknown, event: DragEvent) => {
-      const files = event.dataTransfer?.files;
-      if (!files || files.length === 0) return false;
-
-      const imageFiles = Array.from(files).filter((f) =>
-        f.type.startsWith("image/")
-      );
-      if (imageFiles.length === 0) return false;
-
-      event.preventDefault();
-      imageFiles.forEach(handleImageUpload);
-      return true;
-    },
-    [handleImageUpload]
-  );
-
-  // 에디터에 paste/drop 핸들러 등록
-  if (editor) {
-    editor.setOptions({
-      editorProps: {
-        handlePaste: handlePaste as never,
-        handleDrop: handleDrop as never,
-      },
-    });
-  }
+  // ref 동기화 (handleImageUpload에서 사용)
+  editorRef.current = editor;
 
   const insertLink = useCallback(() => {
-    if (!editor) return;
+    const ed = editorRef.current;
+    if (!ed) return;
     const url = window.prompt("링크 URL을 입력하세요:");
     if (!url) return;
-    editor
-      .chain()
-      .focus()
-      .extendMarkRange("link")
-      .setLink({ href: url })
-      .run();
-  }, [editor]);
+    ed.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+  }, []);
 
   if (!editor) {
     return (
@@ -283,7 +236,11 @@ export default function RichTextEditor({
         type="file"
         accept="image/jpeg,image/png,image/gif,image/webp"
         multiple
-        onChange={handleFileSelect}
+        onChange={(e) => {
+          const files = e.target.files;
+          if (files) Array.from(files).forEach(handleImageUpload);
+          e.target.value = "";
+        }}
         className="hidden"
       />
     </div>
