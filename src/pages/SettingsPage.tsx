@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
-import { Building2, Tag, UserCog, Clock, Settings as SettingsIcon } from 'lucide-react'
+import { Building2, Tag, UserCog, Clock, Settings as SettingsIcon, ClipboardList } from 'lucide-react'
 import { NavLink, Outlet, useLocation, Navigate } from 'react-router-dom'
 
 interface SettingsTab {
@@ -13,6 +13,7 @@ interface SettingsTab {
 const settingsTabs: SettingsTab[] = [
     { id: 'organizations', label: '조직 관리', icon: Building2, adminOnly: true },
     { id: 'labels', label: '라벨 관리', icon: Tag, adminOnly: true },
+    { id: 'board-categories', label: '게시판 관리', icon: ClipboardList, adminOnly: true },
     { id: 'employees', label: '사원 관리', icon: UserCog, adminOnly: true },
     { id: 'approvals', label: '승인 대기', icon: Clock, adminOnly: true },
     { id: 'system', label: '시스템 설정', icon: SettingsIcon },

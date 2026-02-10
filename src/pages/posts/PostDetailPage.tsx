@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { usePost, useUpdatePost, useDeletePost } from "@/hooks/usePosts";
-import { useAuthStore } from "@/stores/authStore";
+import { useIsEditor } from "@/hooks/useMenuRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,17 +33,14 @@ import {
   Plus,
   X,
 } from "lucide-react";
-import type { PostCategory, UpdatePostInput } from "@/types/post";
+import type { UpdatePostInput } from "@/types/post";
 
-interface PostDetailPageProps {
-  category: PostCategory;
-}
-
-export default function PostDetailPage({ category }: PostDetailPageProps) {
-  const { id } = useParams<{ id: string }>();
+export default function PostDetailPage() {
+  const { slug, id } = useParams<{ slug: string; id: string }>();
   const navigate = useNavigate();
-  const { employee } = useAuthStore();
-  const isAdmin = employee?.securityLevel === "F1";
+  const isEditor = useIsEditor(`/board/${slug}`);
+
+  const basePath = `/board/${slug}`;
 
   const postId = id ? parseInt(id) : null;
   const { data: post, isLoading } = usePost(postId);
@@ -61,8 +58,6 @@ export default function PostDetailPage({ category }: PostDetailPageProps) {
 
   // 삭제 확인
   const [deleteOpen, setDeleteOpen] = useState(false);
-
-  const basePath = category === "notice" ? "/notices" : "/resources";
 
   const openEdit = () => {
     if (!post) return;
@@ -148,7 +143,7 @@ export default function PostDetailPage({ category }: PostDetailPageProps) {
           <ArrowLeft className="h-4 w-4 mr-1" />
           목록
         </Button>
-        {isAdmin && (
+        {isEditor && (
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={openEdit}>
               <Pencil className="h-4 w-4 mr-1" />

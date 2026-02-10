@@ -242,15 +242,25 @@ export type NewContract = typeof contracts.$inferInsert;
 export type Contact = typeof contacts.$inferSelect;
 export type NewContact = typeof contacts.$inferInsert;
 
-// ============ Posts (게시판) ============
-export const postCategoryEnum = pgEnum("post_category_enum", [
-  "notice",
-  "resource",
-]);
+// ============ Board Categories (게시판 카테고리) ============
+export const boardCategories = pgTable("board_categories", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  icon: text("icon"),
+  sortOrder: integer("sort_order").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
 
+export type BoardCategory = typeof boardCategories.$inferSelect;
+export type NewBoardCategory = typeof boardCategories.$inferInsert;
+
+// ============ Posts (게시판) ============
 export const posts = pgTable("posts", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  category: postCategoryEnum("category").notNull(),
+  category: text("category").notNull(),
   title: text("title").notNull(),
   content: text("content").notNull(),
   isPinned: boolean("is_pinned").default(false),
@@ -277,7 +287,7 @@ export type Post = typeof posts.$inferSelect;
 export type NewPost = typeof posts.$inferInsert;
 export type PostAttachment = typeof postAttachments.$inferSelect;
 export type NewPostAttachment = typeof postAttachments.$inferInsert;
-export type PostCategory = (typeof postCategoryEnum.enumValues)[number];
+export type PostCategory = string;
 
 // ============ SEO Schema (순위 추적) ============
 export const seoSchema = pgSchema("seo");

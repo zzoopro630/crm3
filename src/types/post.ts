@@ -1,4 +1,4 @@
-export type PostCategory = "notice" | "resource";
+export type PostCategory = string;
 
 export interface Post {
   id: number;
@@ -28,7 +28,7 @@ export interface PostListResponse {
 }
 
 export interface PostListParams {
-  category?: PostCategory;
+  category?: string;
   search?: string;
   page?: number;
   limit?: number;
@@ -37,7 +37,7 @@ export interface PostListParams {
 export interface CreatePostInput {
   title: string;
   content: string;
-  category: PostCategory;
+  category: string;
   isPinned?: boolean;
   attachments?: { fileName: string; fileUrl: string }[];
 }

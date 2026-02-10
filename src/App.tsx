@@ -35,6 +35,7 @@ import RankUrlTrackingPage from '@/pages/rank/RankUrlTrackingPage'
 import RankHistoryPage from '@/pages/rank/RankHistoryPage'
 import PostListPage from '@/pages/posts/PostListPage'
 import PostDetailPage from '@/pages/posts/PostDetailPage'
+import BoardCategoriesPage from '@/pages/BoardCategoriesPage'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -94,11 +95,14 @@ function AppContent() {
         <Route path="/consultant-inquiries" element={<ConsultantInquiriesPage />} />
         <Route path="/recruit-inquiries" element={<RecruitInquiriesPage />} />
 
-        {/* 게시판 */}
-        <Route path="/notices" element={<PostListPage category="notice" />} />
-        <Route path="/notices/:id" element={<PostDetailPage category="notice" />} />
-        <Route path="/resources" element={<PostListPage category="resource" />} />
-        <Route path="/resources/:id" element={<PostDetailPage category="resource" />} />
+        {/* 게시판 - 동적 카테고리 */}
+        <Route path="/board/:slug" element={<PostListPage />} />
+        <Route path="/board/:slug/:id" element={<PostDetailPage />} />
+        {/* 레거시 리다이렉트 */}
+        <Route path="/notices" element={<Navigate to="/board/notice" replace />} />
+        <Route path="/notices/:id" element={<Navigate to="/board/notice" replace />} />
+        <Route path="/resources" element={<Navigate to="/board/resource" replace />} />
+        <Route path="/resources/:id" element={<Navigate to="/board/resource" replace />} />
 
         {/* Ads nested routes (F1 only) */}
         <Route path="/ads" element={<AdsPage />}>
@@ -124,6 +128,7 @@ function AppContent() {
           <Route path="labels" element={<LabelsPage />} />
           <Route path="menus" element={<MenuSettingsPage />} />
           <Route path="menu-permissions" element={<MenuPermissionsPage />} />
+          <Route path="board-categories" element={<BoardCategoriesPage />} />
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="approvals" element={<PendingApprovalsPage />} />
           <Route path="system" element={<SystemSettingsPage />} />

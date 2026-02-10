@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { usePosts, useCreatePost, useUpdatePost, useDeletePost } from "@/hooks/usePosts";
-import { useAuthStore } from "@/stores/authStore";
+import { useBoardCategories } from "@/hooks/useBoardCategories";
+import { useIsEditor } from "@/hooks/useMenuRole";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -33,17 +34,20 @@ import {
   Pencil,
   X,
 } from "lucide-react";
-import type { PostCategory, CreatePostInput, UpdatePostInput, Post } from "@/types/post";
+import type { CreatePostInput, UpdatePostInput, Post } from "@/types/post";
 
 const PAGE_SIZE = 20;
 
-interface PostListPageProps {
-  category: PostCategory;
-}
+export default function PostListPage() {
+  const { slug } = useParams<{ slug: string }>();
+  const category = slug || "";
+  const basePath = `/board/${slug}`;
 
-export default function PostListPage({ category }: PostListPageProps) {
-  const { employee } = useAuthStore();
-  const isAdmin = employee?.securityLevel === "F1";
+  const { data: categories = [] } = useBoardCategories();
+  const categoryInfo = categories.find((c) => c.slug === slug);
+  const categoryLabel = categoryInfo?.name || slug || "게시판";
+
+  const isEditor = useIsEditor(`/board/${slug}`);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -159,15 +163,12 @@ export default function PostListPage({ category }: PostListPageProps) {
     }));
   };
 
-  const basePath = category === "notice" ? "/notices" : "/resources";
-  const categoryLabel = category === "notice" ? "공지사항" : "자료실";
-
   return (
     <div className="space-y-4">
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">{categoryLabel}</h1>
-        {isAdmin && (
+        {isEditor && (
           <Button onClick={openCreateDialog} size="sm">
             <Plus className="h-4 w-4 mr-1" />
             새 글 작성
@@ -211,7 +212,7 @@ export default function PostListPage({ category }: PostListPageProps) {
                 <th className="text-left px-4 py-3 font-medium hidden sm:table-cell w-24">작성자</th>
                 <th className="text-left px-4 py-3 font-medium hidden md:table-cell w-28">작성일</th>
                 <th className="text-left px-4 py-3 font-medium hidden md:table-cell w-16">조회</th>
-                {isAdmin && (
+                {isEditor && (
                   <th className="text-center px-4 py-3 font-medium w-20">관리</th>
                 )}
               </tr>
@@ -246,7 +247,7 @@ export default function PostListPage({ category }: PostListPageProps) {
                   <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">
                     {post.viewCount}
                   </td>
-                  {isAdmin && (
+                  {isEditor && (
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <Button

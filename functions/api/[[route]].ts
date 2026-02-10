@@ -3115,6 +3115,212 @@ app.get("/api/rank/rankings/history", async (c) => {
   return c.json({ error: "type은 keyword 또는 url이어야 합니다." }, 400);
 });
 
+// ============ Board Categories API ============
+
+// 게시판 카테고리 목록
+app.get("/api/board-categories", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const activeOnly = c.req.query("active") === "true";
+
+  try {
+    let query = supabase
+      .from("board_categories")
+      .select("*")
+      .order("sort_order", { ascending: true });
+
+    if (activeOnly) query = query.eq("is_active", true);
+
+    const { data, error } = await query;
+    if (error) return safeError(c, error);
+
+    const categories = (data || []).map((cat: any) => ({
+      id: cat.id,
+      slug: cat.slug,
+      name: cat.name,
+      icon: cat.icon,
+      sortOrder: cat.sort_order,
+      isActive: cat.is_active,
+    }));
+
+    return c.json(categories);
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
+// 게시판 카테고리 생성 (F1)
+app.post("/api/board-categories", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const body = await c.req.json();
+  const { name, slug, icon, sortOrder } = body;
+
+  if (!name || !slug) {
+    return c.json({ error: "이름과 slug는 필수입니다." }, 400);
+  }
+
+  try {
+    const { data: cat, error } = await supabase
+      .from("board_categories")
+      .insert({
+        name,
+        slug,
+        icon: icon || null,
+        sort_order: sortOrder || 0,
+      })
+      .select()
+      .single();
+
+    if (error) return safeError(c, error);
+
+    // app_settings에 기본 메뉴 권한 자동 삽입
+    const defaultRoles = { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" };
+    await supabase.from("app_settings").upsert({
+      key: `menu_role:/board/${slug}`,
+      value: JSON.stringify(defaultRoles),
+    }, { onConflict: "key" });
+
+    return c.json({
+      id: cat.id,
+      slug: cat.slug,
+      name: cat.name,
+      icon: cat.icon,
+      sortOrder: cat.sort_order,
+      isActive: cat.is_active,
+    }, 201);
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
+// 게시판 카테고리 수정 (F1)
+app.put("/api/board-categories/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const id = parseInt(c.req.param("id"));
+  if (isNaN(id)) return c.json({ error: "유효하지 않은 ID" }, 400);
+
+  const body = await c.req.json();
+  const { name, slug, icon, sortOrder, isActive } = body;
+
+  try {
+    // 기존 카테고리 조회 (slug 변경 감지용)
+    const { data: oldCat } = await supabase
+      .from("board_categories")
+      .select("slug")
+      .eq("id", id)
+      .single();
+
+    if (!oldCat) return c.json({ error: "카테고리를 찾을 수 없습니다." }, 404);
+
+    const updateData: any = { updated_at: new Date().toISOString() };
+    if (name !== undefined) updateData.name = name;
+    if (slug !== undefined) updateData.slug = slug;
+    if (icon !== undefined) updateData.icon = icon;
+    if (sortOrder !== undefined) updateData.sort_order = sortOrder;
+    if (isActive !== undefined) updateData.is_active = isActive;
+
+    const { data: cat, error } = await supabase
+      .from("board_categories")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) return safeError(c, error);
+
+    // slug 변경 시 posts.category + app_settings 키 업데이트
+    if (slug && slug !== oldCat.slug) {
+      await supabase
+        .from("posts")
+        .update({ category: slug })
+        .eq("category", oldCat.slug);
+
+      // app_settings 키 마이그레이션
+      const { data: oldSetting } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", `menu_role:/board/${oldCat.slug}`)
+        .single();
+
+      if (oldSetting) {
+        await supabase.from("app_settings").upsert({
+          key: `menu_role:/board/${slug}`,
+          value: oldSetting.value,
+        }, { onConflict: "key" });
+        await supabase
+          .from("app_settings")
+          .delete()
+          .eq("key", `menu_role:/board/${oldCat.slug}`);
+      }
+    }
+
+    return c.json({
+      id: cat.id,
+      slug: cat.slug,
+      name: cat.name,
+      icon: cat.icon,
+      sortOrder: cat.sort_order,
+      isActive: cat.is_active,
+    });
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
+// 게시판 카테고리 삭제 (F1)
+app.delete("/api/board-categories/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const id = parseInt(c.req.param("id"));
+  if (isNaN(id)) return c.json({ error: "유효하지 않은 ID" }, 400);
+
+  try {
+    // 카테고리 조회
+    const { data: cat } = await supabase
+      .from("board_categories")
+      .select("slug")
+      .eq("id", id)
+      .single();
+
+    if (!cat) return c.json({ error: "카테고리를 찾을 수 없습니다." }, 404);
+
+    // 해당 카테고리에 글이 있는지 확인
+    const { count } = await supabase
+      .from("posts")
+      .select("id", { count: "exact", head: true })
+      .eq("category", cat.slug)
+      .is("deleted_at", null);
+
+    if (count && count > 0) {
+      return c.json({ error: `해당 카테고리에 ${count}개의 게시글이 있어 삭제할 수 없습니다.` }, 400);
+    }
+
+    const { error } = await supabase
+      .from("board_categories")
+      .delete()
+      .eq("id", id);
+
+    if (error) return safeError(c, error);
+
+    // app_settings 정리
+    await supabase
+      .from("app_settings")
+      .delete()
+      .eq("key", `menu_role:/board/${cat.slug}`);
+
+    return c.json({ success: true });
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
 // ============ Posts (게시판) API ============
 
 // 게시글 목록
@@ -3333,8 +3539,6 @@ app.delete("/api/posts/:id", async (c) => {
 // 기본 권한 매핑 (시드 데이터와 동일)
 const DEFAULT_MENU_ROLES: Record<string, Record<string, string>> = {
   "/":                          { F1:"editor",F2:"editor",F3:"editor",F4:"editor",F5:"editor",M1:"editor",M2:"editor",M3:"editor" },
-  "/notices":                   { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" },
-  "/resources":                 { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" },
   "/customers":                 { F1:"editor",F2:"editor",F3:"editor",F4:"editor",F5:"editor",M1:"none",M2:"none",M3:"none" },
   "/customers/trash":           { F1:"editor",F2:"editor",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/inquiries":                 { F1:"editor",F2:"editor",F3:"editor",F4:"editor",F5:"viewer",M1:"editor",M2:"editor",M3:"viewer" },
@@ -3354,14 +3558,26 @@ const DEFAULT_MENU_ROLES: Record<string, Record<string, string>> = {
   "/settings/labels":           { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/menus":            { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/menu-permissions": { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
+  "/settings/board-categories": { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/employees":        { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/approvals":        { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
 };
+
+// 게시판 카테고리 기본 권한 (동적)
+const BOARD_DEFAULT_ROLE: Record<string, string> = { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" };
 
 // 메뉴 role 조회 헬퍼: 오버라이드 > app_settings > 하드코딩 기본값
 async function getMenuRoleMap(c: any): Promise<Record<string, string>> {
   const emp = await getAuthEmployee(c);
   if (!emp) return {};
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+
+  // 동적 게시판 카테고리 조회
+  const { data: boardCats } = await supabase
+    .from("board_categories")
+    .select("slug")
+    .eq("is_active", true);
 
   // F1은 항상 전 메뉴 editor
   if (emp.security_level === "F1") {
@@ -3369,10 +3585,15 @@ async function getMenuRoleMap(c: any): Promise<Record<string, string>> {
     for (const path of Object.keys(DEFAULT_MENU_ROLES)) {
       result[path] = "editor";
     }
+    // 동적 게시판 카테고리도 editor
+    if (boardCats) {
+      for (const cat of boardCats) {
+        result[`/board/${cat.slug}`] = "editor";
+      }
+    }
     return result;
   }
 
-  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const level = emp.security_level;
 
   // 1. app_settings에서 등급별 기본값 로드
@@ -3385,6 +3606,13 @@ async function getMenuRoleMap(c: any): Promise<Record<string, string>> {
   for (const path of Object.keys(DEFAULT_MENU_ROLES)) {
     // 하드코딩 기본값
     roleMap[path] = DEFAULT_MENU_ROLES[path]?.[level] || "none";
+  }
+
+  // 동적 게시판 카테고리 기본 권한
+  if (boardCats) {
+    for (const cat of boardCats) {
+      roleMap[`/board/${cat.slug}`] = BOARD_DEFAULT_ROLE[level] || "none";
+    }
   }
 
   // app_settings 오버라이드 (등급별)
