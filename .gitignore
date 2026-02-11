@@ -33,6 +33,12 @@ tmp/
 # Workspace files
 *.code-workspace
 
+# Claude Code
+.claude/
+
+# Work logs
+docs/work-log-*.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
