@@ -158,8 +158,8 @@ const ROLE_BORDER_COLORS: Record<MenuRole, string> = {
 };
 
 export default function MenuPermissionsPage() {
-  const { data: settings = [], isLoading } = useAppSettings();
-  const { data: boardCategories = EMPTY_BOARD_CATEGORIES } = useBoardCategories(false);
+  const { data: settings = [], isLoading: settingsLoading } = useAppSettings();
+  const { data: boardCategories = EMPTY_BOARD_CATEGORIES, isLoading: boardLoading } = useBoardCategories(false);
   const updateSettings = useUpdateSettings();
   const [roles, setRoles] = useState<Record<string, LevelRoleMap>>({});
   const initialized = useRef(false);
@@ -252,7 +252,7 @@ export default function MenuPermissionsPage() {
     updateSettings.mutate(items);
   };
 
-  if (isLoading) return <div className="p-4">로딩 중...</div>;
+  if (settingsLoading || boardLoading) return <div className="p-4">로딩 중...</div>;
 
   return (
     <div className="space-y-6">
