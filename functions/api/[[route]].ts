@@ -3720,6 +3720,131 @@ app.put("/api/menu-overrides", async (c) => {
   return c.json({ success: true });
 });
 
+// ============ Dashboard Cards API ============
+
+// GET /api/dashboard-cards - 카드 목록
+app.get("/api/dashboard-cards", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+
+  try {
+    const { data, error } = await supabase
+      .from("dashboard_cards")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false });
+
+    if (error) return safeError(c, error);
+    return c.json(data);
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
+// POST /api/dashboard-cards - 카드 생성 (editor 권한)
+app.post("/api/dashboard-cards", async (c) => {
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+
+  const roleMap = await getMenuRoleMap(c);
+  if (roleMap["/"] !== "editor") {
+    return c.json({ error: "권한이 부족합니다." }, 403);
+  }
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const body = await c.req.json();
+  const { title, description, imageUrl, linkUrl, sortOrder } = body;
+
+  if (!title) {
+    return c.json({ error: "제목은 필수입니다." }, 400);
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("dashboard_cards")
+      .insert({
+        title,
+        description: description || null,
+        image_url: imageUrl || null,
+        link_url: linkUrl || null,
+        sort_order: sortOrder ?? 0,
+        created_by: emp.id,
+      })
+      .select()
+      .single();
+
+    if (error) return safeError(c, error);
+    return c.json(data, 201);
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
+// PUT /api/dashboard-cards/:id - 카드 수정 (editor 권한)
+app.put("/api/dashboard-cards/:id", async (c) => {
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+
+  const roleMap = await getMenuRoleMap(c);
+  if (roleMap["/"] !== "editor") {
+    return c.json({ error: "권한이 부족합니다." }, 403);
+  }
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const id = parseInt(c.req.param("id"));
+  if (isNaN(id)) return c.json({ error: "유효하지 않은 ID" }, 400);
+
+  const body = await c.req.json();
+  const { title, description, imageUrl, linkUrl, sortOrder } = body;
+
+  try {
+    const updateData: any = { updated_at: new Date().toISOString() };
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (imageUrl !== undefined) updateData.image_url = imageUrl;
+    if (linkUrl !== undefined) updateData.link_url = linkUrl;
+    if (sortOrder !== undefined) updateData.sort_order = sortOrder;
+
+    const { data, error } = await supabase
+      .from("dashboard_cards")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) return safeError(c, error, 404);
+    return c.json(data);
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
+// DELETE /api/dashboard-cards/:id - 카드 삭제 (editor 권한)
+app.delete("/api/dashboard-cards/:id", async (c) => {
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+
+  const roleMap = await getMenuRoleMap(c);
+  if (roleMap["/"] !== "editor") {
+    return c.json({ error: "권한이 부족합니다." }, 403);
+  }
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const id = parseInt(c.req.param("id"));
+  if (isNaN(id)) return c.json({ error: "유효하지 않은 ID" }, 400);
+
+  try {
+    const { error } = await supabase
+      .from("dashboard_cards")
+      .delete()
+      .eq("id", id);
+
+    if (error) return safeError(c, error);
+    return c.json({ success: true });
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
 // Cloudflare Pages Functions export
 import { handle } from "hono/cloudflare-pages";
 export const onRequest = handle(app);
