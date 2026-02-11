@@ -2,6 +2,14 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAppSettings, useUpdateSettings } from '@/hooks/useAppSettings';
 import { useBoardCategories } from '@/hooks/useBoardCategories';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   LayoutDashboard,
   Users,
@@ -33,35 +41,69 @@ interface MenuEntry {
   href: string;
   defaultTitle: string;
   icon: React.ComponentType<{ className?: string }>;
-  indent?: boolean;
 }
 
-// 정적 메뉴 (게시판 제외)
-const staticMenuEntries: MenuEntry[] = [
-  { href: '/', defaultTitle: '대시보드', icon: LayoutDashboard },
-  // 게시판은 동적으로 삽입
-  { href: '/customers', defaultTitle: '고객리스트', icon: Users },
-  { href: '/customers/trash', defaultTitle: '휴지통', icon: Trash2, indent: true },
-  { href: '/inquiries', defaultTitle: '보험문의', icon: Headphones },
-  { href: '/consultant-inquiries', defaultTitle: '더플문의', icon: MessageSquare },
-  { href: '/recruit-inquiries', defaultTitle: '입사문의', icon: UserPlus },
-  { href: '/team', defaultTitle: '팀 관리', icon: UsersRound },
-  { href: '/contacts-direct', defaultTitle: '연락처', icon: BookUser },
-  { href: '/ads/ndata', defaultTitle: 'N-DATA', icon: BarChart3, indent: true },
-  { href: '/ads/powerlink', defaultTitle: '파워링크', icon: Zap, indent: true },
-  { href: '/ads/report', defaultTitle: '보고서', icon: FileText, indent: true },
-  { href: '/ads/weekly', defaultTitle: '주간데이터', icon: TrendingUp, indent: true },
-  { href: '/ads/rank-dashboard', defaultTitle: '순위 대시보드', icon: LayoutDashboard, indent: true },
-  { href: '/ads/rank-keywords', defaultTitle: '사이트/키워드', icon: Search, indent: true },
-  { href: '/ads/rank-urls', defaultTitle: 'URL 추적', icon: Link2, indent: true },
-  { href: '/ads/rank-history', defaultTitle: '순위 기록', icon: History, indent: true },
-  { href: '/settings/organizations', defaultTitle: '조직 관리', icon: Building2, indent: true },
-  { href: '/settings/labels', defaultTitle: '라벨 관리', icon: Tag, indent: true },
-  { href: '/settings/menus', defaultTitle: '메뉴 관리', icon: LayoutList, indent: true },
-  { href: '/settings/menu-permissions', defaultTitle: '메뉴 권한', icon: ShieldCheck, indent: true },
-  { href: '/settings/board-categories', defaultTitle: '게시판 관리', icon: ClipboardList, indent: true },
-  { href: '/settings/employees', defaultTitle: '사원 관리', icon: UserCog, indent: true },
-  { href: '/settings/approvals', defaultTitle: '승인 대기', icon: Clock, indent: true },
+interface MenuSection {
+  title: string;
+  entries: MenuEntry[];
+}
+
+// 정적 메뉴 섹션 (사이드바 그룹과 동일)
+const staticMenuSections: MenuSection[] = [
+  {
+    title: '대시보드',
+    entries: [
+      { href: '/', defaultTitle: '대시보드', icon: LayoutDashboard },
+    ],
+  },
+  // 게시판 섹션은 동적으로 삽입 (index 1)
+  {
+    title: '고객관리',
+    entries: [
+      { href: '/customers', defaultTitle: '고객리스트', icon: Users },
+      { href: '/customers/trash', defaultTitle: '휴지통', icon: Trash2 },
+    ],
+  },
+  {
+    title: '상담관리',
+    entries: [
+      { href: '/inquiries', defaultTitle: '보험문의', icon: Headphones },
+      { href: '/consultant-inquiries', defaultTitle: '더플문의', icon: MessageSquare },
+      { href: '/recruit-inquiries', defaultTitle: '입사문의', icon: UserPlus },
+    ],
+  },
+  {
+    title: '업무',
+    entries: [
+      { href: '/team', defaultTitle: '팀 관리', icon: UsersRound },
+      { href: '/contacts-direct', defaultTitle: '연락처', icon: BookUser },
+    ],
+  },
+  {
+    title: '광고 분석',
+    entries: [
+      { href: '/ads/ndata', defaultTitle: 'N-DATA', icon: BarChart3 },
+      { href: '/ads/powerlink', defaultTitle: '파워링크', icon: Zap },
+      { href: '/ads/report', defaultTitle: '보고서', icon: FileText },
+      { href: '/ads/weekly', defaultTitle: '주간데이터', icon: TrendingUp },
+      { href: '/ads/rank-dashboard', defaultTitle: '순위 대시보드', icon: LayoutDashboard },
+      { href: '/ads/rank-keywords', defaultTitle: '사이트/키워드', icon: Search },
+      { href: '/ads/rank-urls', defaultTitle: 'URL 추적', icon: Link2 },
+      { href: '/ads/rank-history', defaultTitle: '순위 기록', icon: History },
+    ],
+  },
+  {
+    title: '설정',
+    entries: [
+      { href: '/settings/organizations', defaultTitle: '조직 관리', icon: Building2 },
+      { href: '/settings/labels', defaultTitle: '라벨 관리', icon: Tag },
+      { href: '/settings/menus', defaultTitle: '메뉴 관리', icon: LayoutList },
+      { href: '/settings/menu-permissions', defaultTitle: '메뉴 권한', icon: ShieldCheck },
+      { href: '/settings/board-categories', defaultTitle: '게시판 관리', icon: ClipboardList },
+      { href: '/settings/employees', defaultTitle: '사원 관리', icon: UserCog },
+      { href: '/settings/approvals', defaultTitle: '승인 대기', icon: Clock },
+    ],
+  },
 ];
 
 // 기본 권한 (API의 DEFAULT_MENU_ROLES와 동일)
@@ -93,16 +135,23 @@ const STATIC_DEFAULT_ROLES: Record<string, LevelRoleMap> = {
 
 const BOARD_DEFAULT_ROLE: LevelRoleMap = { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" };
 
-const ROLE_OPTIONS: { value: MenuRole; label: string; short: string }[] = [
-  { value: 'none', label: '접근불가', short: 'N' },
-  { value: 'viewer', label: '뷰어', short: 'V' },
-  { value: 'editor', label: '편집자', short: 'E' },
+const ROLE_OPTIONS: { value: MenuRole; label: string }[] = [
+  { value: 'none', label: '접근불가' },
+  { value: 'viewer', label: '뷰어' },
+  { value: 'editor', label: '편집자' },
 ];
 
 const ROLE_COLORS: Record<MenuRole, string> = {
   none: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400',
   viewer: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
   editor: 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+};
+
+// Select 트리거 테두리 색상
+const ROLE_BORDER_COLORS: Record<MenuRole, string> = {
+  none: 'border-zinc-300 dark:border-zinc-600',
+  viewer: 'border-blue-300 dark:border-blue-700',
+  editor: 'border-green-300 dark:border-green-700',
 };
 
 export default function MenuPermissionsPage() {
@@ -112,20 +161,27 @@ export default function MenuPermissionsPage() {
   const [roles, setRoles] = useState<Record<string, LevelRoleMap>>({});
   const initialized = useRef(false);
 
-  // 동적 메뉴 엔트리 생성
-  const menuEntries = useMemo<MenuEntry[]>(() => {
+  // 동적 메뉴 섹션 생성 (게시판 포함)
+  const menuSections = useMemo<MenuSection[]>(() => {
     const boardEntries: MenuEntry[] = boardCategories.map((cat) => ({
       href: `/board/${cat.slug}`,
       defaultTitle: cat.name,
       icon: FileText,
     }));
 
-    // 대시보드 뒤에 게시판 삽입
-    const result = [...staticMenuEntries];
-    const dashIdx = result.findIndex((e) => e.href === '/');
-    result.splice(dashIdx + 1, 0, ...boardEntries);
+    const result = [...staticMenuSections];
+    if (boardEntries.length > 0) {
+      // 대시보드(index 0) 뒤에 게시판 섹션 삽입
+      result.splice(1, 0, { title: '게시판', entries: boardEntries });
+    }
     return result;
   }, [boardCategories]);
+
+  // 전체 메뉴 엔트리 (저장용 flat 리스트)
+  const allEntries = useMemo(
+    () => menuSections.flatMap((s) => s.entries),
+    [menuSections],
+  );
 
   // 기본 권한 맵 (동적 게시판 포함)
   const DEFAULT_ROLES = useMemo<Record<string, LevelRoleMap>>(() => {
@@ -141,7 +197,7 @@ export default function MenuPermissionsPage() {
     initialized.current = true;
 
     const map: Record<string, LevelRoleMap> = {};
-    for (const entry of menuEntries) {
+    for (const entry of allEntries) {
       map[entry.href] = { ...(DEFAULT_ROLES[entry.href] || {}) };
     }
 
@@ -158,7 +214,7 @@ export default function MenuPermissionsPage() {
     }
 
     setRoles(map);
-  }, [settings, menuEntries, DEFAULT_ROLES]);
+  }, [settings, allEntries, DEFAULT_ROLES]);
 
   // 게시판 카테고리 변경 시 새 항목 추가
   useEffect(() => {
@@ -183,16 +239,8 @@ export default function MenuPermissionsPage() {
     }));
   };
 
-  const cycleRole = (href: string, level: string) => {
-    if (level === 'F1') return;
-    const current = roles[href]?.[level] || 'none';
-    const idx = ROLE_OPTIONS.findIndex((o) => o.value === current);
-    const next = ROLE_OPTIONS[(idx + 1) % ROLE_OPTIONS.length].value;
-    setRole(href, level, next);
-  };
-
   const handleSave = () => {
-    const items = menuEntries.map((entry) => ({
+    const items = allEntries.map((entry) => ({
       key: `menu_role:${entry.href}`,
       value: roles[entry.href] ? JSON.stringify(roles[entry.href]) : null,
     }));
@@ -206,57 +254,77 @@ export default function MenuPermissionsPage() {
       <div>
         <h2 className="text-lg font-semibold">메뉴 권한 관리</h2>
         <p className="text-sm text-muted-foreground">
-          보안등급별 메뉴 접근 권한을 설정합니다. 셀을 클릭하면 N(접근불가) → V(뷰어) → E(편집자) 순으로 변경됩니다.
+          보안등급별 메뉴 접근 권한을 설정합니다. 등급 탭을 선택한 후 각 메뉴의 권한을 변경하세요.
         </p>
       </div>
 
-      <div className="border rounded-lg overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium min-w-[180px] sticky left-0 bg-muted/50 z-10">메뉴</th>
-              {ALL_SECURITY_LEVELS.map((level) => (
-                <th key={level} className="text-center px-2 py-3 font-medium w-14">
-                  {level}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {menuEntries.map((entry) => {
-              const menuRoles = roles[entry.href] || DEFAULT_ROLES[entry.href] || {};
-              return (
-                <tr key={entry.href} className="border-t hover:bg-muted/20">
-                  <td className={`px-4 py-2.5 sticky left-0 bg-card z-10 ${entry.indent ? 'pl-8' : ''}`}>
-                    <div className="flex items-center gap-2">
-                      <entry.icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span className="truncate text-sm">{entry.defaultTitle}</span>
+      <Tabs defaultValue="F1">
+        <TabsList className="w-full flex-wrap">
+          {ALL_SECURITY_LEVELS.map((level) => (
+            <TabsTrigger key={level} value={level} className="flex-1 min-w-[3rem]">
+              {level}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        {ALL_SECURITY_LEVELS.map((level) => {
+          const isF1 = level === 'F1';
+          return (
+            <TabsContent key={level} value={level}>
+              {isF1 && (
+                <p className="text-xs text-muted-foreground mb-3">
+                  F1(최고 관리자)은 모든 메뉴에 편집자 권한이 부여되며 변경할 수 없습니다.
+                </p>
+              )}
+              <div className="space-y-4">
+                {menuSections.map((section) => (
+                  <div key={section.title} className="border rounded-lg overflow-hidden">
+                    <div className="bg-muted/50 px-4 py-2.5 text-sm font-semibold text-foreground">
+                      {section.title}
                     </div>
-                  </td>
-                  {ALL_SECURITY_LEVELS.map((level) => {
-                    const role = (menuRoles[level] || 'none') as MenuRole;
-                    const isF1 = level === 'F1';
-                    return (
-                      <td key={level} className="text-center px-1 py-1.5">
-                        <button
-                          onClick={() => cycleRole(entry.href, level)}
-                          disabled={isF1}
-                          className={`inline-flex items-center justify-center w-10 h-7 rounded text-xs font-semibold transition-colors ${ROLE_COLORS[role]} ${
-                            isF1 ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:ring-2 hover:ring-primary/30'
-                          }`}
-                          title={`${entry.defaultTitle} - ${level}: ${ROLE_OPTIONS.find(o => o.value === role)?.label}`}
-                        >
-                          {ROLE_OPTIONS.find((o) => o.value === role)?.short}
-                        </button>
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                    <div className="divide-y">
+                      {section.entries.map((entry) => {
+                        const menuRoles = roles[entry.href] || DEFAULT_ROLES[entry.href] || {};
+                        const role = (menuRoles[level] || 'none') as MenuRole;
+                        return (
+                          <div
+                            key={entry.href}
+                            className="flex items-center justify-between px-4 py-2.5 gap-4"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <entry.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                              <span className="text-sm truncate">{entry.defaultTitle}</span>
+                            </div>
+                            <Select
+                              value={role}
+                              onValueChange={(v) => setRole(entry.href, level, v as MenuRole)}
+                              disabled={isF1}
+                            >
+                              <SelectTrigger
+                                size="sm"
+                                className={`w-[110px] text-xs font-medium ${ROLE_COLORS[role]} ${ROLE_BORDER_COLORS[role]} ${isF1 ? 'opacity-60' : ''}`}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ROLE_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+          );
+        })}
+      </Tabs>
 
       <div className="flex items-center gap-4">
         <Button onClick={handleSave} disabled={updateSettings.isPending}>
