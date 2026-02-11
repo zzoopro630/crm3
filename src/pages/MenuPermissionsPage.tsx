@@ -281,20 +281,20 @@ export default function MenuPermissionsPage() {
                   F1(최고 관리자)은 모든 메뉴에 편집자 권한이 부여되며 변경할 수 없습니다.
                 </p>
               )}
-              <div className="space-y-4">
+              <div className="space-y-4 max-w-md">
                 {menuSections.map((section) => (
                   <div key={section.title} className="border rounded-lg overflow-hidden">
-                    <div className="bg-muted/50 px-4 py-2.5 text-sm font-semibold text-foreground">
+                    <div className="bg-muted/50 px-3 py-2 text-sm font-semibold text-foreground">
                       {section.title}
                     </div>
                     <div className="divide-y">
-                      {section.entries.map((entry) => {
+                      {section.entries.map((entry, idx) => {
                         const menuRoles = roles[entry.href] || DEFAULT_ROLES[entry.href] || {};
                         const role = (menuRoles[level] || 'none') as MenuRole;
                         return (
                           <div
                             key={entry.href}
-                            className="flex items-center justify-between px-4 py-2.5 gap-4"
+                            className={`flex items-center justify-between px-3 py-2 gap-3 ${idx % 2 === 1 ? 'bg-muted/30' : ''}`}
                           >
                             <div className="flex items-center gap-2.5 min-w-0">
                               <entry.icon className="h-4 w-4 text-muted-foreground shrink-0" />
