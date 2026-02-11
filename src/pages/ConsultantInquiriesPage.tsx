@@ -3,6 +3,7 @@ import { useEmployees } from "@/hooks/useEmployees";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useAuthStore } from "@/stores/authStore";
 import { useMenuLabels } from "@/hooks/useAppSettings";
+import { useIsEditor } from "@/hooks/useMenuRole";
 import { Input } from "@/components/ui/input";
 import {
   Loader2,
@@ -28,8 +29,7 @@ const getSavedPageSize = () => {
 export default function ConsultantInquiriesPage() {
   const { employee } = useAuthStore();
   const menuLabels = useMenuLabels();
-  const isAdmin =
-    employee?.securityLevel === "F1" || employee?.securityLevel === "F2";
+  const isAdmin = useIsEditor('/consultant-inquiries');
 
   const [pageSize, setPageSize] = useState(getSavedPageSize);
   const [currentPage, setCurrentPage] = useState(1);

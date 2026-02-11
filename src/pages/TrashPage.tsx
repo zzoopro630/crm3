@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuthStore } from "@/stores/authStore";
+import { useIsViewer } from "@/hooks/useMenuRole";
 import {
   useTrashCustomers,
   usePermanentDeleteCustomer,
@@ -25,9 +25,7 @@ import {
 } from "lucide-react";
 
 export default function TrashPage() {
-  const { employee } = useAuthStore();
-  const isAdmin =
-    employee?.securityLevel === "F1" || employee?.securityLevel === "F2";
+  const isAdmin = useIsViewer('/customers/trash');
 
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");

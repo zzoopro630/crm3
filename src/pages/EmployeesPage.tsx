@@ -8,7 +8,6 @@ import {
   usePermanentDeleteEmployee,
 } from "@/hooks/useEmployees";
 import { useOrganizations } from "@/hooks/useOrganizations";
-import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -44,14 +43,14 @@ import { EmployeeExcelUpload } from "@/components/employees/EmployeeExcelUpload"
 import type { Employee, CreateEmployeeInput } from "@/types/employee";
 import { SECURITY_LEVELS } from "@/types/employee";
 import {
+  useIsEditor,
   useEmployeeOverrides,
   useUpdateEmployeeOverrides,
 } from "@/hooks/useMenuRole";
 import type { MenuRole, EmployeeMenuOverride } from "@/types/menuRole";
 
 export function EmployeesPage() {
-  const { employee: currentEmployee } = useAuthStore();
-  const isF1 = currentEmployee?.securityLevel === "F1";
+  const isF1 = useIsEditor('/settings/employees');
 
   const { data: employees, isLoading } = useEmployees();
   const { data: organizations } = useOrganizations();

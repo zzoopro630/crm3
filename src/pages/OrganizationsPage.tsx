@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Loader2, Building2, Users } from "lucide-react";
+import { useIsEditor } from "@/hooks/useMenuRole";
 import type {
   Organization,
   CreateOrganizationInput,
@@ -46,15 +47,14 @@ export function OrganizationsPage() {
     managerId: null,
   });
 
-  // F1만 수정 가능
-  const isF1 = employee?.securityLevel === "F1";
+  const isF1 = useIsEditor('/settings/organizations');
 
-  // F2~F5는 본인 소속 조직만 필터링
+  // editor가 아니면 본인 소속 조직만 필터링
   const visibleOrganizations = isF1
     ? organizations
     : organizations?.filter((org) => org.id === employee?.organizationId);
 
-  // F2~F5는 읽기 전용
+  // editor가 아니면 읽기 전용
   const isReadOnly = !isF1;
 
   const activeEmployees = employees?.filter((e) => e.isActive) || [];

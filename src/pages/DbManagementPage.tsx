@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useAuthStore } from "@/stores/authStore";
+import { useIsEditor } from "@/hooks/useMenuRole";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -65,8 +66,7 @@ const getSavedPageSize = () => {
 
 export default function DbManagementPage() {
   const { employee } = useAuthStore();
-  const isAdmin =
-    employee?.securityLevel === "F1" || employee?.securityLevel === "F2";
+  const isAdmin = useIsEditor('/inquiries');
 
   const [activeTab, setActiveTab] = useState<TabType>("inProgress");
   const [pageSize, setPageSize] = useState(getSavedPageSize);
