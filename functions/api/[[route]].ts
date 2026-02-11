@@ -102,6 +102,49 @@ async function requireSecurityLevel(c: any, levels: string[]) {
   return null;
 }
 
+// 게시판 메뉴 권한 체크 (app_settings + 직원 오버라이드)
+async function requireBoardEditor(c: any, categorySlug: string) {
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+  if (emp.security_level === "F1") return null;
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const menuPath = `/board/${categorySlug}`;
+  const level = emp.security_level;
+
+  // 기본값: 전등급 viewer (BOARD_DEFAULT_ROLE과 동일)
+  let role = "viewer";
+
+  // app_settings 오버라이드
+  const { data: setting } = await supabase
+    .from("app_settings")
+    .select("value")
+    .eq("key", `menu_role:${menuPath}`)
+    .maybeSingle();
+
+  if (setting?.value) {
+    try {
+      const parsed = JSON.parse(setting.value);
+      if (parsed[level] !== undefined) role = parsed[level];
+    } catch { /* use default */ }
+  }
+
+  // 개별 직원 오버라이드
+  const { data: override } = await supabase
+    .from("employee_menu_overrides")
+    .select("role")
+    .eq("employee_id", emp.id)
+    .eq("menu_path", menuPath)
+    .maybeSingle();
+
+  if (override?.role) role = override.role;
+
+  if (role !== "editor") {
+    return c.json({ error: "권한이 부족합니다." }, 403);
+  }
+  return null;
+}
+
 // ============ 에러 헬퍼 ============
 
 function safeError(c: any, error: any, status: number = 500) {
@@ -3547,17 +3590,18 @@ app.get("/api/posts/:id", async (c) => {
 
 // 게시글 생성 (F1)
 app.post("/api/posts", async (c) => {
-  const denied = await requireSecurityLevel(c, ["F1"]);
-  if (denied) return denied;
-
-  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
-  const emp = await getAuthEmployee(c);
   const body = await c.req.json();
   const { title, content, category, isPinned, attachments } = body;
 
   if (!title || !content || !category) {
     return c.json({ error: "제목, 내용, 카테고리는 필수입니다." }, 400);
   }
+
+  const denied = await requireBoardEditor(c, category);
+  if (denied) return denied;
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const emp = await getAuthEmployee(c);
 
   try {
     const { data: post, error } = await supabase
@@ -3590,14 +3634,22 @@ app.post("/api/posts", async (c) => {
   }
 });
 
-// 게시글 수정 (F1)
+// 게시글 수정 (메뉴 권한 editor)
 app.put("/api/posts/:id", async (c) => {
-  const denied = await requireSecurityLevel(c, ["F1"]);
-  if (denied) return denied;
-
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = parseInt(c.req.param("id"));
   if (isNaN(id)) return c.json({ error: "유효하지 않은 ID" }, 400);
+
+  const { data: existing } = await supabase
+    .from("posts")
+    .select("category")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .single();
+  if (!existing) return c.json({ error: "게시글을 찾을 수 없습니다." }, 404);
+
+  const denied = await requireBoardEditor(c, existing.category);
+  if (denied) return denied;
 
   const body = await c.req.json();
   const { title, content, isPinned, attachments } = body;
@@ -3637,14 +3689,22 @@ app.put("/api/posts/:id", async (c) => {
   }
 });
 
-// 게시글 삭제 (F1, soft delete)
+// 게시글 삭제 (메뉴 권한 editor, soft delete)
 app.delete("/api/posts/:id", async (c) => {
-  const denied = await requireSecurityLevel(c, ["F1"]);
-  if (denied) return denied;
-
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = parseInt(c.req.param("id"));
   if (isNaN(id)) return c.json({ error: "유효하지 않은 ID" }, 400);
+
+  const { data: existing } = await supabase
+    .from("posts")
+    .select("category")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .single();
+  if (!existing) return c.json({ error: "게시글을 찾을 수 없습니다." }, 404);
+
+  const denied = await requireBoardEditor(c, existing.category);
+  if (denied) return denied;
 
   try {
     const { error } = await supabase
