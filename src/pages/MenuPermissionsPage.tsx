@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import type { MenuRole, LevelRoleMap } from '@/types/menuRole';
 import { ALL_SECURITY_LEVELS } from '@/types/menuRole';
+import type { BoardCategory } from '@/types/boardCategory';
 
 interface MenuEntry {
   href: string;
@@ -141,6 +142,8 @@ const ROLE_OPTIONS: { value: MenuRole; label: string }[] = [
   { value: 'editor', label: '편집자' },
 ];
 
+const EMPTY_BOARD_CATEGORIES: BoardCategory[] = [];
+
 const ROLE_COLORS: Record<MenuRole, string> = {
   none: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400',
   viewer: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
@@ -156,7 +159,7 @@ const ROLE_BORDER_COLORS: Record<MenuRole, string> = {
 
 export default function MenuPermissionsPage() {
   const { data: settings = [], isLoading } = useAppSettings();
-  const { data: boardCategories = [] } = useBoardCategories(false);
+  const { data: boardCategories = EMPTY_BOARD_CATEGORIES } = useBoardCategories(false);
   const updateSettings = useUpdateSettings();
   const [roles, setRoles] = useState<Record<string, LevelRoleMap>>({});
   const initialized = useRef(false);
@@ -220,14 +223,16 @@ export default function MenuPermissionsPage() {
   useEffect(() => {
     if (!initialized.current) return;
     setRoles((prev) => {
+      let changed = false;
       const next = { ...prev };
       for (const cat of boardCategories) {
         const path = `/board/${cat.slug}`;
         if (!next[path]) {
           next[path] = { ...BOARD_DEFAULT_ROLE };
+          changed = true;
         }
       }
-      return next;
+      return changed ? next : prev;
     });
   }, [boardCategories]);
 
