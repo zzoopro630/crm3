@@ -2399,54 +2399,25 @@ app.put("/api/settings", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
   const items = body.items as Array<{ key: string; value: string | null }>;
-
-  // 1. 기존 키 일괄 조회 (1 request)
-  const keys = items.map((i) => i.key);
-  const { data: existingRows } = await supabase
-    .from("app_settings")
-    .select("id, key")
-    .in("key", keys);
-  const existingMap = new Map((existingRows || []).map((r: any) => [r.key, r.id]));
-
-  // 2. 분류
-  const toInsert: Array<{ key: string; value: string }> = [];
-  const toUpdate: Array<{ id: number; key: string; value: string }> = [];
-  const toDeleteKeys: string[] = [];
   const now = new Date().toISOString();
 
-  for (const item of items) {
-    if (item.value) {
-      const existingId = existingMap.get(item.key);
-      if (existingId) {
-        toUpdate.push({ id: existingId, key: item.key, value: item.value });
-      } else {
-        toInsert.push({ key: item.key, value: item.value });
-      }
-    } else if (existingMap.has(item.key)) {
-      toDeleteKeys.push(item.key);
-    }
-  }
+  // value가 있는 항목: upsert (1 request)
+  const toUpsert = items
+    .filter((i) => i.value)
+    .map((i) => ({ key: i.key, value: i.value!, updated_at: now }));
+
+  // value가 null인 항목: delete (1 request)
+  const toDeleteKeys = items.filter((i) => !i.value).map((i) => i.key);
 
   const errors: string[] = [];
 
-  // 3. bulk insert (1 request)
-  if (toInsert.length > 0) {
+  if (toUpsert.length > 0) {
     const { error } = await supabase
       .from("app_settings")
-      .insert(toInsert.map((r) => ({ key: r.key, value: r.value })));
-    if (error) errors.push(`insert: ${error.message}`);
+      .upsert(toUpsert, { onConflict: "key" });
+    if (error) errors.push(`upsert: ${error.message}`);
   }
 
-  // 4. update - 개별 (변경분만)
-  for (const item of toUpdate) {
-    const { error } = await supabase
-      .from("app_settings")
-      .update({ value: item.value, updated_at: now })
-      .eq("id", item.id);
-    if (error) errors.push(`update(${item.key}): ${error.message}`);
-  }
-
-  // 5. bulk delete (1 request)
   if (toDeleteKeys.length > 0) {
     const { error } = await supabase
       .from("app_settings")
