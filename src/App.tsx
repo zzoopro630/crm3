@@ -104,7 +104,7 @@ function AppContent() {
         <Route path="/resources" element={<Navigate to="/board/resource" replace />} />
         <Route path="/resources/:id" element={<Navigate to="/board/resource" replace />} />
 
-        {/* Ads nested routes (F1 only) */}
+        {/* Ads nested routes */}
         <Route path="/ads" element={<AdsPage />}>
           <Route index element={<Navigate to="ndata" replace />} />
           <Route path="ndata" element={<AdsNDataPage />} />

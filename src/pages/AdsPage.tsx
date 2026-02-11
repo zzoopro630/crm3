@@ -1,7 +1,7 @@
-import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
 import { BarChart3, FileText, TrendingUp, Zap, LayoutDashboard, Search, Link2, History } from "lucide-react";
 import { NavLink, Outlet, Navigate } from "react-router-dom";
+import { useMenuRoles } from "@/hooks/useMenuRole";
 
 interface AdsTab {
   id: string;
@@ -22,9 +22,15 @@ const adsTabs: AdsTab[] = [
 ];
 
 export function AdsPage() {
-  const { employee } = useAuthStore();
+  const { data: menuRoles } = useMenuRoles();
 
-  if (employee?.securityLevel !== "F1") {
+  const visibleTabs = adsTabs.filter((tab) => {
+    if (!menuRoles) return true; // 로딩 중에는 모두 표시
+    const role = menuRoles[`/ads/${tab.id}`];
+    return role && role !== "none";
+  });
+
+  if (menuRoles && visibleTabs.length === 0) {
     return <Navigate to="/" replace />;
   }
 
@@ -33,7 +39,7 @@ export function AdsPage() {
       <div className="hidden lg:block w-48 shrink-0">
         <div className="sticky top-6">
           <nav className="space-y-1">
-            {adsTabs.map((tab) => {
+            {visibleTabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <div key={tab.id}>

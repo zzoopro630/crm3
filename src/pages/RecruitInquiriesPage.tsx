@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useAuthStore } from "@/stores/authStore";
 import { useMenuLabels } from "@/hooks/useAppSettings";
+import { useIsEditor } from "@/hooks/useMenuRole";
 import { Input } from "@/components/ui/input";
 import {
   Loader2,
@@ -32,9 +33,8 @@ const getSavedPageSize = () => {
 export default function RecruitInquiriesPage() {
   const { employee } = useAuthStore();
   const menuLabels = useMenuLabels();
-  const isAdmin =
-    employee?.securityLevel === "F1" || employee?.securityLevel === "F2";
-  const isF1 = employee?.securityLevel === "F1";
+  const isAdmin = useIsEditor('/recruit-inquiries');
+  const isF1 = useIsEditor('/recruit-inquiries');
 
   const [pageSize, setPageSize] = useState(getSavedPageSize);
   const [currentPage, setCurrentPage] = useState(1);

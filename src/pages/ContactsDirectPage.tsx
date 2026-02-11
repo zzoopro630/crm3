@@ -15,7 +15,7 @@ import {
   Pencil,
   Trash,
 } from 'lucide-react'
-import { useAuthStore } from '@/stores/authStore'
+import { useIsEditor } from '@/hooks/useMenuRole'
 import {
   useContacts,
   useCreateContact,
@@ -36,9 +36,8 @@ import { formatPhone } from '@/utils/contacts/excel'
 import type { Contact, ContactInput, UpdateContactInput } from '@/types/contact'
 
 export default function ContactsDirectPage() {
-  const employee = useAuthStore((s) => s.employee)
   const menuLabels = useMenuLabels()
-  const isAdmin = employee?.securityLevel === 'F1'
+  const isAdmin = useIsEditor('/contacts-direct')
 
   const { data: contacts = [], isLoading } = useContacts()
   const { data: trashContacts = [] } = useTrashContacts()

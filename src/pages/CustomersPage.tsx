@@ -8,6 +8,7 @@ import {
 import { useEmployees } from "@/hooks/useEmployees";
 import { useSources } from "@/hooks/useSources";
 import { useAuthStore } from "@/stores/authStore";
+import { useIsEditor } from "@/hooks/useMenuRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -93,6 +94,7 @@ export function CustomersPage() {
   const managerFilter = searchParams.get("manager");
 
   const { employee } = useAuthStore();
+  const isEditor = useIsEditor('/customers');
   const createCustomer = useCreateCustomer();
   const deleteCustomer = useDeleteCustomer();
   const { data: allEmployees } = useEmployees();
@@ -636,7 +638,7 @@ export function CustomersPage() {
                         {sortConfig.key === "createdAt" &&
                           (sortConfig.direction === "asc" ? "↑" : "↓")}
                       </th>
-                      {(employee?.securityLevel === "F1" || employee?.securityLevel === "F2") && (
+                      {isEditor && (
                       <th className="text-right py-4 px-4 text-sm font-medium text-muted-foreground">
                         작업
                       </th>
@@ -711,7 +713,7 @@ export function CustomersPage() {
                                 )
                               : "-"}
                           </td>
-                          {(employee?.securityLevel === "F1" || employee?.securityLevel === "F2") && (
+                          {isEditor && (
                           <td className="py-3 px-4 text-right">
                             <div className="flex justify-end gap-2">
                               <Button
