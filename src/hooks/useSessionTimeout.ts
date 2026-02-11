@@ -30,6 +30,15 @@ export function useSessionTimeout() {
       localStorage.setItem(STORAGE_KEY, String(Date.now()));
     }
 
+    // 앱 시작 시 즉시 타임아웃 체크 (이벤트 리스너 등록 전)
+    const lastStored = Number(localStorage.getItem(STORAGE_KEY) || Date.now());
+    if (Date.now() - lastStored >= TIMEOUT_MS) {
+      localStorage.removeItem(STORAGE_KEY);
+      toast.info('1시간 동안 활동이 없어 자동 로그아웃되었습니다.');
+      signOut();
+      return;
+    }
+
     const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
     events.forEach((e) => window.addEventListener(e, updateActivity, { passive: true }));
 
