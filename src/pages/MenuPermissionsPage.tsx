@@ -137,7 +137,7 @@ const STATIC_DEFAULT_ROLES: Record<string, LevelRoleMap> = {
 const BOARD_DEFAULT_ROLE: LevelRoleMap = { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" };
 
 const ROLE_OPTIONS: { value: MenuRole; label: string }[] = [
-  { value: 'none', label: '접근불가' },
+  { value: 'none', label: '비활성' },
   { value: 'viewer', label: '뷰어' },
   { value: 'editor', label: '편집자' },
 ];
@@ -352,7 +352,7 @@ export default function MenuPermissionsPage() {
           </span>
           <span className="flex items-center gap-1">
             <span className={`inline-block w-6 h-5 rounded text-center leading-5 font-semibold ${ROLE_COLORS.none}`}>N</span>
-            접근불가
+            비활성
           </span>
         </div>
       </div>
