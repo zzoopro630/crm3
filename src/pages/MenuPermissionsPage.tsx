@@ -265,6 +265,9 @@ export default function MenuPermissionsPage() {
         {updateSettings.isSuccess && (
           <p className="text-sm text-green-600">저장되었습니다.</p>
         )}
+        {updateSettings.isError && (
+          <p className="text-sm text-red-600">저장 실패: {updateSettings.error?.message}</p>
+        )}
         <div className="ml-auto flex gap-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <span className={`inline-block w-6 h-5 rounded text-center leading-5 font-semibold ${ROLE_COLORS.editor}`}>E</span>

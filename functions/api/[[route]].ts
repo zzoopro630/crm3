@@ -2283,17 +2283,37 @@ app.put("/api/settings", async (c) => {
   const body = await c.req.json();
   const items = body.items as Array<{ key: string; value: string | null }>;
 
+  const errors: string[] = [];
   for (const item of items) {
     if (item.value) {
-      await supabase.from("app_settings").upsert(
-        { key: item.key, value: item.value, updated_at: new Date().toISOString() },
-        { onConflict: "key" }
-      );
+      // 기존 행 존재 여부 확인 후 insert/update
+      const { data: existing } = await supabase
+        .from("app_settings")
+        .select("id")
+        .eq("key", item.key)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from("app_settings")
+          .update({ value: item.value, updated_at: new Date().toISOString() })
+          .eq("id", existing.id);
+        if (error) errors.push(`${item.key}: ${error.message}`);
+      } else {
+        const { error } = await supabase
+          .from("app_settings")
+          .insert({ key: item.key, value: item.value });
+        if (error) errors.push(`${item.key}: ${error.message}`);
+      }
     } else {
-      await supabase.from("app_settings").delete().eq("key", item.key);
+      const { error } = await supabase.from("app_settings").delete().eq("key", item.key);
+      if (error) errors.push(`${item.key}: ${error.message}`);
     }
   }
 
+  if (errors.length > 0) {
+    return c.json({ error: errors.join("; ") }, 500);
+  }
   return c.json({ success: true });
 });
 
