@@ -323,6 +323,15 @@ app.get("/api/customers/:id", async (c) => {
     managerName,
     type: data.type,
     interestProduct: data.interest_product,
+    memo: data.memo,
+    adminComment: data.admin_comment,
+    addressDetail: data.address_detail,
+    nationality: data.nationality,
+    maritalStatus: data.marital_status,
+    annualIncome: data.annual_income,
+    existingInsurance: data.existing_insurance,
+    insuranceType: data.insurance_type,
+    notes: data.notes,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
   });
@@ -417,6 +426,8 @@ app.put("/api/customers/:id", async (c) => {
 });
 
 app.delete("/api/customers/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "F3", "F4", "F5"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
@@ -435,6 +446,8 @@ app.delete("/api/customers/:id", async (c) => {
 
 // 완전 삭제
 app.delete("/api/customers/:id/permanent", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
@@ -449,6 +462,8 @@ app.delete("/api/customers/:id/permanent", async (c) => {
 
 // 복원
 app.post("/api/customers/:id/restore", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
@@ -479,6 +494,19 @@ app.get("/api/contracts/:customerId", async (c) => {
     return safeError(c, error);
   }
 
+  // 작성자 이름 일괄 조회
+  const creatorIds = [...new Set((data || []).map((r: any) => r.created_by).filter(Boolean))];
+  const creatorsMap: Record<string, string> = {};
+  if (creatorIds.length > 0) {
+    const { data: creators } = await supabase
+      .from("employees")
+      .select("id, full_name")
+      .in("id", creatorIds);
+    if (creators) {
+      for (const c2 of creators) creatorsMap[c2.id] = c2.full_name;
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const contracts = (data || []).map((row: any) => ({
     id: row.id,
@@ -491,7 +519,7 @@ app.get("/api/contracts/:customerId", async (c) => {
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    authorName: "작성자",
+    authorName: creatorsMap[row.created_by] || "알 수 없음",
   }));
 
   return c.json(contracts);
@@ -582,6 +610,19 @@ app.get("/api/notes/:customerId", async (c) => {
     return safeError(c, error);
   }
 
+  // 작성자 이름 일괄 조회
+  const noteCreatorIds = [...new Set((data || []).map((r: any) => r.created_by).filter(Boolean))];
+  const noteCreatorsMap: Record<string, string> = {};
+  if (noteCreatorIds.length > 0) {
+    const { data: creators } = await supabase
+      .from("employees")
+      .select("id, full_name")
+      .in("id", noteCreatorIds);
+    if (creators) {
+      for (const c2 of creators) noteCreatorsMap[c2.id] = c2.full_name;
+    }
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const notes = (data || []).map((row: any) => ({
     id: row.id,
@@ -590,7 +631,7 @@ app.get("/api/notes/:customerId", async (c) => {
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    authorName: "작성자",
+    authorName: noteCreatorsMap[row.created_by] || "알 수 없음",
   }));
 
   return c.json(notes);
@@ -719,7 +760,7 @@ app.post("/api/employees", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
-  const VALID_LEVELS = ["F1", "F2", "F3", "F4", "F5"];
+  const VALID_LEVELS = ["F1", "F2", "F3", "F4", "F5", "M1", "M2", "M3"];
   if (!body.email || !body.fullName || !body.securityLevel) {
     return c.json({ error: "email, fullName, securityLevel은 필수입니다." }, 400);
   }
@@ -759,15 +800,23 @@ app.post("/api/employees", async (c) => {
 });
 
 app.put("/api/employees/:id", async (c) => {
-  const denied = await requireSecurityLevel(c, ["F1"]);
-  if (denied) return denied;
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+
+  const id = c.req.param("id");
+  const isSelf = emp.id === id;
+  const isF1 = emp.security_level === "F1";
+
+  // F1이 아니면 자기 자신만 수정 가능
+  if (!isF1 && !isSelf) {
+    return c.json({ error: "권한이 부족합니다." }, 403);
+  }
 
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
-  const id = c.req.param("id");
   const body = await c.req.json();
 
-  // 이메일 변경 시 중복 체크
-  if (body.email !== undefined) {
+  // 이메일 변경 시 중복 체크 (F1 전용)
+  if (body.email !== undefined && isF1) {
     const { data: existing } = await supabase
       .from("employees")
       .select("id")
@@ -784,17 +833,22 @@ app.put("/api/employees/:id", async (c) => {
     updated_at: new Date().toISOString(),
   };
 
-  if (body.email !== undefined) updateData.email = body.email;
+  // 자기자신: 이름, 직위, 부서만 수정 가능
   if (body.fullName !== undefined) updateData.full_name = body.fullName;
-  if (body.securityLevel !== undefined)
-    updateData.security_level = body.securityLevel;
-  if (body.organizationId !== undefined)
-    updateData.organization_id = body.organizationId;
-  if (body.parentId !== undefined) updateData.parent_id = body.parentId;
   if (body.positionName !== undefined)
     updateData.position_name = body.positionName;
   if (body.department !== undefined) updateData.department = body.department;
-  if (body.isActive !== undefined) updateData.is_active = body.isActive;
+
+  // F1 전용 필드
+  if (isF1) {
+    if (body.email !== undefined) updateData.email = body.email;
+    if (body.securityLevel !== undefined)
+      updateData.security_level = body.securityLevel;
+    if (body.organizationId !== undefined)
+      updateData.organization_id = body.organizationId;
+    if (body.parentId !== undefined) updateData.parent_id = body.parentId;
+    if (body.isActive !== undefined) updateData.is_active = body.isActive;
+  }
 
   const { data, error } = await supabase
     .from("employees")
@@ -916,6 +970,8 @@ app.get("/api/sources", async (c) => {
 });
 
 app.post("/api/sources", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
@@ -936,6 +992,8 @@ app.post("/api/sources", async (c) => {
 });
 
 app.put("/api/sources/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
@@ -955,6 +1013,8 @@ app.put("/api/sources/:id", async (c) => {
 });
 
 app.delete("/api/sources/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
@@ -974,7 +1034,8 @@ app.get("/api/dashboard", async (c) => {
 
   let query = supabase
     .from("customers")
-    .select("id, status", { count: "exact" });
+    .select("id, status", { count: "exact" })
+    .is("deleted_at", null);
 
   if (managerId) {
     query = query.eq("manager_id", managerId);
@@ -1003,6 +1064,7 @@ app.get("/api/dashboard", async (c) => {
   let recentQuery = supabase
     .from("customers")
     .select("id, name, status, created_at, manager_id")
+    .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(5);
 
@@ -1152,7 +1214,7 @@ app.put("/api/pending-approvals/:id/approve", async (c) => {
   const id = c.req.param("id");
   const body = await c.req.json();
 
-  const VALID_LEVELS = ["F1", "F2", "F3", "F4", "F5"];
+  const VALID_LEVELS = ["F1", "F2", "F3", "F4", "F5", "M1", "M2", "M3"];
   if (!body.email || !body.fullName || !body.securityLevel) {
     return c.json({ error: "email, fullName, securityLevel은 필수입니다." }, 400);
   }
@@ -1430,7 +1492,8 @@ app.post("/api/team/members", async (c) => {
     const { data: customers } = await supabase
       .from("customers")
       .select("status")
-      .eq("manager_id", empId);
+      .eq("manager_id", empId)
+      .is("deleted_at", null);
 
     const customersByStatus = {
       new: 0,
@@ -1469,7 +1532,8 @@ app.post("/api/team/stats", async (c) => {
   const { data: customers, error } = await supabase
     .from("customers")
     .select("status")
-    .in("manager_id", memberIds);
+    .in("manager_id", memberIds)
+    .is("deleted_at", null);
 
   if (error) {
     return safeError(c, error);
@@ -2066,10 +2130,20 @@ app.post("/api/ads/inquiries", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
+  // 허용 필드만 pick
+  const rows = (Array.isArray(body) ? body : [body]).map((item: any) => ({
+    customer_name: item.customer_name,
+    phone: item.phone,
+    product_name: item.product_name,
+    utm_campaign: item.utm_campaign,
+    source_url: item.source_url,
+    inquiry_date: item.inquiry_date,
+  }));
+
   const { error } = await (supabase as any)
     .schema("marketing")
     .from("inquiries")
-    .insert(body);
+    .insert(rows);
 
   if (error) return safeError(c, error);
   return c.json({ success: true });
@@ -2503,6 +2577,8 @@ app.post("/api/contacts/:id/restore", async (c) => {
 
 // DELETE /api/contacts/:id/permanent - 완전 삭제
 app.delete("/api/contacts/:id/permanent", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
@@ -2517,6 +2593,8 @@ app.delete("/api/contacts/:id/permanent", async (c) => {
 
 // DELETE /api/contacts/trash/empty - 휴지통 비우기
 app.delete("/api/contacts/trash/empty", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { error } = await supabase
@@ -3691,7 +3769,7 @@ app.get("/api/menu-overrides", async (c) => {
     .eq("employee_id", employeeId);
 
   if (error) return safeError(c, error);
-  return c.json(data || []);
+  return c.json((data || []).map((o: any) => ({ menuPath: o.menu_path, role: o.role })));
 });
 
 // PUT /api/menu-overrides - F1 전용, 오버라이드 일괄 저장
