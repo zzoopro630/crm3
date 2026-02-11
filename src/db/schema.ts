@@ -392,6 +392,24 @@ export const employeeMenuOverrides = pgTable("employee_menu_overrides", {
 export type EmployeeMenuOverride = typeof employeeMenuOverrides.$inferSelect;
 export type NewEmployeeMenuOverride = typeof employeeMenuOverrides.$inferInsert;
 
+// ============ Dashboard Cards Table ============
+export const dashboardCards = pgTable("dashboard_cards", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  title: text("title").notNull(),
+  description: text("description"),
+  imageUrl: text("image_url"),
+  linkUrl: text("link_url"),
+  sortOrder: integer("sort_order").default(0),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => employees.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type DashboardCard = typeof dashboardCards.$inferSelect;
+export type NewDashboardCard = typeof dashboardCards.$inferInsert;
+
 // ============ ENUM Value Types ============
 export type SecurityLevel = (typeof securityLevelEnum.enumValues)[number];
 export type CustomerStatus = (typeof customerStatusEnum.enumValues)[number];
