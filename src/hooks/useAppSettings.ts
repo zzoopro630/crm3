@@ -32,6 +32,7 @@ export function useUpdateSettings() {
     mutationFn: (items: AppSetting[]) => updateAppSettings(items),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appSettings'] });
+      queryClient.invalidateQueries({ queryKey: ['menuRoles'] });
     },
   });
 }
