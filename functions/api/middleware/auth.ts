@@ -7,6 +7,7 @@ export interface Env {
   JUSO_API_KEY: string;
   SUPER_ADMIN_EMAIL?: string;
   ENVIRONMENT?: string;
+  RESEND_API_KEY?: string;
 }
 
 export async function getAuthEmployee(c: any) {

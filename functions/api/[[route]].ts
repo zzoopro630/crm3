@@ -24,6 +24,8 @@ import { boardCategoryRoutes, postRoutes } from "./routes/board";
 import { menuRoleRoutes, menuOverrideRoutes } from "./routes/menu-roles";
 import dashboardCards from "./routes/dashboard-cards";
 import pages from "./routes/pages";
+import leadProducts from "./routes/lead-products";
+import leadOrders from "./routes/lead-orders";
 
 // Hono 앱 생성
 const app = new Hono<{ Bindings: Env }>();
@@ -114,6 +116,8 @@ app.route("/api/menu-roles", menuRoleRoutes);
 app.route("/api/menu-overrides", menuOverrideRoutes);
 app.route("/api/dashboard-cards", dashboardCards);
 app.route("/api/pages", pages);
+app.route("/api/lead-products", leadProducts);
+app.route("/api/lead-orders", leadOrders);
 
 // Cloudflare Pages Functions export
 import { handle } from "hono/cloudflare-pages";
