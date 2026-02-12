@@ -11,6 +11,7 @@ import {
   getRankDashboardSummary,
   getTrackedUrls,
   createTrackedUrl,
+  updateTrackedUrl,
   deleteTrackedUrl,
   checkUrlRanking,
   getRankHistory,
@@ -122,6 +123,17 @@ export function useCreateTrackedUrl() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateTrackedUrlInput) => createTrackedUrl(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trackedUrls'] });
+    },
+  });
+}
+
+export function useUpdateTrackedUrl() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number; input: CreateTrackedUrlInput }) =>
+      updateTrackedUrl(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trackedUrls'] });
     },

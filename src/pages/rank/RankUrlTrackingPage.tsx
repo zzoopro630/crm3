@@ -37,14 +37,16 @@ import {
 import {
   useTrackedUrls,
   useCreateTrackedUrl,
+  useUpdateTrackedUrl,
   useDeleteTrackedUrl,
   useCheckUrlRanking,
 } from "@/hooks/useRanking";
-import { Plus, Trash2, RefreshCw } from "lucide-react";
+import { Plus, Trash2, RefreshCw, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import type { TrackedUrl } from "@/types/ranking";
 
 const SECTIONS = [
   { value: "all", label: "전체" },
@@ -67,14 +69,21 @@ type UrlTrackingFormData = z.infer<typeof urlTrackingSchema>;
 export default function RankUrlTrackingPage() {
   const { data: trackedUrls, isLoading, refetch } = useTrackedUrls();
   const createTrackedUrl = useCreateTrackedUrl();
+  const updateTrackedUrl = useUpdateTrackedUrl();
   const deleteTrackedUrl = useDeleteTrackedUrl();
   const checkUrlRanking = useCheckUrlRanking();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<TrackedUrl | null>(null);
   const [checkingIds, setCheckingIds] = useState<Set<number>>(new Set());
   const [isCheckingAll, setIsCheckingAll] = useState(false);
 
   const form = useForm<UrlTrackingFormData>({
+    resolver: zodResolver(urlTrackingSchema),
+    defaultValues: { keyword: "", targetUrl: "", section: "all", memo: "" },
+  });
+
+  const editForm = useForm<UrlTrackingFormData>({
     resolver: zodResolver(urlTrackingSchema),
     defaultValues: { keyword: "", targetUrl: "", section: "all", memo: "" },
   });
@@ -92,6 +101,35 @@ export default function RankUrlTrackingPage() {
       form.reset();
     } catch {
       toast.error("URL 추적 등록에 실패했습니다.");
+    }
+  };
+
+  const handleEdit = (item: TrackedUrl) => {
+    setEditingItem(item);
+    editForm.reset({
+      keyword: item.keyword,
+      targetUrl: item.targetUrl,
+      section: item.section || "all",
+      memo: item.memo || "",
+    });
+  };
+
+  const handleUpdate = async (data: UrlTrackingFormData) => {
+    if (!editingItem) return;
+    try {
+      await updateTrackedUrl.mutateAsync({
+        id: editingItem.id,
+        input: {
+          keyword: data.keyword,
+          targetUrl: data.targetUrl,
+          section: data.section === "all" ? null : data.section,
+          memo: data.memo || null,
+        },
+      });
+      toast.success("수정되었습니다.");
+      setEditingItem(null);
+    } catch {
+      toast.error("수정에 실패했습니다.");
     }
   };
 
@@ -168,23 +206,18 @@ export default function RankUrlTrackingPage() {
     sectionRank: number | null | undefined,
     section: string | null
   ) => {
-    // 영역을 지정하지 않은 경우
     if (!section) {
       return <span className="text-sm text-muted-foreground">-</span>;
     }
-    // 아직 체크 안 한 경우
     if (sectionExists === null || sectionExists === undefined) {
       return <span className="text-sm text-muted-foreground">미확인</span>;
     }
-    // 지정 영역이 검색결과에 없는 경우
     if (!sectionExists) {
       return <span className="text-sm text-muted-foreground">영역없음</span>;
     }
-    // 영역은 있지만 URL이 해당 영역에 없는 경우
     if (!sectionRank) {
       return <span className="text-sm text-muted-foreground">-</span>;
     }
-    // 영역 내 순위 표시
     return (
       <Badge variant={sectionRank <= 3 ? "default" : sectionRank <= 10 ? "secondary" : "outline"}>
         {sectionRank}위
@@ -305,6 +338,92 @@ export default function RankUrlTrackingPage() {
         </div>
       </div>
 
+      {/* 수정 다이얼로그 */}
+      <Dialog open={!!editingItem} onOpenChange={(open) => !open && setEditingItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>URL 추적 수정</DialogTitle>
+            <DialogDescription>
+              추적 항목의 정보를 수정합니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-keyword">키워드</Label>
+              <Input
+                id="edit-keyword"
+                {...editForm.register("keyword")}
+              />
+              {editForm.formState.errors.keyword && (
+                <p className="text-sm text-destructive">
+                  {editForm.formState.errors.keyword.message}
+                </p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-targetUrl">대상 URL</Label>
+              <Input
+                id="edit-targetUrl"
+                {...editForm.register("targetUrl")}
+              />
+              {editForm.formState.errors.targetUrl && (
+                <p className="text-sm text-destructive">
+                  {editForm.formState.errors.targetUrl.message}
+                </p>
+              )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-section">영역</Label>
+              <Controller
+                name="section"
+                control={editForm.control}
+                render={({ field }) => (
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="전체" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SECTIONS.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>
+                          {s.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit-memo">메모</Label>
+              <Input
+                id="edit-memo"
+                {...editForm.register("memo")}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditingItem(null)}
+            >
+              취소
+            </Button>
+            <Button
+              onClick={editForm.handleSubmit(handleUpdate)}
+              disabled={updateTrackedUrl.isPending}
+            >
+              {updateTrackedUrl.isPending && (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              )}
+              저장
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card>
         <CardHeader>
           <CardTitle>추적 중인 URL</CardTitle>
@@ -357,7 +476,7 @@ export default function RankUrlTrackingPage() {
                       {formatDate(item.lastChecked ?? null)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1">
                         <Button
                           variant="outline"
                           size="sm"
@@ -369,6 +488,13 @@ export default function RankUrlTrackingPage() {
                           ) : (
                             "체크"
                           )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEdit(item)}
+                        >
+                          <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="ghost"
