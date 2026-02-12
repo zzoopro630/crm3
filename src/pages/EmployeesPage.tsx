@@ -380,7 +380,7 @@ export function EmployeesPage() {
     "/team", "/contacts-direct",
     "/ads/ndata", "/ads/powerlink", "/ads/report", "/ads/weekly",
     "/ads/rank-dashboard", "/ads/rank-keywords", "/ads/rank-urls", "/ads/rank-history",
-    "/settings/organizations", "/settings/labels", "/settings/menus",
+    "/settings/organizations", "/settings/labels", "/settings/app-settings",
     "/settings/menu-permissions", "/settings/employees", "/settings/approvals",
   ];
 
@@ -395,7 +395,7 @@ export function EmployeesPage() {
     "/ads/rank-dashboard": "순위 대시보드", "/ads/rank-keywords": "사이트/키워드",
     "/ads/rank-urls": "URL 추적", "/ads/rank-history": "순위 기록",
     "/settings/organizations": "조직 관리", "/settings/labels": "라벨 관리",
-    "/settings/menus": "메뉴 관리", "/settings/menu-permissions": "메뉴 권한",
+    "/settings/app-settings": "앱 설정", "/settings/menu-permissions": "메뉴 권한",
     "/settings/employees": "사원 관리", "/settings/approvals": "승인 대기",
   };
 

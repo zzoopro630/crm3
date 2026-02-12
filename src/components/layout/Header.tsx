@@ -37,16 +37,15 @@ import { SECURITY_LEVELS } from '@/types/employee'
 
 interface HeaderProps {
     onSidebarToggle: () => void
+    logoutCountdownSeconds?: number
 }
 
-const LOGOUT_COUNTDOWN = 30
-
-export function Header({ onSidebarToggle }: HeaderProps) {
+export function Header({ onSidebarToggle, logoutCountdownSeconds = 30 }: HeaderProps) {
     const navigate = useNavigate()
     const { theme, setTheme, fontScale, increaseFontScale, decreaseFontScale } = useThemeStore()
     const { signOut, user, employee } = useAuthStore()
     const [showLogoutDialog, setShowLogoutDialog] = useState(false)
-    const [countdown, setCountdown] = useState(LOGOUT_COUNTDOWN)
+    const [countdown, setCountdown] = useState(logoutCountdownSeconds)
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
     const handleSignOut = useCallback(async () => {
@@ -64,7 +63,7 @@ export function Header({ onSidebarToggle }: HeaderProps) {
     useEffect(() => {
         if (!showLogoutDialog) return
 
-        setCountdown(LOGOUT_COUNTDOWN)
+        setCountdown(logoutCountdownSeconds)
         timerRef.current = setInterval(() => {
             setCountdown(prev => {
                 if (prev <= 1) {

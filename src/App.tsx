@@ -28,7 +28,7 @@ import AdsPowerLinkPage from '@/pages/ads/AdsPowerLinkPage'
 import ContactsDirectPage from '@/pages/ContactsDirectPage'
 import ConsultantInquiriesPage from '@/pages/ConsultantInquiriesPage'
 import RecruitInquiriesPage from '@/pages/RecruitInquiriesPage'
-import MenuSettingsPage from '@/pages/MenuSettingsPage'
+import AppSettingsPage from '@/pages/AppSettingsPage'
 import RankDashboardPage from '@/pages/rank/RankDashboardPage'
 import RankKeywordsPage from '@/pages/rank/RankKeywordsPage'
 import RankUrlTrackingPage from '@/pages/rank/RankUrlTrackingPage'
@@ -126,7 +126,8 @@ function AppContent() {
           <Route index element={<Navigate to="organizations" replace />} />
           <Route path="organizations" element={<OrganizationsPage />} />
           <Route path="labels" element={<LabelsPage />} />
-          <Route path="menus" element={<MenuSettingsPage />} />
+          <Route path="app-settings" element={<AppSettingsPage />} />
+          <Route path="menus" element={<Navigate to="/settings/app-settings" replace />} />
           <Route path="menu-permissions" element={<MenuPermissionsPage />} />
           <Route path="board-categories" element={<BoardCategoriesPage />} />
           <Route path="employees" element={<EmployeesPage />} />

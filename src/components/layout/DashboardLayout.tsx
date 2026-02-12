@@ -6,13 +6,24 @@ import { Breadcrumb } from './Breadcrumb'
 import { cn } from '@/lib/utils'
 import { useSessionTimeout } from '@/hooks/useSessionTimeout'
 import { useVersionCheck } from '@/hooks/useVersionCheck'
+import { useAppConfig } from '@/hooks/useAppConfig'
+import { useThemeStore } from '@/stores/themeStore'
 
 // 서브메뉴가 있는 경로 prefix 목록
 const SUBMENU_PREFIXES = ['/settings', '/ads']
 
 export function DashboardLayout() {
-    useSessionTimeout()
+    const { sessionTimeoutMinutes, logoutCountdownSeconds, defaultFontScale } = useAppConfig()
+    useSessionTimeout(sessionTimeoutMinutes)
     useVersionCheck()
+
+    // 신규 사용자 폰트 기본값 적용
+    const { fontScaleCustomized, setFontScale } = useThemeStore()
+    useEffect(() => {
+        if (!fontScaleCustomized && defaultFontScale) {
+            setFontScale(defaultFontScale)
+        }
+    }, [fontScaleCustomized, defaultFontScale, setFontScale])
     const location = useLocation()
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -102,7 +113,7 @@ export function DashboardLayout() {
                 'min-h-screen flex flex-col transition-all duration-300',
                 sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
             )}>
-                <Header onSidebarToggle={toggleSidebar} />
+                <Header onSidebarToggle={toggleSidebar} logoutCountdownSeconds={logoutCountdownSeconds} />
 
                 {/* 모바일 브레드크럼 */}
                 <div className="lg:hidden px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
