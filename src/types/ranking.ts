@@ -41,6 +41,8 @@ export interface TrackedUrl {
   latestRank?: number | null;
   latestSection?: string | null;
   latestSectionRank?: number | null;
+  latestIsExposed?: boolean | null;
+  latestSectionExists?: boolean | null;
   lastChecked?: string | null;
 }
 
@@ -50,6 +52,8 @@ export interface UrlRankRecord {
   rankPosition: number | null;
   sectionName: string | null;
   sectionRank: number | null;
+  isExposed: boolean;
+  sectionExists: boolean;
   checkedAt: string;
 }
 

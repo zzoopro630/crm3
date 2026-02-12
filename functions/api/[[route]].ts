@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./database.types";
-import { checkNaverUrlExposure, checkNaverWebRank } from "../lib/naver-crawler";
+import { checkUrlTracking, checkNaverWebRank } from "../lib/naver-crawler";
 
 // 환경 변수 타입 정의
 interface Env {
@@ -3022,7 +3022,7 @@ app.get("/api/rank/url-tracking", async (c) => {
   for (const t of tracked || []) {
     const { data: latestRanking } = await seo
       .from("url_rankings")
-      .select("rank_position, section_name, section_rank, checked_at")
+      .select("rank_position, section_name, section_rank, is_exposed, section_exists, checked_at")
       .eq("tracked_url_id", t.id)
       .order("checked_at", { ascending: false })
       .limit(1)
@@ -3033,6 +3033,8 @@ app.get("/api/rank/url-tracking", async (c) => {
       latestRank: latestRanking?.rank_position || null,
       latestSection: latestRanking?.section_name || null,
       latestSectionRank: latestRanking?.section_rank || null,
+      latestIsExposed: latestRanking?.is_exposed ?? null,
+      latestSectionExists: latestRanking?.section_exists ?? null,
       lastChecked: latestRanking?.checked_at || null,
     });
   }
@@ -3102,27 +3104,32 @@ app.post("/api/rank/url-tracking/check", async (c) => {
     }
 
     try {
-      const crawlResult = await checkNaverUrlExposure(tracked.keyword, tracked.target_url);
-
-      const rankPosition = crawlResult?.overallRank || null;
+      const crawlResult = await checkUrlTracking(
+        tracked.keyword,
+        tracked.target_url,
+        tracked.section || undefined
+      );
 
       await seo
         .from("url_rankings")
         .insert({
           tracked_url_id: id,
-          rank_position: rankPosition,
-          section_name: crawlResult?.sectionName || null,
-          section_rank: crawlResult?.sectionRank || null,
+          rank_position: crawlResult.overallRank,
+          section_name: crawlResult.foundInSection || null,
+          section_rank: crawlResult.sectionRank,
+          is_exposed: crawlResult.isExposed,
+          section_exists: crawlResult.sectionExists,
         });
 
       results.push({
         trackedUrlId: id,
         keyword: tracked.keyword,
         targetUrl: tracked.target_url,
-        rankPosition,
-        sectionName: crawlResult?.sectionName || null,
-        sectionRank: crawlResult?.sectionRank || null,
-        found: crawlResult?.found || false,
+        isExposed: crawlResult.isExposed,
+        sectionExists: crawlResult.sectionExists,
+        sectionRank: crawlResult.sectionRank,
+        overallRank: crawlResult.overallRank,
+        foundInSection: crawlResult.foundInSection,
       });
     } catch (err) {
       results.push({ trackedUrlId: id, error: String(err) });
