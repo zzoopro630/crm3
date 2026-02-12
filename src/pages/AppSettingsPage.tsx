@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAppSettings, useUpdateSettings } from '@/hooks/useAppSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
 import {
+  Search,
   LayoutDashboard,
   Users,
   Trash2,
@@ -14,6 +14,20 @@ import {
   BarChart3,
   Settings,
   Headphones,
+  ShoppingBag,
+  ClipboardList,
+  Zap,
+  FileText,
+  TrendingUp,
+  Link2,
+  History,
+  Building2,
+  Tag,
+  ShieldCheck,
+  UserCog,
+  Clock,
+  Cog,
+  Minus,
 } from 'lucide-react';
 
 // ── 앱 설정 항목 정의 ──
@@ -87,6 +101,7 @@ interface MenuEntry {
   href: string;
   defaultTitle: string;
   icon: React.ComponentType<{ className?: string }>;
+  isSub?: boolean; // 하위 메뉴 여부 (들여쓰기 표시용)
 }
 
 const menuEntries: MenuEntry[] = [
@@ -98,8 +113,30 @@ const menuEntries: MenuEntry[] = [
   { href: '/recruit-inquiries', defaultTitle: '입사문의', icon: UserPlus },
   { href: '/team', defaultTitle: '팀 관리', icon: UsersRound },
   { href: '/contacts-direct', defaultTitle: '연락처', icon: BookUser },
+  // 신청/주문
+  { href: '/orders', defaultTitle: '신청/주문', icon: ShoppingBag },
+  { href: '/orders/lead', defaultTitle: '보험 리드', icon: ShoppingBag, isSub: true },
+  { href: '/orders/lead/admin', defaultTitle: '주문 관리', icon: ClipboardList, isSub: true },
+  // 광고 분석
   { href: '/ads', defaultTitle: '광고 분석', icon: BarChart3 },
+  { href: '/ads/ndata', defaultTitle: 'N-DATA', icon: BarChart3, isSub: true },
+  { href: '/ads/powerlink', defaultTitle: '파워링크', icon: Zap, isSub: true },
+  { href: '/ads/report', defaultTitle: '보고서', icon: FileText, isSub: true },
+  { href: '/ads/weekly', defaultTitle: '주간데이터', icon: TrendingUp, isSub: true },
+  { href: '/ads/rank-dashboard', defaultTitle: '순위 대시보드', icon: LayoutDashboard, isSub: true },
+  { href: '/ads/rank-keywords', defaultTitle: '사이트/키워드', icon: Search, isSub: true },
+  { href: '/ads/rank-urls', defaultTitle: 'URL 추적', icon: Link2, isSub: true },
+  { href: '/ads/rank-history', defaultTitle: '순위 기록', icon: History, isSub: true },
+  // 설정
   { href: '/settings', defaultTitle: '설정', icon: Settings },
+  { href: '/settings/organizations', defaultTitle: '조직 관리', icon: Building2, isSub: true },
+  { href: '/settings/labels', defaultTitle: '라벨 관리', icon: Tag, isSub: true },
+  { href: '/settings/menu-permissions', defaultTitle: '메뉴 권한', icon: ShieldCheck, isSub: true },
+  { href: '/settings/board-categories', defaultTitle: '게시판 관리', icon: ClipboardList, isSub: true },
+  { href: '/settings/pages', defaultTitle: '페이지 관리', icon: FileText, isSub: true },
+  { href: '/settings/employees', defaultTitle: '사원 관리', icon: UserCog, isSub: true },
+  { href: '/settings/approvals', defaultTitle: '승인 대기', icon: Clock, isSub: true },
+  { href: '/settings/app-settings', defaultTitle: '앱 설정', icon: Cog, isSub: true },
 ];
 
 // ── 검색 매칭 ──
@@ -275,10 +312,16 @@ export default function AppSettingsPage() {
           </p>
           <div className="space-y-2">
             {menuEntries.map((entry) => (
-              <div key={entry.href} className="flex items-center gap-3">
-                <div className="flex items-center gap-2 w-32 shrink-0">
-                  <entry.icon className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{entry.defaultTitle}</span>
+              <div key={entry.href} className={`flex items-center gap-3 ${entry.isSub ? 'ml-6' : ''}`}>
+                <div className="flex items-center gap-2 w-36 shrink-0">
+                  {entry.isSub ? (
+                    <Minus className="h-3 w-3 text-muted-foreground/50" />
+                  ) : (
+                    <entry.icon className="h-4 w-4 text-muted-foreground" />
+                  )}
+                  <span className={`text-sm ${entry.isSub ? 'text-muted-foreground' : ''}`}>
+                    {entry.defaultTitle}
+                  </span>
                 </div>
                 <Input
                   value={labels[entry.href] || ''}
