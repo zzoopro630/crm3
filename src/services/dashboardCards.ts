@@ -45,3 +45,10 @@ export async function updateDashboardCard(
 export async function deleteDashboardCard(id: number): Promise<void> {
   await apiRequest(`/api/dashboard-cards/${id}`, { method: "DELETE" });
 }
+
+export async function reorderDashboardCards(ids: number[]): Promise<void> {
+  await apiRequest("/api/dashboard-cards/reorder", {
+    method: "PUT",
+    body: JSON.stringify({ ids }),
+  });
+}
