@@ -2,13 +2,13 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./database.types";
+import { checkNaverUrlExposure, checkNaverWebRank } from "../lib/naver-crawler";
 
 // 환경 변수 타입 정의
 interface Env {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
   JUSO_API_KEY: string;
-  RANKTRACKER_API_URL: string;
   SUPER_ADMIN_EMAIL?: string;
   ENVIRONMENT?: string;
 }
@@ -2943,7 +2943,7 @@ app.get("/api/rank/rankings/dashboard/summary", async (c) => {
   });
 });
 
-// 순위 체크 (Railway 크롤링 서버로 프록시)
+// 순위 체크 (로컬 cheerio 크롤러)
 app.post("/api/rank/rankings/check", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const seo = (supabase as any).schema("seo");
@@ -2951,11 +2951,6 @@ app.post("/api/rank/rankings/check", async (c) => {
 
   if (!keywordIds || !Array.isArray(keywordIds) || keywordIds.length === 0) {
     return c.json({ error: "키워드 ID 배열이 필요합니다." }, 400);
-  }
-
-  const crawlerUrl = c.env.RANKTRACKER_API_URL;
-  if (!crawlerUrl) {
-    return c.json({ error: "크롤링 서버 URL이 설정되지 않았습니다." }, 500);
   }
 
   const results = [];
@@ -2983,15 +2978,7 @@ app.post("/api/rank/rankings/check", async (c) => {
     }
 
     try {
-      const crawlRes = await fetch(`${crawlerUrl}/api/crawl/keyword-rank`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keyword: kw.keyword, siteUrl: site.url }),
-      });
-
-      if (!crawlRes.ok) throw new Error("크롤링 서버 응답 오류");
-
-      const crawlResult = await crawlRes.json() as { rank?: number | null; url?: string | null; title?: string | null };
+      const crawlResult = await checkNaverWebRank(kw.keyword, site.url);
 
       await seo
         .from("rankings")
@@ -3101,11 +3088,6 @@ app.post("/api/rank/url-tracking/check", async (c) => {
     return c.json({ error: "추적 URL ID 배열이 필요합니다." }, 400);
   }
 
-  const crawlerUrl = c.env.RANKTRACKER_API_URL;
-  if (!crawlerUrl) {
-    return c.json({ error: "크롤링 서버 URL이 설정되지 않았습니다." }, 500);
-  }
-
   const results = [];
   for (const id of trackedUrlIds) {
     const { data: tracked } = await seo
@@ -3120,25 +3102,9 @@ app.post("/api/rank/url-tracking/check", async (c) => {
     }
 
     try {
-      const crawlRes = await fetch(`${crawlerUrl}/api/crawl/url-exposure`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keyword: tracked.keyword, targetUrl: tracked.target_url }),
-      });
+      const crawlResult = await checkNaverUrlExposure(tracked.keyword, tracked.target_url);
 
-      if (!crawlRes.ok) throw new Error("크롤링 서버 응답 오류");
-
-      const crawlResult = await crawlRes.json() as {
-        found?: boolean;
-        sectionName?: string | null;
-        sectionRank?: number | null;
-        overallRank?: number | null;
-      };
-
-      // section 필터: 지정된 영역이 있으면 해당 영역 순위 사용
-      const rankPosition = tracked.section && crawlResult?.sectionName === tracked.section
-        ? crawlResult?.overallRank || null
-        : crawlResult?.overallRank || null;
+      const rankPosition = crawlResult?.overallRank || null;
 
       await seo
         .from("url_rankings")
