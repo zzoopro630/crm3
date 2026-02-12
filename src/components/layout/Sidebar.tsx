@@ -36,12 +36,14 @@ import {
   HelpCircle,
   BookOpen,
   Newspaper,
+  ShoppingBag,
   type LucideIcon,
 } from "lucide-react";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useMenuLabels } from "@/hooks/useAppSettings";
 import { useMenuRoles } from "@/hooks/useMenuRole";
 import { useBoardCategories } from "@/hooks/useBoardCategories";
+import { usePages } from "@/hooks/usePages";
 import type { MenuRoleMap } from "@/types/menuRole";
 
 // Lucide 아이콘 룩업 맵
@@ -63,6 +65,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Tag,
   Settings,
   Search,
+  ShoppingBag,
 };
 
 interface NavItem {
@@ -117,6 +120,21 @@ const staticNavSections: NavSection[] = [
       },
     ],
   },
+  // 신청/주문
+  {
+    items: [
+      {
+        title: "신청/주문",
+        href: "/orders",
+        icon: ShoppingBag,
+        isSubmenu: true,
+        submenuItems: [
+          { title: "보험 리드", href: "/orders/lead", icon: ShoppingBag },
+          { title: "주문 관리", href: "/orders/lead/admin", icon: ClipboardList },
+        ],
+      },
+    ],
+  },
   // 광고 분석
   {
     items: [
@@ -151,6 +169,7 @@ const staticNavSections: NavSection[] = [
           { title: "라벨 관리", href: "/settings/labels", icon: Tag },
           { title: "메뉴 권한", href: "/settings/menu-permissions", icon: ShieldCheck },
           { title: "게시판 관리", href: "/settings/board-categories", icon: ClipboardList },
+          { title: "페이지 관리", href: "/settings/pages", icon: FileText },
           { title: "사원 관리", href: "/settings/employees", icon: UserCog },
           { title: "승인 대기", href: "/settings/approvals", icon: Clock },
           { title: "앱 설정", href: "/settings/app-settings", icon: Cog },
@@ -185,8 +204,9 @@ export function Sidebar({
   const menuLabels = useMenuLabels();
   const { data: menuRoles } = useMenuRoles();
   const { data: boardCategories = [] } = useBoardCategories();
+  const { data: publishedPages = [] } = usePages();
 
-  // 동적 게시판 섹션 생성
+  // 동적 게시판 + 페이지 섹션 생성
   const navSections = useMemo<NavSection[]>(() => {
     const boardItems: NavItem[] = boardCategories.map((cat) => ({
       title: cat.name,
@@ -199,13 +219,29 @@ export function Sidebar({
       items: boardItems,
     };
 
-    // staticNavSections의 첫 번째(대시보드) 뒤에 게시판 섹션 삽입
+    const pageItems: NavItem[] = publishedPages.map((p) => ({
+      title: p.title,
+      href: `/page/${p.slug}`,
+      icon: ICON_MAP[p.icon || ""] || FileText,
+    }));
+
+    const pageSection: NavSection = {
+      title: "페이지",
+      items: pageItems,
+    };
+
+    // staticNavSections의 첫 번째(대시보드) 뒤에 게시판, 페이지 섹션 삽입
     const result = [...staticNavSections];
+    let insertIdx = 1;
     if (boardItems.length > 0) {
-      result.splice(1, 0, boardSection);
+      result.splice(insertIdx, 0, boardSection);
+      insertIdx++;
+    }
+    if (pageItems.length > 0) {
+      result.splice(insertIdx, 0, pageSection);
     }
     return result;
-  }, [boardCategories]);
+  }, [boardCategories, publishedPages]);
 
   const navItems: NavItem[] = useMemo(
     () => navSections.flatMap((section) => section.items),

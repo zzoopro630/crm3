@@ -379,6 +379,25 @@ export type NewSeoTrackedUrl = typeof seoTrackedUrls.$inferInsert;
 export type SeoUrlRanking = typeof seoUrlRankings.$inferSelect;
 export type NewSeoUrlRanking = typeof seoUrlRankings.$inferInsert;
 
+// ============ Pages (CMS 페이지) ============
+export const pages = pgTable("pages", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  content: text("content").notNull().default(""),
+  icon: text("icon"),
+  sortOrder: integer("sort_order").default(0),
+  isPublished: boolean("is_published").default(false),
+  authorId: uuid("author_id")
+    .notNull()
+    .references(() => employees.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type PageRecord = typeof pages.$inferSelect;
+export type NewPageRecord = typeof pages.$inferInsert;
+
 // ============ Employee Menu Overrides Table ============
 export const employeeMenuOverrides = pgTable("employee_menu_overrides", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -411,6 +430,70 @@ export const dashboardCards = pgTable("dashboard_cards", {
 
 export type DashboardCard = typeof dashboardCards.$inferSelect;
 export type NewDashboardCard = typeof dashboardCards.$inferInsert;
+
+// ============ Lead Products (보험 리드 상품) ============
+export const leadProducts = pgTable("lead_products", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  dbType: text("db_type").notNull(), // 상품 카테고리 (예: "실손", "종신" 등)
+  name: text("name").notNull(),
+  price: integer("price").notNull(), // 단가 (원)
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type LeadProduct = typeof leadProducts.$inferSelect;
+export type NewLeadProduct = typeof leadProducts.$inferInsert;
+
+// ============ Lead Orders (보험 리드 주문) ============
+export const orderStatusEnum = pgEnum("order_status_enum", [
+  "pending",
+  "confirmed",
+  "completed",
+  "cancelled",
+]);
+
+export const leadOrders = pgTable("lead_orders", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  orderedBy: uuid("ordered_by")
+    .notNull()
+    .references(() => employees.id, { onDelete: "restrict" }),
+  name: text("name").notNull(),
+  affiliation: text("affiliation"), // 소속
+  position: text("position"), // 직급
+  phone: text("phone"),
+  email: text("email"),
+  totalAmount: integer("total_amount").notNull().default(0),
+  status: orderStatusEnum("status").notNull().default("pending"),
+  cancelledAt: timestamp("cancelled_at"),
+  cancelledBy: uuid("cancelled_by").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type LeadOrder = typeof leadOrders.$inferSelect;
+export type NewLeadOrder = typeof leadOrders.$inferInsert;
+
+// ============ Lead Order Items (주문 상세) ============
+export const leadOrderItems = pgTable("lead_order_items", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  orderId: integer("order_id")
+    .notNull()
+    .references(() => leadOrders.id, { onDelete: "cascade" }),
+  productId: integer("product_id")
+    .notNull()
+    .references(() => leadProducts.id, { onDelete: "restrict" }),
+  region: text("region"), // 지역
+  quantity: integer("quantity").notNull().default(1),
+  unitPrice: integer("unit_price").notNull(), // 주문 시점 단가 스냅샷
+  totalPrice: integer("total_price").notNull(), // quantity * unitPrice
+});
+
+export type LeadOrderItem = typeof leadOrderItems.$inferSelect;
+export type NewLeadOrderItem = typeof leadOrderItems.$inferInsert;
+
+export type OrderStatus = (typeof orderStatusEnum.enumValues)[number];
 
 // ============ ENUM Value Types ============
 export type SecurityLevel = (typeof securityLevelEnum.enumValues)[number];
