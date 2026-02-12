@@ -84,7 +84,7 @@ export function DashboardLayout() {
     }
 
     return (
-        <div className="min-h-screen bg-zinc-100 dark:bg-zinc-950">
+        <div className="min-h-screen bg-zinc-100 dark:bg-background">
             {/* 왼쪽 가장자리 호버 존: 마우스 환경 + 소형 화면 + 사이드바 닫힘 */}
             {showEdgeTrigger && (
                 <div
@@ -116,7 +116,7 @@ export function DashboardLayout() {
                 <Header onSidebarToggle={toggleSidebar} logoutCountdownSeconds={logoutCountdownSeconds} />
 
                 {/* 모바일 브레드크럼 */}
-                <div className="lg:hidden px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                <div className="lg:hidden px-4 py-2 border-b border-zinc-200 dark:border-border bg-white dark:bg-card">
                     <Breadcrumb />
                 </div>
 

@@ -103,7 +103,7 @@ export function Header({ onSidebarToggle, logoutCountdownSeconds = 30 }: HeaderP
 
     return (
         <>
-            <header className="sticky top-0 z-30 h-16 border-b border-zinc-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-zinc-800 dark:bg-zinc-900/95 dark:supports-[backdrop-filter]:bg-zinc-900/60">
+            <header className="sticky top-0 z-30 h-16 border-b border-zinc-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-border dark:bg-card/95 dark:supports-[backdrop-filter]:bg-card/60">
                 <div className="flex h-full items-center justify-between px-4 gap-4">
                     <div className="flex items-center gap-4 shrink-0">
                         <SidebarTrigger onToggle={onSidebarToggle} />
@@ -121,21 +121,21 @@ export function Header({ onSidebarToggle, logoutCountdownSeconds = 30 }: HeaderP
 
                     <div className="flex items-center gap-2 shrink-0">
                         {/* 텍스트 배율 조절 */}
-                        <div className="hidden md:flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-lg overflow-hidden">
+                        <div className="hidden md:flex items-center bg-zinc-100 dark:bg-secondary rounded-lg overflow-hidden">
                             <button
                                 onClick={decreaseFontScale}
                                 disabled={fontScale <= 80}
-                                className="px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 transition-colors"
+                                className="px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-zinc-200 dark:hover:bg-accent disabled:opacity-30 transition-colors"
                             >
                                 가
                             </button>
-                            <span className="px-2 py-1.5 text-xs font-medium text-foreground tabular-nums min-w-[3rem] text-center border-x border-zinc-200 dark:border-zinc-700">
+                            <span className="px-2 py-1.5 text-xs font-medium text-foreground tabular-nums min-w-[3rem] text-center border-x border-zinc-200 dark:border-border">
                                 {fontScale}%
                             </span>
                             <button
                                 onClick={increaseFontScale}
                                 disabled={fontScale >= 150}
-                                className="px-2.5 py-1.5 text-base font-medium text-muted-foreground hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-30 transition-colors"
+                                className="px-2.5 py-1.5 text-base font-medium text-muted-foreground hover:bg-zinc-200 dark:hover:bg-accent disabled:opacity-30 transition-colors"
                             >
                                 가
                             </button>
@@ -151,12 +151,12 @@ export function Header({ onSidebarToggle, logoutCountdownSeconds = 30 }: HeaderP
                             <Bell className="h-5 w-5" />
                         </Button>
 
-                        <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800 mx-2 hidden md:block" />
+                        <div className="h-6 w-px bg-zinc-200 dark:bg-border mx-2 hidden md:block" />
 
                         {/* 사용자 메뉴 */}
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="relative h-10 w-auto px-2 gap-2 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                                <Button variant="ghost" className="relative h-10 w-auto px-2 gap-2 rounded-md hover:bg-zinc-100 dark:hover:bg-secondary">
                                     <CircleUser className="h-8 w-8 text-muted-foreground stroke-1" />
                                     <div className="flex flex-col items-start gap-0.5">
                                         <span className="text-sm font-medium leading-none text-foreground">{employee?.fullName || '사용자'}</span>
