@@ -30,23 +30,24 @@ export const useThemeStore = create<ThemeState>()(
     }),
     {
       name: "crm-theme",
-      version: 2,
+      version: 3,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
-        if (version === 0) {
-          // v0→v2: base 14px 시절 fontScale → base 15.4px 보정
+        if (version === 0 || version === 1) {
+          // v0/v1→v3: base 14px → 15.4px 변경 보정, 10 단위로 정규화
           const oldScale = (state.fontScale as number) || 100;
+          const converted = Math.round(oldScale * 14 / 15.4);
           return {
             theme: state.theme || "light",
-            fontScale: Math.round(oldScale * 14 / 15.4),
+            fontScale: Math.round(converted / 10) * 10,
           };
         }
-        if (version === 1) {
-          // v1→v2: base 14→15.4 변경으로 기존 비율 보정
-          const oldScale = (state.fontScale as number) || 100;
+        if (version === 2) {
+          // v2→v3: 기존 마이그레이션에서 10단위 정규화 누락된 값 보정
+          const scale = (state.fontScale as number) || 100;
           return {
             theme: state.theme || "light",
-            fontScale: Math.round(oldScale * 14 / 15.4),
+            fontScale: Math.round(scale / 10) * 10,
           };
         }
         return persisted as ThemeState;
