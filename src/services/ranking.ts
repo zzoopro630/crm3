@@ -78,6 +78,13 @@ export async function createTrackedUrl(input: CreateTrackedUrlInput): Promise<Tr
   });
 }
 
+export async function updateTrackedUrl(id: number, input: CreateTrackedUrlInput): Promise<TrackedUrl> {
+  return apiRequest<TrackedUrl>(`${BASE}/url-tracking/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+}
+
 export async function deleteTrackedUrl(id: number): Promise<void> {
   return apiRequest<void>(`${BASE}/url-tracking/${id}`, { method: 'DELETE' });
 }

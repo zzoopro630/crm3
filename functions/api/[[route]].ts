@@ -3080,6 +3080,29 @@ app.delete("/api/rank/url-tracking/:id", async (c) => {
   return c.json({ message: "삭제되었습니다." });
 });
 
+app.put("/api/rank/url-tracking/:id", async (c) => {
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const seo = (supabase as any).schema("seo");
+  const id = c.req.param("id");
+  const { keyword, targetUrl, section, memo } = await c.req.json();
+
+  const updateData: Record<string, unknown> = {};
+  if (keyword !== undefined) updateData.keyword = keyword;
+  if (targetUrl !== undefined) updateData.target_url = targetUrl;
+  if (section !== undefined) updateData.section = section || null;
+  if (memo !== undefined) updateData.memo = memo || null;
+
+  const { data, error } = await seo
+    .from("tracked_urls")
+    .update(updateData)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) return safeError(c, error);
+  return c.json(toCamelCase(data as Record<string, unknown>));
+});
+
 // URL 순위 체크 (Railway 크롤링 서버로 프록시)
 app.post("/api/rank/url-tracking/check", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
