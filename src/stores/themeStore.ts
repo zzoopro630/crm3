@@ -6,7 +6,9 @@ type Theme = "dark" | "light" | "system";
 interface ThemeState {
   theme: Theme;
   fontScale: number;
+  fontScaleCustomized: boolean;
   setTheme: (theme: Theme) => void;
+  setFontScale: (scale: number) => void;
   increaseFontScale: () => void;
   decreaseFontScale: () => void;
 }
@@ -16,14 +18,33 @@ export const useThemeStore = create<ThemeState>()(
     (set) => ({
       theme: "light",
       fontScale: 100,
+      fontScaleCustomized: false,
       setTheme: (theme) => set({ theme }),
+      setFontScale: (scale) => set({ fontScale: scale }),
       increaseFontScale: () =>
-        set((state) => ({ fontScale: Math.min(state.fontScale + 10, 150) })),
+        set((state) => ({
+          fontScale: Math.min(state.fontScale + 10, 150),
+          fontScaleCustomized: true,
+        })),
       decreaseFontScale: () =>
-        set((state) => ({ fontScale: Math.max(state.fontScale - 10, 80) })),
+        set((state) => ({
+          fontScale: Math.max(state.fontScale - 10, 80),
+          fontScaleCustomized: true,
+        })),
     }),
     {
       name: "crm-theme",
+      version: 1,
+      migrate: (persisted: unknown, version: number) => {
+        if (version === 0) {
+          const old = persisted as { theme: Theme; fontScale: number };
+          return {
+            ...old,
+            fontScaleCustomized: true, // 기존 사용자는 이미 커스터마이즈된 것으로 간주
+          };
+        }
+        return persisted as ThemeState;
+      },
     }
   )
 );

@@ -12,7 +12,7 @@ const ROUTE_TITLES: Record<string, string> = {
   "/settings": "설정",
   "/settings/organizations": "조직 관리",
   "/settings/labels": "라벨 관리",
-  "/settings/menus": "메뉴 관리",
+  "/settings/app-settings": "앱 설정",
   "/settings/employees": "사원 관리",
   "/settings/approvals": "승인 대기",
   "/settings/system": "시스템 설정",
