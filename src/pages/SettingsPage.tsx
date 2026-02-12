@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import { Building2, Tag, UserCog, Clock, Settings as SettingsIcon, ClipboardList, Cog, ShieldCheck } from 'lucide-react'
+import { Building2, Tag, UserCog, Clock, ClipboardList, Cog, ShieldCheck } from 'lucide-react'
 import { NavLink, Outlet, useLocation, Navigate } from 'react-router-dom'
 import { useMenuRoles } from '@/hooks/useMenuRole'
 
@@ -12,12 +12,11 @@ interface SettingsTab {
 const settingsTabs: SettingsTab[] = [
     { id: 'organizations', label: '조직 관리', icon: Building2 },
     { id: 'labels', label: '라벨 관리', icon: Tag },
-    { id: 'app-settings', label: '앱 설정', icon: Cog },
     { id: 'menu-permissions', label: '메뉴 권한', icon: ShieldCheck },
     { id: 'board-categories', label: '게시판 관리', icon: ClipboardList },
     { id: 'employees', label: '사원 관리', icon: UserCog },
     { id: 'approvals', label: '승인 대기', icon: Clock },
-    { id: 'system', label: '시스템 설정', icon: SettingsIcon },
+    { id: 'app-settings', label: '앱 설정', icon: Cog },
 ]
 
 export function SettingsPage() {
@@ -28,8 +27,6 @@ export function SettingsPage() {
     const visibleTabs = settingsTabs.filter((tab) => {
         if (!menuRoles) return true // 로딩 중에는 모두 표시
         const role = menuRoles[`/settings/${tab.id}`]
-        // system 탭은 role 맵에 없으면 모두 허용
-        if (tab.id === 'system') return role === undefined || role !== 'none'
         return role !== undefined && role !== 'none'
     })
 
@@ -46,15 +43,6 @@ export function SettingsPage() {
             }
             return <Navigate to="/" replace />
         }
-    }
-
-    // 탭이 1개(system)만 보이면 사이드바 없이 컨텐츠만 표시
-    if (menuRoles && visibleTabs.length === 1) {
-        return (
-            <div className="space-y-6">
-                <Outlet />
-            </div>
-        )
     }
 
     return (

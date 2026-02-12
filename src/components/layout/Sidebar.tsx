@@ -149,11 +149,11 @@ const staticNavSections: NavSection[] = [
         submenuItems: [
           { title: "조직 관리", href: "/settings/organizations", icon: Building2 },
           { title: "라벨 관리", href: "/settings/labels", icon: Tag },
-          { title: "앱 설정", href: "/settings/app-settings", icon: Cog },
           { title: "메뉴 권한", href: "/settings/menu-permissions", icon: ShieldCheck },
           { title: "게시판 관리", href: "/settings/board-categories", icon: ClipboardList },
           { title: "사원 관리", href: "/settings/employees", icon: UserCog },
           { title: "승인 대기", href: "/settings/approvals", icon: Clock },
+          { title: "앱 설정", href: "/settings/app-settings", icon: Cog },
         ],
       },
     ],

@@ -15,7 +15,7 @@ const ROUTE_TITLES: Record<string, string> = {
   "/settings/app-settings": "앱 설정",
   "/settings/employees": "사원 관리",
   "/settings/approvals": "승인 대기",
-  "/settings/system": "시스템 설정",
+  "/settings/profile": "내 계정",
   "/settings/board-categories": "게시판 관리",
   "/trash": "휴지통",
   "/contacts-direct": "연락처",

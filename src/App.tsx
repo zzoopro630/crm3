@@ -121,6 +121,9 @@ function AppContent() {
         <Route path="/rank" element={<Navigate to="/ads/rank-dashboard" replace />} />
         <Route path="/rank/*" element={<Navigate to="/ads/rank-dashboard" replace />} />
 
+        {/* 내 계정 (독립 라우트) */}
+        <Route path="/settings/profile" element={<SystemSettingsPage />} />
+
         {/* Settings nested routes */}
         <Route path="/settings" element={<SettingsPage />}>
           <Route index element={<Navigate to="organizations" replace />} />
@@ -132,7 +135,7 @@ function AppContent() {
           <Route path="board-categories" element={<BoardCategoriesPage />} />
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="approvals" element={<PendingApprovalsPage />} />
-          <Route path="system" element={<SystemSettingsPage />} />
+          <Route path="system" element={<Navigate to="/settings/profile" replace />} />
         </Route>
 
         {/* Legacy routes redirect */}
