@@ -7,23 +7,15 @@ import { cn } from '@/lib/utils'
 import { useSessionTimeout } from '@/hooks/useSessionTimeout'
 import { useVersionCheck } from '@/hooks/useVersionCheck'
 import { useAppConfig } from '@/hooks/useAppConfig'
-import { useThemeStore } from '@/stores/themeStore'
 
 // 서브메뉴가 있는 경로 prefix 목록
 const SUBMENU_PREFIXES = ['/settings', '/ads']
 
 export function DashboardLayout() {
-    const { sessionTimeoutMinutes, logoutCountdownSeconds, defaultFontScale } = useAppConfig()
+    const { sessionTimeoutMinutes, logoutCountdownSeconds } = useAppConfig()
     useSessionTimeout(sessionTimeoutMinutes)
     useVersionCheck()
 
-    // 신규 사용자 폰트 기본값 적용
-    const { fontScaleCustomized, setFontScale } = useThemeStore()
-    useEffect(() => {
-        if (!fontScaleCustomized && defaultFontScale) {
-            setFontScale(defaultFontScale)
-        }
-    }, [fontScaleCustomized, defaultFontScale, setFontScale])
     const location = useLocation()
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false)

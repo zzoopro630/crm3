@@ -34,6 +34,7 @@ import {
 import { SidebarTrigger } from './Sidebar'
 import { Breadcrumb } from './Breadcrumb'
 import { SECURITY_LEVELS } from '@/types/employee'
+import { useAppConfig } from '@/hooks/useAppConfig'
 
 interface HeaderProps {
     onSidebarToggle: () => void
@@ -43,6 +44,7 @@ interface HeaderProps {
 export function Header({ onSidebarToggle, logoutCountdownSeconds = 30 }: HeaderProps) {
     const navigate = useNavigate()
     const { theme, setTheme, fontScale, increaseFontScale, decreaseFontScale } = useThemeStore()
+    const { defaultFontSize } = useAppConfig()
     const { signOut, user, employee } = useAuthStore()
     const [showLogoutDialog, setShowLogoutDialog] = useState(false)
     const [countdown, setCountdown] = useState(logoutCountdownSeconds)
@@ -90,10 +92,11 @@ export function Header({ onSidebarToggle, logoutCountdownSeconds = 30 }: HeaderP
         if (timerRef.current) clearInterval(timerRef.current)
     }
 
-    // fontScale 적용 (기본 15.4px 기준 = 기존 14px * 110%)
+    // 폰트 크기 적용: 관리자 기본값(px) × 사용자 배율(%)
+    const computedFontSize = Math.round(defaultFontSize * fontScale / 100)
     useEffect(() => {
-        document.documentElement.style.fontSize = `${15.4 * fontScale / 100}px`
-    }, [fontScale])
+        document.documentElement.style.fontSize = `${computedFontSize}px`
+    }, [computedFontSize])
 
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 

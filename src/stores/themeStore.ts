@@ -5,8 +5,7 @@ type Theme = "dark" | "light" | "system";
 
 interface ThemeState {
   theme: Theme;
-  fontScale: number;
-  fontScaleCustomized: boolean;
+  fontScale: number;  // % 단위 (기본 100)
   setTheme: (theme: Theme) => void;
   setFontScale: (scale: number) => void;
   increaseFontScale: () => void;
@@ -18,18 +17,15 @@ export const useThemeStore = create<ThemeState>()(
     (set) => ({
       theme: "light",
       fontScale: 100,
-      fontScaleCustomized: false,
       setTheme: (theme) => set({ theme }),
       setFontScale: (scale) => set({ fontScale: scale }),
       increaseFontScale: () =>
         set((state) => ({
           fontScale: Math.min(state.fontScale + 10, 150),
-          fontScaleCustomized: true,
         })),
       decreaseFontScale: () =>
         set((state) => ({
           fontScale: Math.max(state.fontScale - 10, 80),
-          fontScaleCustomized: true,
         })),
     }),
     {
@@ -38,19 +34,18 @@ export const useThemeStore = create<ThemeState>()(
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version === 0) {
-          // v0→v2: fontScaleCustomized 추가 + 기준 px 변경 보정
+          // v0→v2: base 14px 시절 fontScale → base 15.4px 보정
           const oldScale = (state.fontScale as number) || 100;
           return {
-            ...state,
-            fontScaleCustomized: true,
+            theme: state.theme || "light",
             fontScale: Math.round(oldScale * 14 / 15.4),
           };
         }
         if (version === 1) {
-          // v1→v2: 기준 px 14→15.4 변경 보정 (동일 렌더 크기 유지)
+          // v1→v2: base 14→15.4 변경으로 기존 비율 보정
           const oldScale = (state.fontScale as number) || 100;
           return {
-            ...state,
+            theme: state.theme || "light",
             fontScale: Math.round(oldScale * 14 / 15.4),
           };
         }
@@ -63,7 +58,6 @@ export const useThemeStore = create<ThemeState>()(
 // Apply theme to document
 export function applyTheme(theme: Theme) {
   const root = window.document.documentElement;
-  // 모든 테마 클래스 제거
   root.classList.remove("light", "dark");
 
   if (theme === "system") {

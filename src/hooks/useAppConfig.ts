@@ -4,7 +4,7 @@ import { useAppSettings } from '@/hooks/useAppSettings';
 export interface AppConfig {
   sessionTimeoutMinutes: number;
   logoutCountdownSeconds: number;
-  defaultFontScale: number;
+  defaultFontSize: number; // px
 }
 
 export function useAppConfig(): AppConfig {
@@ -17,7 +17,7 @@ export function useAppConfig(): AppConfig {
     return {
       sessionTimeoutMinutes: Number(map['app:session_timeout_minutes']) || 60,
       logoutCountdownSeconds: Number(map['app:logout_countdown_seconds']) || 30,
-      defaultFontScale: Number(map['app:default_font_scale']) || 100,
+      defaultFontSize: Number(map['app:default_font_size']) || 15,
     };
   }, [settings]);
 }
