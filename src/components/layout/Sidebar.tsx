@@ -36,6 +36,7 @@ import {
   HelpCircle,
   BookOpen,
   Newspaper,
+  ShoppingBag,
   type LucideIcon,
 } from "lucide-react";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -64,6 +65,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Tag,
   Settings,
   Search,
+  ShoppingBag,
 };
 
 interface NavItem {
@@ -115,6 +117,21 @@ const staticNavSections: NavSection[] = [
         href: "/contacts-direct",
         icon: BookUser,
         allowedOrgs: ["직할"],
+      },
+    ],
+  },
+  // 신청/주문
+  {
+    items: [
+      {
+        title: "신청/주문",
+        href: "/orders",
+        icon: ShoppingBag,
+        isSubmenu: true,
+        submenuItems: [
+          { title: "보험 리드", href: "/orders/lead", icon: ShoppingBag },
+          { title: "주문 관리", href: "/orders/lead/admin", icon: ClipboardList },
+        ],
       },
     ],
   },

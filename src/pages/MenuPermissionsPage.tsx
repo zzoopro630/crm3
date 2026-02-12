@@ -83,6 +83,13 @@ const staticMenuSections: MenuSection[] = [
     ],
   },
   {
+    title: '신청/주문',
+    entries: [
+      { href: '/orders/lead', defaultTitle: '보험 리드', icon: FileText },
+      { href: '/orders/lead/admin', defaultTitle: '주문 관리', icon: ClipboardList },
+    ],
+  },
+  {
     title: '광고 분석',
     entries: [
       { href: '/ads/ndata', defaultTitle: 'N-DATA', icon: BarChart3 },
@@ -134,6 +141,8 @@ const STATIC_DEFAULT_ROLES: Record<string, LevelRoleMap> = {
   "/settings/menu-permissions": { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/board-categories": { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/pages":            { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
+  "/orders/lead":               { F1:"editor",F2:"editor",F3:"editor",F4:"editor",F5:"editor",M1:"editor",M2:"editor",M3:"editor" },
+  "/orders/lead/admin":         { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/employees":        { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/approvals":        { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
 };

@@ -38,6 +38,8 @@ import PostDetailPage from '@/pages/posts/PostDetailPage'
 import BoardCategoriesPage from '@/pages/BoardCategoriesPage'
 import PageViewPage from '@/pages/pages/PageViewPage'
 import PageManagementPage from '@/pages/pages/PageManagementPage'
+import LeadOrderPage from '@/pages/orders/LeadOrderPage'
+import LeadOrderAdminPage from '@/pages/orders/LeadOrderAdminPage'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -108,6 +110,10 @@ function AppContent() {
 
         {/* CMS 페이지 */}
         <Route path="/page/:slug" element={<PageViewPage />} />
+
+        {/* 주문 */}
+        <Route path="/orders/lead" element={<LeadOrderPage />} />
+        <Route path="/orders/lead/admin" element={<LeadOrderAdminPage />} />
 
         {/* Ads nested routes */}
         <Route path="/ads" element={<AdsPage />}>
