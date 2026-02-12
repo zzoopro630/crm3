@@ -43,6 +43,7 @@
     "drizzle-orm": "^1.0.0-beta.12-a5629fb",
     "embla-carousel-react": "^8.6.0",
     "exceljs": "^4.4.0",
+    "framer-motion": "^12.34.0",
     "googleapis": "^170.1.0",
     "hono": "^4.11.3",
     "kr-format": "^1.0.1",

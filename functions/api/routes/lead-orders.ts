@@ -7,12 +7,14 @@ import { safeError, parsePagination } from "../middleware/helpers";
 
 const app = new Hono<{ Bindings: Env }>();
 
-// 이메일 발송 (best-effort)
+// 이메일 발송 (best-effort, 관리자+신청자 이중 발송)
 async function sendOrderEmail(c: any, order: any, items: any[], products: any[]) {
   const resendKey = c.env.RESEND_API_KEY;
-  if (!resendKey) return; // 환경변수 미설정 시 스킵
+  if (!resendKey) return;
 
+  const adminEmail = c.env.ADMIN_NOTIFICATION_EMAIL || "admin@thefirst.co.kr";
   const productMap = new Map(products.map((p: any) => [p.id, p]));
+  const formattedDate = new Date(order.created_at).toISOString().split("T")[0];
 
   const itemRows = items.map((item: any) => {
     const product = productMap.get(item.product_id);
@@ -25,15 +27,7 @@ async function sendOrderEmail(c: any, order: any, items: any[], products: any[])
     </tr>`;
   }).join("");
 
-  const html = `
-    <h2>보험 리드 주문이 접수되었습니다</h2>
-    <table style="border-collapse:collapse;margin-bottom:16px">
-      <tr><td style="padding:4px 12px 4px 0;font-weight:bold">신청자</td><td>${order.name}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0;font-weight:bold">소속</td><td>${order.affiliation || "-"}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0;font-weight:bold">직급</td><td>${order.position || "-"}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0;font-weight:bold">연락처</td><td>${order.phone || "-"}</td></tr>
-      <tr><td style="padding:4px 12px 4px 0;font-weight:bold">이메일</td><td>${order.email || "-"}</td></tr>
-    </table>
+  const orderTable = `
     <table style="border-collapse:collapse;width:100%">
       <thead>
         <tr style="background:#f5f5f5">
@@ -51,12 +45,47 @@ async function sendOrderEmail(c: any, order: any, items: any[], products: any[])
           <td style="padding:8px;border:1px solid #ddd;text-align:right">${order.total_amount.toLocaleString()}원</td>
         </tr>
       </tfoot>
-    </table>
-    <p style="color:#888;font-size:12px;margin-top:16px">주문번호: #${order.id} | ${new Date(order.created_at).toLocaleString("ko-KR")}</p>
-  `;
+    </table>`;
 
-  try {
-    await fetch("https://api.resend.com/emails", {
+  const bankInfo = `
+    <div style="background-color:#f7f7f7;padding:15px;border-radius:5px;margin-top:15px">
+      <h4 style="margin:0;font-size:16px">DB입금계좌</h4>
+      <p style="margin:5px 0 0;font-size:14px">카카오뱅크 3333-36-3512633 송낙주(영업지원팀)</p>
+      <p style="margin:5px 0 0;font-size:14px;color:#333;font-weight:bold">담당자가 수량 확인 및 입금안내 드릴 예정입니다.</p>
+    </div>`;
+
+  // 관리자 이메일
+  const adminHtml = `
+    <h2>새로운 DB 신청이 접수되었습니다.</h2>
+    <table style="border-collapse:collapse;margin-bottom:16px">
+      <tr><td style="padding:4px 12px 4px 0;font-weight:bold">신청자</td><td>${order.name}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;font-weight:bold">소속</td><td>${order.affiliation || "-"}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;font-weight:bold">직급</td><td>${order.position || "-"}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;font-weight:bold">연락처</td><td>${order.phone || "-"}</td></tr>
+      <tr><td style="padding:4px 12px 4px 0;font-weight:bold">이메일</td><td>${order.email || "-"}</td></tr>
+    </table>
+    <h3>신청 내역</h3>
+    ${orderTable}
+    ${bankInfo}
+    <p style="color:#888;font-size:12px;margin-top:16px">주문번호: #${order.id} | ${formattedDate}</p>`;
+
+  // 신청자 확인 이메일
+  const applicantHtml = `
+    <h2>DB 신청이 정상적으로 접수되었습니다.</h2>
+    <p>안녕하세요, ${order.name}님. 신청해주셔서 감사합니다.</p>
+    <p>아래는 신청하신 내역입니다. 확인 후 담당자가 개별 연락드리겠습니다.</p>
+    <hr>
+    <h3>신청 내역</h3>
+    ${orderTable}
+    ${bankInfo}
+    <br>
+    <p><em>*본 메일은 발신 전용입니다.</em></p>`;
+
+  const emailPromises: Promise<any>[] = [];
+
+  // 1. 관리자 이메일 (항상 발송)
+  emailPromises.push(
+    fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${resendKey}`,
@@ -64,11 +93,34 @@ async function sendOrderEmail(c: any, order: any, items: any[], products: any[])
       },
       body: JSON.stringify({
         from: "CRM <noreply@crm.thefirst.co.kr>",
-        to: [order.email || "admin@thefirst.co.kr"],
-        subject: `[CRM] 보험 리드 주문 접수 #${order.id}`,
-        html,
+        to: adminEmail.split(",").map((e: string) => e.trim()),
+        subject: `[DB신청] ${order.name} / ${order.affiliation || "-"} / ${order.position || "-"} / ${formattedDate}`,
+        html: adminHtml,
       }),
-    });
+    })
+  );
+
+  // 2. 신청자 이메일 (이메일 있을 때만)
+  if (order.email) {
+    emailPromises.push(
+      fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "THE FIN. <noreply@crm.thefirst.co.kr>",
+          to: [order.email],
+          subject: `[${formattedDate}] ${order.name} ${order.position || ""}님, DB신청이 정상적으로 접수되었습니다.`,
+          html: applicantHtml,
+        }),
+      })
+    );
+  }
+
+  try {
+    await Promise.all(emailPromises);
   } catch {
     // best-effort: 이메일 실패해도 주문은 유지
   }
