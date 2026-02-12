@@ -34,13 +34,24 @@ export const useThemeStore = create<ThemeState>()(
     }),
     {
       name: "crm-theme",
-      version: 1,
+      version: 2,
       migrate: (persisted: unknown, version: number) => {
+        const state = persisted as Record<string, unknown>;
         if (version === 0) {
-          const old = persisted as { theme: Theme; fontScale: number };
+          // v0→v2: fontScaleCustomized 추가 + 기준 px 변경 보정
+          const oldScale = (state.fontScale as number) || 100;
           return {
-            ...old,
-            fontScaleCustomized: true, // 기존 사용자는 이미 커스터마이즈된 것으로 간주
+            ...state,
+            fontScaleCustomized: true,
+            fontScale: Math.round(oldScale * 14 / 15.4),
+          };
+        }
+        if (version === 1) {
+          // v1→v2: 기준 px 14→15.4 변경 보정 (동일 렌더 크기 유지)
+          const oldScale = (state.fontScale as number) || 100;
+          return {
+            ...state,
+            fontScale: Math.round(oldScale * 14 / 15.4),
           };
         }
         return persisted as ThemeState;

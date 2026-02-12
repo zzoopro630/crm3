@@ -122,6 +122,36 @@
   }
 }
 
+/* 사이드바 스크롤바: 평소 투명, 호버 시 가늘게 표시 */
+aside nav {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s;
+}
+aside nav:hover {
+  scrollbar-color: oklch(0.5 0 0 / 20%) transparent;
+}
+aside nav::-webkit-scrollbar {
+  width: 4px;
+}
+aside nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+aside nav::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+aside nav:hover::-webkit-scrollbar-thumb {
+  background: oklch(0.5 0 0 / 20%);
+}
+.dark aside nav:hover {
+  scrollbar-color: oklch(0.8 0 0 / 20%) transparent;
+}
+.dark aside nav:hover::-webkit-scrollbar-thumb {
+  background: oklch(0.8 0 0 / 20%);
+}
+
 /* TipTap 에디터 공통 스타일 */
 .tiptap-editor .ProseMirror,
 .tiptap-viewer .ProseMirror {

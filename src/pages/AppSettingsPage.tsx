@@ -69,7 +69,7 @@ const settingSections: SettingSection[] = [
       {
         key: 'app:default_font_scale',
         label: '기본 폰트 크기',
-        description: '신규 사용자에게 적용되는 기본 폰트 크기 (기존 사용자에게는 영향 없음)',
+        description: '모든 사용자에게 적용되는 기본 폰트 크기 (개인은 헤더에서 개별 조절 가능)',
         type: 'number',
         suffix: '%',
         min: 80,
@@ -234,16 +234,23 @@ export default function AppSettingsPage() {
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <Input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       value={currentValue}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/[^0-9]/g, '');
                         setValues((prev) => ({
                           ...prev,
-                          [item.key]: e.target.value,
-                        }))
-                      }
-                      min={item.min}
-                      max={item.max}
+                          [item.key]: v,
+                        }));
+                      }}
+                      onBlur={() => {
+                        setValues((prev) => {
+                          const raw = Number(prev[item.key]) || item.fallback;
+                          const clamped = Math.max(item.min, Math.min(item.max, raw));
+                          return { ...prev, [item.key]: String(clamped) };
+                        });
+                      }}
                       className="w-20 text-right"
                     />
                     <span className="text-sm text-muted-foreground w-6">

@@ -90,9 +90,9 @@ export function Header({ onSidebarToggle, logoutCountdownSeconds = 30 }: HeaderP
         if (timerRef.current) clearInterval(timerRef.current)
     }
 
-    // fontScale 적용 (기본 14px 기준)
+    // fontScale 적용 (기본 15.4px 기준 = 기존 14px * 110%)
     useEffect(() => {
-        document.documentElement.style.fontSize = `${14 * fontScale / 100}px`
+        document.documentElement.style.fontSize = `${15.4 * fontScale / 100}px`
     }, [fontScale])
 
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
