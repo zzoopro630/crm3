@@ -5,53 +5,63 @@ type Theme = "dark" | "light" | "system";
 
 interface ThemeState {
   theme: Theme;
-  fontScale: number;
-  fontScaleCustomized: boolean;
+  fontSize: number;          // px 단위 (기본 15)
+  fontSizeCustomized: boolean;
   setTheme: (theme: Theme) => void;
-  setFontScale: (scale: number) => void;
-  increaseFontScale: () => void;
-  decreaseFontScale: () => void;
+  setFontSize: (size: number) => void;
+  increaseFontSize: () => void;
+  decreaseFontSize: () => void;
 }
 
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
       theme: "light",
-      fontScale: 100,
-      fontScaleCustomized: false,
+      fontSize: 15,
+      fontSizeCustomized: false,
       setTheme: (theme) => set({ theme }),
-      setFontScale: (scale) => set({ fontScale: scale }),
-      increaseFontScale: () =>
+      setFontSize: (size) => set({ fontSize: size }),
+      increaseFontSize: () =>
         set((state) => ({
-          fontScale: Math.min(state.fontScale + 10, 150),
-          fontScaleCustomized: true,
+          fontSize: Math.min(state.fontSize + 1, 22),
+          fontSizeCustomized: true,
         })),
-      decreaseFontScale: () =>
+      decreaseFontSize: () =>
         set((state) => ({
-          fontScale: Math.max(state.fontScale - 10, 80),
-          fontScaleCustomized: true,
+          fontSize: Math.max(state.fontSize - 1, 12),
+          fontSizeCustomized: true,
         })),
     }),
     {
       name: "crm-theme",
-      version: 2,
+      version: 3,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version === 0) {
-          // v0→v2: fontScaleCustomized 추가 + 기준 px 변경 보정
+          // v0→v3: fontScale % → fontSize px (기존 base 14px)
           const oldScale = (state.fontScale as number) || 100;
           return {
-            ...state,
-            fontScaleCustomized: true,
-            fontScale: Math.round(oldScale * 14 / 15.4),
+            theme: state.theme || "light",
+            fontSize: Math.round(14 * oldScale / 100),
+            fontSizeCustomized: true,
           };
         }
         if (version === 1) {
-          // v1→v2: 기준 px 14→15.4 변경 보정 (동일 렌더 크기 유지)
+          // v1→v3: fontScale % → fontSize px (기존 base 14px)
           const oldScale = (state.fontScale as number) || 100;
           return {
-            ...state,
-            fontScale: Math.round(oldScale * 14 / 15.4),
+            theme: state.theme || "light",
+            fontSize: Math.round(14 * oldScale / 100),
+            fontSizeCustomized: state.fontScaleCustomized ?? true,
+          };
+        }
+        if (version === 2) {
+          // v2→v3: fontScale % (base 15.4px) → fontSize px
+          const oldScale = (state.fontScale as number) || 100;
+          return {
+            theme: state.theme || "light",
+            fontSize: Math.round(15.4 * oldScale / 100),
+            fontSizeCustomized: state.fontScaleCustomized ?? true,
           };
         }
         return persisted as ThemeState;
@@ -63,7 +73,6 @@ export const useThemeStore = create<ThemeState>()(
 // Apply theme to document
 export function applyTheme(theme: Theme) {
   const root = window.document.documentElement;
-  // 모든 테마 클래스 제거
   root.classList.remove("light", "dark");
 
   if (theme === "system") {

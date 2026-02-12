@@ -13,17 +13,17 @@ import { useThemeStore } from '@/stores/themeStore'
 const SUBMENU_PREFIXES = ['/settings', '/ads']
 
 export function DashboardLayout() {
-    const { sessionTimeoutMinutes, logoutCountdownSeconds, defaultFontScale } = useAppConfig()
+    const { sessionTimeoutMinutes, logoutCountdownSeconds, defaultFontSize } = useAppConfig()
     useSessionTimeout(sessionTimeoutMinutes)
     useVersionCheck()
 
-    // 신규 사용자 폰트 기본값 적용
-    const { fontScaleCustomized, setFontScale } = useThemeStore()
+    // 관리자 기본 폰트 크기 적용 (개인이 헤더에서 조절하지 않은 경우)
+    const { fontSizeCustomized, setFontSize } = useThemeStore()
     useEffect(() => {
-        if (!fontScaleCustomized && defaultFontScale) {
-            setFontScale(defaultFontScale)
+        if (!fontSizeCustomized && defaultFontSize) {
+            setFontSize(defaultFontSize)
         }
-    }, [fontScaleCustomized, defaultFontScale, setFontScale])
+    }, [fontSizeCustomized, defaultFontSize, setFontSize])
     const location = useLocation()
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
