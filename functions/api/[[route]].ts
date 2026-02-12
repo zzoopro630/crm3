@@ -3687,6 +3687,95 @@ app.delete("/api/posts/:id", async (c) => {
   }
 });
 
+// 게시글 영구 삭제 (soft delete 15일 경과분 정리, F1 전용)
+app.post("/api/posts/cleanup", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
+  const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+
+  try {
+    // 1. 15일 경과한 soft-deleted 게시글 조회
+    const cutoff = new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: expired, error: qErr } = await supabase
+      .from("posts")
+      .select("id, content")
+      .not("deleted_at", "is", null)
+      .lt("deleted_at", cutoff)
+      .limit(50);
+
+    if (qErr) return safeError(c, qErr);
+    if (!expired || expired.length === 0) {
+      return c.json({ deleted: 0, storageErrors: 0 });
+    }
+
+    const ids = expired.map((p: any) => p.id);
+
+    // 2. 첨부파일 URL 조회
+    const { data: attachments } = await supabase
+      .from("post_attachments")
+      .select("file_url")
+      .in("post_id", ids);
+
+    // 3. Storage 경로 수집
+    const storagePaths: string[] = [];
+    const MARKER = "/storage/v1/object/public/post-images/";
+
+    const extractPath = (url: string): string | null => {
+      const idx = url.indexOf(MARKER);
+      return idx === -1 ? null : url.substring(idx + MARKER.length);
+    };
+
+    const extractImageUrls = (content: string): string[] => {
+      if (!content) return [];
+      try {
+        const parsed = JSON.parse(content);
+        if (parsed?.images && Array.isArray(parsed.images)) return parsed.images;
+      } catch { /* not JSON */ }
+      const urls: string[] = [];
+      const re = /<img[^>]+src="([^"]*post-images[^"]*)"/g;
+      let m;
+      while ((m = re.exec(content))) urls.push(m[1]);
+      return urls;
+    };
+
+    // 본문 이미지
+    for (const post of expired) {
+      for (const url of extractImageUrls(post.content || "")) {
+        const p = extractPath(url);
+        if (p) storagePaths.push(p);
+      }
+    }
+
+    // 첨부파일
+    for (const att of attachments || []) {
+      const p = extractPath((att as any).file_url || "");
+      if (p) storagePaths.push(p);
+    }
+
+    // 4. Storage 삭제 (best-effort)
+    let storageErrors = 0;
+    if (storagePaths.length > 0) {
+      const { error: sErr } = await supabase.storage
+        .from("post-images")
+        .remove(storagePaths);
+      if (sErr) storageErrors = storagePaths.length;
+    }
+
+    // 5. DB 영구 삭제 (post_attachments는 CASCADE)
+    const { error: dErr } = await supabase
+      .from("posts")
+      .delete()
+      .in("id", ids);
+
+    if (dErr) return safeError(c, dErr);
+
+    return c.json({ deleted: ids.length, storageErrors });
+  } catch (err) {
+    return safeError(c, err);
+  }
+});
+
 // ============ Menu Roles API ============
 
 // 기본 권한 매핑 (시드 데이터와 동일)
