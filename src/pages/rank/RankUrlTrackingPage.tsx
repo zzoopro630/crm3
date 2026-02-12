@@ -146,17 +146,50 @@ export default function RankUrlTrackingPage() {
     return new Date(utc).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
   };
 
-  const getRankBadgeVariant = (rank: number | null | undefined): "default" | "secondary" | "outline" => {
-    if (!rank) return "outline";
-    if (rank <= 3) return "default";
-    if (rank <= 10) return "secondary";
-    return "outline";
-  };
-
   const truncateUrl = (url: string, maxLen = 40) => {
     if (!url) return "-";
     if (url.length <= maxLen) return url;
     return url.substring(0, maxLen) + "...";
+  };
+
+  const renderExposureBadge = (isExposed: boolean | null | undefined) => {
+    if (isExposed === null || isExposed === undefined) {
+      return <Badge variant="outline">미확인</Badge>;
+    }
+    return isExposed ? (
+      <Badge className="bg-green-600 hover:bg-green-700">O</Badge>
+    ) : (
+      <Badge variant="destructive">X</Badge>
+    );
+  };
+
+  const renderSectionRank = (
+    sectionExists: boolean | null | undefined,
+    sectionRank: number | null | undefined,
+    section: string | null
+  ) => {
+    // 영역을 지정하지 않은 경우
+    if (!section) {
+      return <span className="text-sm text-muted-foreground">-</span>;
+    }
+    // 아직 체크 안 한 경우
+    if (sectionExists === null || sectionExists === undefined) {
+      return <span className="text-sm text-muted-foreground">미확인</span>;
+    }
+    // 지정 영역이 검색결과에 없는 경우
+    if (!sectionExists) {
+      return <span className="text-sm text-muted-foreground">영역없음</span>;
+    }
+    // 영역은 있지만 URL이 해당 영역에 없는 경우
+    if (!sectionRank) {
+      return <span className="text-sm text-muted-foreground">-</span>;
+    }
+    // 영역 내 순위 표시
+    return (
+      <Badge variant={sectionRank <= 3 ? "default" : sectionRank <= 10 ? "secondary" : "outline"}>
+        {sectionRank}위
+      </Badge>
+    );
   };
 
   if (isLoading) {
@@ -276,7 +309,7 @@ export default function RankUrlTrackingPage() {
         <CardHeader>
           <CardTitle>추적 중인 URL</CardTitle>
           <CardDescription>
-            네이버 통합 검색에서 특정 URL의 노출 순위를 추적합니다.
+            네이버 통합 검색에서 특정 URL의 노출 여부와 영역별 순위를 추적합니다.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -286,9 +319,9 @@ export default function RankUrlTrackingPage() {
                 <TableRow>
                   <TableHead>키워드</TableHead>
                   <TableHead>대상 URL</TableHead>
+                  <TableHead className="text-center">노출</TableHead>
                   <TableHead>영역</TableHead>
-                  <TableHead className="text-center">전체 순위</TableHead>
-                  <TableHead className="text-center">영역 내 순위</TableHead>
+                  <TableHead className="text-center">영역순위</TableHead>
                   <TableHead>마지막 체크</TableHead>
                   <TableHead className="text-right">액션</TableHead>
                 </TableRow>
@@ -305,27 +338,19 @@ export default function RankUrlTrackingPage() {
                     >
                       {truncateUrl(item.targetUrl)}
                     </TableCell>
+                    <TableCell className="text-center">
+                      {renderExposureBadge(item.latestIsExposed)}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">
                         {item.section || "전체"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Badge variant={getRankBadgeVariant(item.latestRank)}>
-                        {item.latestRank
-                          ? `${item.latestRank}위`
-                          : "미확인"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {item.latestSectionRank ? (
-                        <span className="text-sm">
-                          {item.latestSection} {item.latestSectionRank}위
-                        </span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">
-                          -
-                        </span>
+                      {renderSectionRank(
+                        item.latestSectionExists,
+                        item.latestSectionRank,
+                        item.section
                       )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">

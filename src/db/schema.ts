@@ -357,6 +357,8 @@ export const seoUrlRankings = seoSchema.table(
     rankPosition: integer("rank_position"),
     sectionName: text("section_name"),
     sectionRank: integer("section_rank"),
+    isExposed: boolean("is_exposed").notNull().default(false),
+    sectionExists: boolean("section_exists").notNull().default(true),
     checkedAt: timestamp("checked_at").defaultNow(),
   },
   (table) => [

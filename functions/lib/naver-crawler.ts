@@ -69,21 +69,47 @@ async function fetchNaverHtml(query: string, where: string): Promise<string> {
   return res.text();
 }
 
+// ============ URL 추적 (통합검색) ============
+
+interface SectionItem {
+  url: string;
+  title: string;
+}
+
+interface ParsedSection {
+  name: string;
+  items: SectionItem[];
+}
+
+interface ParseResult {
+  sections: ParsedSection[];
+  brandContentApiUrl: string | null;
+}
+
 /**
- * 네이버 통합검색에서 특정 URL의 노출 위치를 확인 (cheerio 기반)
+ * 네이버 통합검색 HTML을 파싱하여 섹션별 URL 목록 반환
  */
-export async function checkNaverUrlExposure(
-  keyword: string,
-  targetUrl: string
-) {
+async function parseNaverSearchResults(keyword: string): Promise<ParseResult> {
   const html = await fetchNaverHtml(keyword, "nexearch");
   const $ = cheerio.load(html);
+
+  let brandContentApiUrl: string | null = null;
+
+  // 브랜드콘텐츠 lb_api URL 추출 (script 태그에서)
+  $("script").each((_, el) => {
+    const scriptText = $(el).html() || "";
+    // lb_api 패턴 매칭: "api":"https://lbapi.naver.com/..."
+    const match = scriptText.match(/"api"\s*:\s*"(https:\/\/lbapi\.naver\.com[^"]+)"/);
+    if (match) {
+      brandContentApiUrl = match[1];
+    }
+  });
 
   // 섹션별 URL 추출
   const rawSections: Array<{
     area: string;
     h2: string;
-    urls: Array<{ url: string; title: string }>;
+    urls: SectionItem[];
   }> = [];
 
   $("#main_pack .sc_new").each((_, section) => {
@@ -93,7 +119,7 @@ export async function checkNaverUrlExposure(
 
     if (area === "ad_section" || h2.includes("파워링크")) return;
 
-    const urls: Array<{ url: string; title: string }> = [];
+    const urls: SectionItem[] = [];
     const seen = new Set<string>();
 
     $section.find('a[href^="http"]').each((_, link) => {
@@ -120,25 +146,29 @@ export async function checkNaverUrlExposure(
     }
   });
 
-  // ader.naver.com 리디렉트 URL 해석
-  const allSections: Array<{
-    name: string;
-    items: Array<{ url: string; title: string }>;
-  }> = [];
+  // ader.naver.com 리디렉트 URL 병렬 해석
+  const sections: ParsedSection[] = [];
 
   for (const raw of rawSections) {
     const sectionName = getSectionName(raw.area, raw.h2);
     if (!sectionName) continue;
 
-    const items: Array<{ url: string; title: string }> = [];
-    for (const item of raw.urls) {
+    // 브랜드콘텐츠 섹션은 lb_api로 별도 조회하므로 HTML 파싱 결과 스킵
+    if (sectionName === "브랜드콘텐츠" && brandContentApiUrl) {
+      sections.push({ name: sectionName, items: [] });
+      continue;
+    }
+
+    const aderItems: Array<{ index: number; url: string }> = [];
+    const items: SectionItem[] = [];
+
+    for (let i = 0; i < raw.urls.length; i++) {
+      const item = raw.urls[i];
       try {
         const urlObj = new URL(item.url);
         if (urlObj.hostname.startsWith("ader.")) {
-          const resolved = await resolveAderUrl(item.url);
-          if (resolved) {
-            items.push({ url: resolved, title: item.title });
-          }
+          aderItems.push({ index: i, url: item.url });
+          items.push({ url: "", title: item.title }); // placeholder
         } else {
           items.push(item);
         }
@@ -147,19 +177,107 @@ export async function checkNaverUrlExposure(
       }
     }
 
-    if (items.length > 0) {
-      allSections.push({ name: sectionName, items });
+    // ader URL 병렬 해석
+    if (aderItems.length > 0) {
+      const resolved = await Promise.all(
+        aderItems.map((a) => resolveAderUrl(a.url))
+      );
+      for (let i = 0; i < aderItems.length; i++) {
+        if (resolved[i]) {
+          items[aderItems[i].index] = {
+            url: resolved[i]!,
+            title: items[aderItems[i].index].title,
+          };
+        }
+      }
+    }
+
+    const validItems = items.filter((item) => item.url !== "");
+    if (validItems.length > 0) {
+      sections.push({ name: sectionName, items: validItems });
     }
   }
 
-  // 전체 순위 계산 + 타겟 URL 매칭
-  const normalizedTarget = normalizeUrl(targetUrl);
-  let overallRank = 0;
-  let foundSectionName: string | null = null;
-  let foundSectionRank: number | null = null;
-  let foundOverallRank: number | null = null;
+  return { sections, brandContentApiUrl };
+}
 
-  for (const section of allSections) {
+/**
+ * lb_api로 브랜드콘텐츠 전체 아이템 조회
+ */
+async function fetchBrandContentItems(
+  apiUrl: string
+): Promise<SectionItem[]> {
+  try {
+    const res = await fetch(apiUrl, {
+      headers: { "User-Agent": USER_AGENT },
+    });
+    const json = (await res.json()) as {
+      dom?: { collection?: Array<{ html?: string }> };
+    };
+
+    const htmlStr = json?.dom?.collection?.[0]?.html;
+    if (!htmlStr) return [];
+
+    const $ = cheerio.load(htmlStr);
+    const aderUrls: Array<{ url: string; title: string }> = [];
+
+    $("a[href]").each((_, link) => {
+      const href = $(link).attr("href") || "";
+      const text = $(link).text().trim();
+      if (href && text.length >= 3) {
+        aderUrls.push({ url: href, title: text.substring(0, 100) });
+      }
+    });
+
+    if (aderUrls.length === 0) return [];
+
+    // ader URL 병렬 리디렉트 해석
+    const results = await Promise.all(
+      aderUrls.map(async (item) => {
+        try {
+          const urlObj = new URL(item.url);
+          if (urlObj.hostname.startsWith("ader.")) {
+            const resolved = await resolveAderUrl(item.url);
+            return resolved ? { url: resolved, title: item.title } : null;
+          }
+          return item;
+        } catch {
+          return item;
+        }
+      })
+    );
+
+    return results.filter((r): r is SectionItem => r !== null);
+  } catch {
+    return [];
+  }
+}
+
+interface UrlMatchResult {
+  isExposed: boolean;
+  sectionExists: boolean;
+  sectionRank: number | null;
+  overallRank: number | null;
+  foundInSection: string | null;
+}
+
+/**
+ * 전체 결과에서 타겟 URL 매칭
+ */
+function matchUrlInResults(
+  sections: ParsedSection[],
+  targetUrl: string,
+  targetSection?: string
+): UrlMatchResult {
+  const normalizedTarget = normalizeUrl(targetUrl);
+
+  // 전체 노출 여부 체크
+  let isExposed = false;
+  let overallRank = 0;
+  let foundOverallRank: number | null = null;
+  let foundInSection: string | null = null;
+
+  for (const section of sections) {
     for (let i = 0; i < section.items.length; i++) {
       overallRank++;
       const normalizedItem = normalizeUrl(section.items[i].url);
@@ -168,22 +286,87 @@ export async function checkNaverUrlExposure(
         normalizedItem.includes(normalizedTarget) ||
         normalizedTarget.includes(normalizedItem)
       ) {
+        isExposed = true;
         if (!foundOverallRank) {
-          foundSectionName = section.name;
-          foundSectionRank = i + 1;
           foundOverallRank = overallRank;
+          foundInSection = section.name;
         }
       }
     }
   }
 
+  // 지정 영역 체크
+  if (!targetSection) {
+    return {
+      isExposed,
+      sectionExists: true,
+      sectionRank: null,
+      overallRank: foundOverallRank,
+      foundInSection,
+    };
+  }
+
+  const targetSectionData = sections.find((s) => s.name === targetSection);
+  const sectionExists = !!targetSectionData;
+
+  if (!sectionExists) {
+    return {
+      isExposed,
+      sectionExists: false,
+      sectionRank: null,
+      overallRank: foundOverallRank,
+      foundInSection,
+    };
+  }
+
+  // 지정 영역 내 순위 계산
+  let sectionRank: number | null = null;
+  for (let i = 0; i < targetSectionData.items.length; i++) {
+    const normalizedItem = normalizeUrl(targetSectionData.items[i].url);
+    if (
+      normalizedItem.includes(normalizedTarget) ||
+      normalizedTarget.includes(normalizedItem)
+    ) {
+      sectionRank = i + 1;
+      break;
+    }
+  }
+
   return {
-    found: !!foundOverallRank,
-    sectionName: foundSectionName,
-    sectionRank: foundSectionRank,
+    isExposed,
+    sectionExists: true,
+    sectionRank,
     overallRank: foundOverallRank,
+    foundInSection,
   };
 }
+
+/**
+ * URL 추적 통합 체크 함수 (API에서 호출)
+ */
+export async function checkUrlTracking(
+  keyword: string,
+  targetUrl: string,
+  section?: string
+): Promise<UrlMatchResult> {
+  const { sections, brandContentApiUrl } = await parseNaverSearchResults(keyword);
+
+  // 브랜드콘텐츠 lb_api가 있으면 전체 아이템 조회 후 섹션 데이터 교체
+  if (brandContentApiUrl) {
+    const brandItems = await fetchBrandContentItems(brandContentApiUrl);
+    const brandSection = sections.find((s) => s.name === "브랜드콘텐츠");
+    if (brandSection) {
+      brandSection.items = brandItems;
+    } else if (brandItems.length > 0) {
+      // lb_api는 있는데 섹션이 없었으면 추가
+      sections.unshift({ name: "브랜드콘텐츠", items: brandItems });
+    }
+  }
+
+  return matchUrlInResults(sections, targetUrl, section || undefined);
+}
+
+// ============ 사이트 순위 추적 (웹 탭) — 기존 유지 ============
 
 /**
  * 네이버 웹 탭에서 특정 키워드 검색 후 사이트 순위 확인 (cheerio 기반)
