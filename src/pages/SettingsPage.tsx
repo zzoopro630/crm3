@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import { Building2, Tag, UserCog, Clock, ClipboardList, Cog, ShieldCheck } from 'lucide-react'
+import { Building2, Tag, UserCog, Clock, ClipboardList, Cog, ShieldCheck, FileText } from 'lucide-react'
 import { NavLink, Outlet, useLocation, Navigate } from 'react-router-dom'
 import { useMenuRoles } from '@/hooks/useMenuRole'
 
@@ -14,6 +14,7 @@ const settingsTabs: SettingsTab[] = [
     { id: 'labels', label: '라벨 관리', icon: Tag },
     { id: 'menu-permissions', label: '메뉴 권한', icon: ShieldCheck },
     { id: 'board-categories', label: '게시판 관리', icon: ClipboardList },
+    { id: 'pages', label: '페이지 관리', icon: FileText },
     { id: 'employees', label: '사원 관리', icon: UserCog },
     { id: 'approvals', label: '승인 대기', icon: Clock },
     { id: 'app-settings', label: '앱 설정', icon: Cog },
