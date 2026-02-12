@@ -7,23 +7,15 @@ import { cn } from '@/lib/utils'
 import { useSessionTimeout } from '@/hooks/useSessionTimeout'
 import { useVersionCheck } from '@/hooks/useVersionCheck'
 import { useAppConfig } from '@/hooks/useAppConfig'
-import { useThemeStore } from '@/stores/themeStore'
 
 // 서브메뉴가 있는 경로 prefix 목록
 const SUBMENU_PREFIXES = ['/settings', '/ads']
 
 export function DashboardLayout() {
-    const { sessionTimeoutMinutes, logoutCountdownSeconds, defaultFontSize } = useAppConfig()
+    const { sessionTimeoutMinutes, logoutCountdownSeconds } = useAppConfig()
     useSessionTimeout(sessionTimeoutMinutes)
     useVersionCheck()
 
-    // 관리자 기본 폰트 크기 적용 (개인이 헤더에서 조절하지 않은 경우)
-    const { fontSizeCustomized, setFontSize } = useThemeStore()
-    useEffect(() => {
-        if (!fontSizeCustomized && defaultFontSize) {
-            setFontSize(defaultFontSize)
-        }
-    }, [fontSizeCustomized, defaultFontSize, setFontSize])
     const location = useLocation()
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false)

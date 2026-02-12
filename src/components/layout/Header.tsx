@@ -34,6 +34,7 @@ import {
 import { SidebarTrigger } from './Sidebar'
 import { Breadcrumb } from './Breadcrumb'
 import { SECURITY_LEVELS } from '@/types/employee'
+import { useAppConfig } from '@/hooks/useAppConfig'
 
 interface HeaderProps {
     onSidebarToggle: () => void
@@ -42,7 +43,8 @@ interface HeaderProps {
 
 export function Header({ onSidebarToggle, logoutCountdownSeconds = 30 }: HeaderProps) {
     const navigate = useNavigate()
-    const { theme, setTheme, fontSize, increaseFontSize, decreaseFontSize } = useThemeStore()
+    const { theme, setTheme, fontScale, increaseFontScale, decreaseFontScale } = useThemeStore()
+    const { defaultFontSize } = useAppConfig()
     const { signOut, user, employee } = useAuthStore()
     const [showLogoutDialog, setShowLogoutDialog] = useState(false)
     const [countdown, setCountdown] = useState(logoutCountdownSeconds)
@@ -90,10 +92,11 @@ export function Header({ onSidebarToggle, logoutCountdownSeconds = 30 }: HeaderP
         if (timerRef.current) clearInterval(timerRef.current)
     }
 
-    // fontSize 적용 (px 단위)
+    // 폰트 크기 적용: 관리자 기본값(px) × 사용자 배율(%)
+    const computedFontSize = Math.round(defaultFontSize * fontScale / 100)
     useEffect(() => {
-        document.documentElement.style.fontSize = `${fontSize}px`
-    }, [fontSize])
+        document.documentElement.style.fontSize = `${computedFontSize}px`
+    }, [computedFontSize])
 
     const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
@@ -123,18 +126,18 @@ export function Header({ onSidebarToggle, logoutCountdownSeconds = 30 }: HeaderP
                         {/* 텍스트 배율 조절 */}
                         <div className="hidden md:flex items-center bg-zinc-100 dark:bg-secondary rounded-lg overflow-hidden">
                             <button
-                                onClick={decreaseFontSize}
-                                disabled={fontSize <= 12}
+                                onClick={decreaseFontScale}
+                                disabled={fontScale <= 80}
                                 className="px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-zinc-200 dark:hover:bg-accent disabled:opacity-30 transition-colors"
                             >
                                 가
                             </button>
                             <span className="px-2 py-1.5 text-xs font-medium text-foreground tabular-nums min-w-[3rem] text-center border-x border-zinc-200 dark:border-border">
-                                {fontSize}px
+                                {fontScale}%
                             </span>
                             <button
-                                onClick={increaseFontSize}
-                                disabled={fontSize >= 22}
+                                onClick={increaseFontScale}
+                                disabled={fontScale >= 150}
                                 className="px-2.5 py-1.5 text-base font-medium text-muted-foreground hover:bg-zinc-200 dark:hover:bg-accent disabled:opacity-30 transition-colors"
                             >
                                 가

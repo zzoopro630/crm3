@@ -5,63 +5,48 @@ type Theme = "dark" | "light" | "system";
 
 interface ThemeState {
   theme: Theme;
-  fontSize: number;          // px 단위 (기본 15)
-  fontSizeCustomized: boolean;
+  fontScale: number;  // % 단위 (기본 100)
   setTheme: (theme: Theme) => void;
-  setFontSize: (size: number) => void;
-  increaseFontSize: () => void;
-  decreaseFontSize: () => void;
+  setFontScale: (scale: number) => void;
+  increaseFontScale: () => void;
+  decreaseFontScale: () => void;
 }
 
 export const useThemeStore = create<ThemeState>()(
   persist(
     (set) => ({
       theme: "light",
-      fontSize: 15,
-      fontSizeCustomized: false,
+      fontScale: 100,
       setTheme: (theme) => set({ theme }),
-      setFontSize: (size) => set({ fontSize: size }),
-      increaseFontSize: () =>
+      setFontScale: (scale) => set({ fontScale: scale }),
+      increaseFontScale: () =>
         set((state) => ({
-          fontSize: Math.min(state.fontSize + 1, 22),
-          fontSizeCustomized: true,
+          fontScale: Math.min(state.fontScale + 10, 150),
         })),
-      decreaseFontSize: () =>
+      decreaseFontScale: () =>
         set((state) => ({
-          fontSize: Math.max(state.fontSize - 1, 12),
-          fontSizeCustomized: true,
+          fontScale: Math.max(state.fontScale - 10, 80),
         })),
     }),
     {
       name: "crm-theme",
-      version: 3,
+      version: 2,
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
         if (version === 0) {
-          // v0→v3: fontScale % → fontSize px (기존 base 14px)
+          // v0→v2: base 14px 시절 fontScale → base 15.4px 보정
           const oldScale = (state.fontScale as number) || 100;
           return {
             theme: state.theme || "light",
-            fontSize: Math.round(14 * oldScale / 100),
-            fontSizeCustomized: true,
+            fontScale: Math.round(oldScale * 14 / 15.4),
           };
         }
         if (version === 1) {
-          // v1→v3: fontScale % → fontSize px (기존 base 14px)
+          // v1→v2: base 14→15.4 변경으로 기존 비율 보정
           const oldScale = (state.fontScale as number) || 100;
           return {
             theme: state.theme || "light",
-            fontSize: Math.round(14 * oldScale / 100),
-            fontSizeCustomized: state.fontScaleCustomized ?? true,
-          };
-        }
-        if (version === 2) {
-          // v2→v3: fontScale % (base 15.4px) → fontSize px
-          const oldScale = (state.fontScale as number) || 100;
-          return {
-            theme: state.theme || "light",
-            fontSize: Math.round(15.4 * oldScale / 100),
-            fontSizeCustomized: state.fontScaleCustomized ?? true,
+            fontScale: Math.round(oldScale * 14 / 15.4),
           };
         }
         return persisted as ThemeState;
