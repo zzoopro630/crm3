@@ -23,6 +23,7 @@ import rank from "./routes/rank";
 import { boardCategoryRoutes, postRoutes } from "./routes/board";
 import { menuRoleRoutes, menuOverrideRoutes } from "./routes/menu-roles";
 import dashboardCards from "./routes/dashboard-cards";
+import pages from "./routes/pages";
 
 // Hono 앱 생성
 const app = new Hono<{ Bindings: Env }>();
@@ -112,6 +113,7 @@ app.route("/api/posts", postRoutes);
 app.route("/api/menu-roles", menuRoleRoutes);
 app.route("/api/menu-overrides", menuOverrideRoutes);
 app.route("/api/dashboard-cards", dashboardCards);
+app.route("/api/pages", pages);
 
 // Cloudflare Pages Functions export
 import { handle } from "hono/cloudflare-pages";

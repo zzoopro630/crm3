@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAppSettings, useUpdateSettings } from '@/hooks/useAppSettings';
 import { useBoardCategories } from '@/hooks/useBoardCategories';
+import { usePages } from '@/hooks/usePages';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
@@ -37,6 +38,7 @@ import {
 import type { MenuRole, LevelRoleMap } from '@/types/menuRole';
 import { ALL_SECURITY_LEVELS } from '@/types/menuRole';
 import type { BoardCategory } from '@/types/boardCategory';
+import type { Page } from '@/types/page';
 
 interface MenuEntry {
   href: string;
@@ -101,6 +103,7 @@ const staticMenuSections: MenuSection[] = [
       { href: '/settings/app-settings', defaultTitle: '앱 설정', icon: Cog },
       { href: '/settings/menu-permissions', defaultTitle: '메뉴 권한', icon: ShieldCheck },
       { href: '/settings/board-categories', defaultTitle: '게시판 관리', icon: ClipboardList },
+      { href: '/settings/pages', defaultTitle: '페이지 관리', icon: FileText },
       { href: '/settings/employees', defaultTitle: '사원 관리', icon: UserCog },
       { href: '/settings/approvals', defaultTitle: '승인 대기', icon: Clock },
     ],
@@ -130,11 +133,13 @@ const STATIC_DEFAULT_ROLES: Record<string, LevelRoleMap> = {
   "/settings/app-settings":     { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/menu-permissions": { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/board-categories": { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
+  "/settings/pages":            { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/employees":        { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/approvals":        { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
 };
 
 const BOARD_DEFAULT_ROLE: LevelRoleMap = { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" };
+const PAGE_DEFAULT_ROLE: LevelRoleMap = { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" };
 
 const ROLE_OPTIONS: { value: MenuRole; label: string }[] = [
   { value: 'none', label: '비활성' },
@@ -143,6 +148,7 @@ const ROLE_OPTIONS: { value: MenuRole; label: string }[] = [
 ];
 
 const EMPTY_BOARD_CATEGORIES: BoardCategory[] = [];
+const EMPTY_PAGES: Page[] = [];
 
 const ROLE_COLORS: Record<MenuRole, string> = {
   none: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400',
@@ -160,12 +166,13 @@ const ROLE_BORDER_COLORS: Record<MenuRole, string> = {
 export default function MenuPermissionsPage() {
   const { data: settings = [], isLoading: settingsLoading } = useAppSettings();
   const { data: boardCategories = EMPTY_BOARD_CATEGORIES, isLoading: boardLoading } = useBoardCategories(false);
+  const { data: allPages = EMPTY_PAGES, isLoading: pagesLoading } = usePages(true);
   const updateSettings = useUpdateSettings();
   const [roles, setRoles] = useState<Record<string, LevelRoleMap>>({});
   const [selectedLevel, setSelectedLevel] = useState<string>('F1');
   const initialized = useRef(false);
 
-  // 동적 메뉴 섹션 생성 (게시판 포함)
+  // 동적 메뉴 섹션 생성 (게시판 + 페이지 포함)
   const menuSections = useMemo<MenuSection[]>(() => {
     const boardEntries: MenuEntry[] = boardCategories.map((cat) => ({
       href: `/board/${cat.slug}`,
@@ -173,13 +180,23 @@ export default function MenuPermissionsPage() {
       icon: FileText,
     }));
 
+    const pageEntries: MenuEntry[] = allPages.map((p) => ({
+      href: `/page/${p.slug}`,
+      defaultTitle: p.title,
+      icon: FileText,
+    }));
+
     const result = [...staticMenuSections];
+    let insertIdx = 1;
     if (boardEntries.length > 0) {
-      // 대시보드(index 0) 뒤에 게시판 섹션 삽입
-      result.splice(1, 0, { title: '게시판', entries: boardEntries });
+      result.splice(insertIdx, 0, { title: '게시판', entries: boardEntries });
+      insertIdx++;
+    }
+    if (pageEntries.length > 0) {
+      result.splice(insertIdx, 0, { title: '페이지', entries: pageEntries });
     }
     return result;
-  }, [boardCategories]);
+  }, [boardCategories, allPages]);
 
   // 전체 메뉴 엔트리 (저장용 flat 리스트)
   const allEntries = useMemo(
@@ -187,17 +204,20 @@ export default function MenuPermissionsPage() {
     [menuSections],
   );
 
-  // 기본 권한 맵 (동적 게시판 포함)
+  // 기본 권한 맵 (동적 게시판 + 페이지 포함)
   const DEFAULT_ROLES = useMemo<Record<string, LevelRoleMap>>(() => {
     const map = { ...STATIC_DEFAULT_ROLES };
     for (const cat of boardCategories) {
       map[`/board/${cat.slug}`] = { ...BOARD_DEFAULT_ROLE };
     }
+    for (const p of allPages) {
+      map[`/page/${p.slug}`] = { ...PAGE_DEFAULT_ROLE };
+    }
     return map;
-  }, [boardCategories]);
+  }, [boardCategories, allPages]);
 
   useEffect(() => {
-    if (initialized.current || settingsLoading || boardLoading) return;
+    if (initialized.current || settingsLoading || boardLoading || pagesLoading) return;
     if (settings.length === 0) return;
     initialized.current = true;
 

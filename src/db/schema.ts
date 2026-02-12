@@ -379,6 +379,25 @@ export type NewSeoTrackedUrl = typeof seoTrackedUrls.$inferInsert;
 export type SeoUrlRanking = typeof seoUrlRankings.$inferSelect;
 export type NewSeoUrlRanking = typeof seoUrlRankings.$inferInsert;
 
+// ============ Pages (CMS 페이지) ============
+export const pages = pgTable("pages", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  content: text("content").notNull().default(""),
+  icon: text("icon"),
+  sortOrder: integer("sort_order").default(0),
+  isPublished: boolean("is_published").default(false),
+  authorId: uuid("author_id")
+    .notNull()
+    .references(() => employees.id, { onDelete: "restrict" }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type PageRecord = typeof pages.$inferSelect;
+export type NewPageRecord = typeof pages.$inferInsert;
+
 // ============ Employee Menu Overrides Table ============
 export const employeeMenuOverrides = pgTable("employee_menu_overrides", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),

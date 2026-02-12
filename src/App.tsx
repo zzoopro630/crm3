@@ -36,6 +36,8 @@ import RankHistoryPage from '@/pages/rank/RankHistoryPage'
 import PostListPage from '@/pages/posts/PostListPage'
 import PostDetailPage from '@/pages/posts/PostDetailPage'
 import BoardCategoriesPage from '@/pages/BoardCategoriesPage'
+import PageViewPage from '@/pages/pages/PageViewPage'
+import PageManagementPage from '@/pages/pages/PageManagementPage'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -104,6 +106,9 @@ function AppContent() {
         <Route path="/resources" element={<Navigate to="/board/resource" replace />} />
         <Route path="/resources/:id" element={<Navigate to="/board/resource" replace />} />
 
+        {/* CMS 페이지 */}
+        <Route path="/page/:slug" element={<PageViewPage />} />
+
         {/* Ads nested routes */}
         <Route path="/ads" element={<AdsPage />}>
           <Route index element={<Navigate to="ndata" replace />} />
@@ -133,6 +138,7 @@ function AppContent() {
           <Route path="menus" element={<Navigate to="/settings/app-settings" replace />} />
           <Route path="menu-permissions" element={<MenuPermissionsPage />} />
           <Route path="board-categories" element={<BoardCategoriesPage />} />
+          <Route path="pages" element={<PageManagementPage />} />
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="approvals" element={<PendingApprovalsPage />} />
           <Route path="system" element={<Navigate to="/settings/profile" replace />} />

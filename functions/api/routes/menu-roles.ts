@@ -27,11 +27,13 @@ const DEFAULT_MENU_ROLES: Record<string, Record<string, string>> = {
   "/settings/app-settings":     { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/menu-permissions": { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/board-categories": { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
+  "/settings/pages":            { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/employees":        { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
   "/settings/approvals":        { F1:"editor",F2:"none",F3:"none",F4:"none",F5:"none",M1:"none",M2:"none",M3:"none" },
 };
 
 const BOARD_DEFAULT_ROLE: Record<string, string> = { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" };
+const PAGE_DEFAULT_ROLE: Record<string, string> = { F1:"editor",F2:"viewer",F3:"viewer",F4:"viewer",F5:"viewer",M1:"viewer",M2:"viewer",M3:"viewer" };
 
 async function getMenuRoleMap(c: any): Promise<Record<string, string>> {
   const emp = await getAuthEmployee(c);
@@ -44,14 +46,25 @@ async function getMenuRoleMap(c: any): Promise<Record<string, string>> {
     .select("slug")
     .eq("is_active", true);
 
+  const { data: publishedPages } = await supabase
+    .from("pages")
+    .select("slug")
+    .eq("is_published", true);
+
   if (emp.security_level === "F1") {
     const result: Record<string, string> = {};
     for (const path of Object.keys(DEFAULT_MENU_ROLES)) {
       result[path] = "editor";
     }
+    result["/settings/pages"] = "editor";
     if (boardCats) {
       for (const cat of boardCats) {
         result[`/board/${cat.slug}`] = "editor";
+      }
+    }
+    if (publishedPages) {
+      for (const p of publishedPages) {
+        result[`/page/${p.slug}`] = "editor";
       }
     }
     return result;
@@ -72,6 +85,12 @@ async function getMenuRoleMap(c: any): Promise<Record<string, string>> {
   if (boardCats) {
     for (const cat of boardCats) {
       roleMap[`/board/${cat.slug}`] = BOARD_DEFAULT_ROLE[level] || "none";
+    }
+  }
+
+  if (publishedPages) {
+    for (const p of publishedPages) {
+      roleMap[`/page/${p.slug}`] = PAGE_DEFAULT_ROLE[level] || "none";
     }
   }
 
