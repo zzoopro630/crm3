@@ -162,6 +162,7 @@ export default function MenuPermissionsPage() {
   const { data: boardCategories = EMPTY_BOARD_CATEGORIES, isLoading: boardLoading } = useBoardCategories(false);
   const updateSettings = useUpdateSettings();
   const [roles, setRoles] = useState<Record<string, LevelRoleMap>>({});
+  const [selectedLevel, setSelectedLevel] = useState<string>('F1');
   const initialized = useRef(false);
 
   // 동적 메뉴 섹션 생성 (게시판 포함)
@@ -254,7 +255,28 @@ export default function MenuPermissionsPage() {
     updateSettings.mutate(items);
   };
 
+  // 선택 등급의 권한 요약 (좌측 카드용)
+  const summary = useMemo(() => {
+    const groups: Record<MenuRole, { section: string; title: string }[]> = {
+      editor: [], viewer: [], none: [],
+    };
+    for (const section of menuSections) {
+      for (const entry of section.entries) {
+        const menuRoles = roles[entry.href] || DEFAULT_ROLES[entry.href] || {};
+        const role = (menuRoles[selectedLevel] || 'none') as MenuRole;
+        groups[role].push({ section: section.title, title: entry.defaultTitle });
+      }
+    }
+    return groups;
+  }, [menuSections, roles, selectedLevel, DEFAULT_ROLES]);
+
   if (settingsLoading || boardLoading) return <div className="p-4">로딩 중...</div>;
+
+  const summaryGroups: { key: MenuRole; label: string; color: string; badge: string }[] = [
+    { key: 'editor', label: '편집자', color: 'text-green-600 dark:text-green-400', badge: 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300' },
+    { key: 'viewer', label: '뷰어', color: 'text-blue-600 dark:text-blue-400', badge: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' },
+    { key: 'none', label: '비활성', color: 'text-zinc-400 dark:text-zinc-500', badge: 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -265,7 +287,7 @@ export default function MenuPermissionsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="F1">
+      <Tabs value={selectedLevel} onValueChange={setSelectedLevel}>
         <TabsList className="w-full flex-wrap">
           {ALL_SECURITY_LEVELS.map((level) => (
             <TabsTrigger key={level} value={level} className="flex-1 min-w-[3rem]">
@@ -283,81 +305,122 @@ export default function MenuPermissionsPage() {
                   F1(최고 관리자)은 모든 메뉴에 편집자 권한이 부여되며 변경할 수 없습니다.
                 </p>
               )}
-              <div className="space-y-4 max-w-md">
-                {menuSections.map((section) => (
-                  <div key={section.title} className="border rounded-lg overflow-hidden">
-                    <div className="bg-muted/50 px-3 py-2 text-sm font-semibold text-foreground">
-                      {section.title}
+
+              <div className="flex gap-6">
+                {/* 좌측 요약 카드 */}
+                <div className="hidden lg:block w-[280px] shrink-0 sticky top-4 self-start">
+                  <div className="border rounded-lg p-4 space-y-4">
+                    <div className="text-center">
+                      <span className="text-3xl font-bold">{selectedLevel}</span>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {selectedLevel.startsWith('F') ? '영업등급' : '마케팅등급'}
+                      </p>
                     </div>
-                    <div className="divide-y">
-                      {section.entries.map((entry, idx) => {
-                        const menuRoles = roles[entry.href] || DEFAULT_ROLES[entry.href] || {};
-                        const role = (menuRoles[level] || 'none') as MenuRole;
-                        return (
-                          <div
-                            key={entry.href}
-                            className={`flex items-center justify-between px-3 py-2 gap-3 ${idx % 2 === 1 ? 'bg-muted/30' : ''}`}
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <entry.icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                              <span className="text-sm truncate">{entry.defaultTitle}</span>
-                            </div>
-                            <Select
-                              value={role}
-                              onValueChange={(v) => setRole(entry.href, level, v as MenuRole)}
-                              disabled={isF1}
-                            >
-                              <SelectTrigger
-                                size="sm"
-                                className={`w-[110px] text-xs font-medium ${ROLE_COLORS[role]} ${ROLE_BORDER_COLORS[role]} ${isF1 ? 'opacity-60' : ''}`}
-                              >
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {ROLE_OPTIONS.map((opt) => (
-                                  <SelectItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+
+                    <div className="border-t pt-3 space-y-3">
+                      {summaryGroups.map(({ key, label, color, badge }) => (
+                        <div key={key}>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className={`text-xs font-semibold ${color}`}>{label}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${badge}`}>
+                              {summary[key].length}
+                            </span>
                           </div>
-                        );
-                      })}
+                          {summary[key].length > 0 ? (
+                            <div className="space-y-0.5">
+                              {summary[key].map((item) => (
+                                <p key={`${item.section}-${item.title}`} className="text-xs text-muted-foreground truncate">
+                                  {item.section} &gt; {item.title}
+                                </p>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground/50 italic">없음</p>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
+                </div>
+
+                {/* 우측 메뉴 설정 */}
+                <div className="flex-1 space-y-4">
+                  {menuSections.map((section) => (
+                    <div key={section.title} className="border rounded-lg overflow-hidden">
+                      <div className="bg-muted/50 px-3 py-2 text-sm font-semibold text-foreground">
+                        {section.title}
+                      </div>
+                      <div className="divide-y">
+                        {section.entries.map((entry, idx) => {
+                          const menuRoles = roles[entry.href] || DEFAULT_ROLES[entry.href] || {};
+                          const role = (menuRoles[level] || 'none') as MenuRole;
+                          return (
+                            <div
+                              key={entry.href}
+                              className={`flex items-center justify-between px-3 py-2 gap-3 ${idx % 2 === 1 ? 'bg-muted/30' : ''}`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <entry.icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                                <span className="text-sm truncate">{entry.defaultTitle}</span>
+                              </div>
+                              <Select
+                                value={role}
+                                onValueChange={(v) => setRole(entry.href, level, v as MenuRole)}
+                                disabled={isF1}
+                              >
+                                <SelectTrigger
+                                  size="sm"
+                                  className={`w-[110px] text-xs font-medium ${ROLE_COLORS[role]} ${ROLE_BORDER_COLORS[role]} ${isF1 ? 'opacity-60' : ''}`}
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {ROLE_OPTIONS.map((opt) => (
+                                    <SelectItem key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* 저장 버튼 + 범례 */}
+                  <div className="flex items-center gap-4">
+                    <Button onClick={handleSave} disabled={updateSettings.isPending}>
+                      {updateSettings.isPending ? '저장 중...' : '저장'}
+                    </Button>
+                    {updateSettings.isSuccess && (
+                      <p className="text-sm text-green-600">저장되었습니다.</p>
+                    )}
+                    {updateSettings.isError && (
+                      <p className="text-sm text-red-600">저장 실패: {updateSettings.error?.message}</p>
+                    )}
+                    <div className="ml-auto flex gap-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <span className={`inline-block w-6 h-5 rounded text-center leading-5 font-semibold ${ROLE_COLORS.editor}`}>E</span>
+                        편집자
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className={`inline-block w-6 h-5 rounded text-center leading-5 font-semibold ${ROLE_COLORS.viewer}`}>V</span>
+                        뷰어
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className={`inline-block w-6 h-5 rounded text-center leading-5 font-semibold ${ROLE_COLORS.none}`}>N</span>
+                        비활성
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </TabsContent>
           );
         })}
       </Tabs>
-
-      <div className="flex items-center gap-4">
-        <Button onClick={handleSave} disabled={updateSettings.isPending}>
-          {updateSettings.isPending ? '저장 중...' : '저장'}
-        </Button>
-        {updateSettings.isSuccess && (
-          <p className="text-sm text-green-600">저장되었습니다.</p>
-        )}
-        {updateSettings.isError && (
-          <p className="text-sm text-red-600">저장 실패: {updateSettings.error?.message}</p>
-        )}
-        <div className="ml-auto flex gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <span className={`inline-block w-6 h-5 rounded text-center leading-5 font-semibold ${ROLE_COLORS.editor}`}>E</span>
-            편집자
-          </span>
-          <span className="flex items-center gap-1">
-            <span className={`inline-block w-6 h-5 rounded text-center leading-5 font-semibold ${ROLE_COLORS.viewer}`}>V</span>
-            뷰어
-          </span>
-          <span className="flex items-center gap-1">
-            <span className={`inline-block w-6 h-5 rounded text-center leading-5 font-semibold ${ROLE_COLORS.none}`}>N</span>
-            비활성
-          </span>
-        </div>
-      </div>
     </div>
   );
 }
