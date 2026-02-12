@@ -245,10 +245,12 @@ export default function MenuPermissionsPage() {
   };
 
   const handleSave = () => {
-    const items = allEntries.map((entry) => ({
-      key: `menu_role:${entry.href}`,
-      value: roles[entry.href] ? JSON.stringify(roles[entry.href]) : null,
-    }));
+    const items = allEntries
+      .filter((entry) => roles[entry.href])
+      .map((entry) => ({
+        key: `menu_role:${entry.href}`,
+        value: JSON.stringify(roles[entry.href]),
+      }));
     updateSettings.mutate(items);
   };
 
