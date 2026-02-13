@@ -42,6 +42,7 @@ import LeadOrderPage from '@/pages/orders/LeadOrderPage'
 import LeadOrderAdminPage from '@/pages/orders/LeadOrderAdminPage'
 import CardOrderPage from '@/pages/orders/CardOrderPage'
 import CardOrderAdminPage from '@/pages/orders/CardOrderAdminPage'
+import { Toaster, toast } from 'sonner'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -49,6 +50,12 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
       retry: 1,
+    },
+    mutations: {
+      onError: (error: Error) => {
+        const msg = error?.message || '요청 처리 중 오류가 발생했습니다.'
+        toast.error(msg)
+      },
     },
   },
 })
@@ -169,6 +176,7 @@ function App() {
       <BrowserRouter>
         <AppContent />
       </BrowserRouter>
+      <Toaster position="top-right" richColors closeButton duration={4000} />
     </QueryClientProvider>
   )
 }

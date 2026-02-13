@@ -140,6 +140,9 @@ function NameInput({
   isInvalid?: boolean;
 }) {
   const [showError, setShowError] = useState(false);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => { return () => { clearTimeout(errorTimerRef.current); }; }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -149,7 +152,8 @@ function NameInput({
     );
     if (val !== onlyKorean) {
       setShowError(true);
-      setTimeout(() => setShowError(false), 2000);
+      clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = setTimeout(() => setShowError(false), 2000);
     }
     setValue(onlyKorean);
   };
@@ -239,13 +243,17 @@ function EmailInput({
   isInvalid?: boolean;
 }) {
   const [showError, setShowError] = useState(false);
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => { return () => { clearTimeout(errorTimerRef.current); }; }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     const noKorean = val.replace(/[가-힣ㄱ-ㅎㅏ-ㅣ]/g, "");
     if (val !== noKorean) {
       setShowError(true);
-      setTimeout(() => setShowError(false), 2000);
+      clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = setTimeout(() => setShowError(false), 2000);
     }
     setValue(noKorean);
   };

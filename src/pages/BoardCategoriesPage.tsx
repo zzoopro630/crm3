@@ -93,26 +93,28 @@ export default function BoardCategoriesPage() {
   const handleSubmit = async () => {
     if (!form.name.trim() || !form.slug.trim()) return;
 
-    if (editing) {
-      await updateCategory.mutateAsync({
-        id: editing.id,
-        input: {
+    try {
+      if (editing) {
+        await updateCategory.mutateAsync({
+          id: editing.id,
+          input: {
+            name: form.name,
+            slug: form.slug,
+            icon: form.icon,
+            sortOrder: form.sortOrder,
+            isActive: form.isActive,
+          },
+        });
+      } else {
+        await createCategory.mutateAsync({
           name: form.name,
           slug: form.slug,
           icon: form.icon,
           sortOrder: form.sortOrder,
-          isActive: form.isActive,
-        },
-      });
-    } else {
-      await createCategory.mutateAsync({
-        name: form.name,
-        slug: form.slug,
-        icon: form.icon,
-        sortOrder: form.sortOrder,
-      });
-    }
-    setDialogOpen(false);
+        });
+      }
+      setDialogOpen(false);
+    } catch { /* 글로벌 onError에서 toast 처리 */ }
   };
 
   const handleDelete = async () => {

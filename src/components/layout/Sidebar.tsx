@@ -406,7 +406,7 @@ export function Sidebar({
         setOpenSubmenus((prev) => new Set(prev).add(item.href));
       }
     }
-  }, [location.pathname]);
+  }, [location.pathname, navItems]);
 
   const toggleSubmenu = (href: string) => {
     setOpenSubmenus((prev) => {
