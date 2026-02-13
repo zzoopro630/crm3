@@ -88,7 +88,7 @@ export function InquiryInputModal({
           customer_name: `수동입력_${input.keyword}_${i + 1}`,
           phone: null as null,
           product_name: input.keyword,
-          utm_campaign: input.keyword,
+          utm_campaign: "powerContents",
           source_url: "manual_input",
           inquiry_date: `${date}T12:00:00+09:00`,
         })),
