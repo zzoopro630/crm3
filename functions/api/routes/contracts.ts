@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../database.types";
 import type { Env } from "../middleware/auth";
+import { getAuthEmployee } from "../middleware/auth";
 import { safeError } from "../middleware/helpers";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -51,6 +52,8 @@ app.get("/:customerId", async (c) => {
 
 app.post("/", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
   const body = await c.req.json();
 
   const { data, error } = await supabase
@@ -62,7 +65,7 @@ app.post("/", async (c) => {
       premium: body.premium,
       payment_period: body.paymentPeriod,
       memo: body.memo,
-      created_by: body.createdBy,
+      created_by: emp.id,
     })
     .select()
     .single();

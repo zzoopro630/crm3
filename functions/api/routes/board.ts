@@ -3,7 +3,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../database.types";
 import type { Env } from "../middleware/auth";
 import { getAuthEmployee, requireSecurityLevel, requireBoardEditor } from "../middleware/auth";
-import { safeError, parsePagination } from "../middleware/helpers";
+import { safeError, parsePagination, sanitizeSearch } from "../middleware/helpers";
 
 // 게시판 카테고리
 export const boardCategoryRoutes = new Hono<{ Bindings: Env }>();
@@ -209,7 +209,7 @@ postRoutes.get("/", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const { page, limit, offset } = parsePagination(c);
   const category = c.req.query("category") || "";
-  const search = c.req.query("search") || "";
+  const search = sanitizeSearch(c.req.query("search") || "");
 
   try {
     let query = supabase

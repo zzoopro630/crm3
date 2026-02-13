@@ -16,10 +16,7 @@ export function useTeamMembers() {
 
     return useQuery<TeamMember[]>({
         queryKey: ['team-members', employee?.id],
-        queryFn: () => {
-            if (!employee) throw new Error('로그인이 필요합니다')
-            return getTeamMembers(employee)
-        },
+        queryFn: () => getTeamMembers(),
         enabled: !!employee,
     })
 }

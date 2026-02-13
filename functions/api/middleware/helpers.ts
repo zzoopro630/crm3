@@ -13,6 +13,14 @@ export function safeError(c: any, error: any, status: number = 500) {
   );
 }
 
+/**
+ * PostgREST .or() 필터 인젝션 방어: 특수문자 제거
+ * 괄호, 쉼표, 마침표 등 PostgREST 문법에 사용되는 문자를 strip
+ */
+export function sanitizeSearch(raw: string): string {
+  return raw.replace(/[(),."'\\;]/g, "").trim();
+}
+
 export function parsePagination(c: any) {
   let page = parseInt(c.req.query("page") || "1");
   let limit = parseInt(c.req.query("limit") || "20");

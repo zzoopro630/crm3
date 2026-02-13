@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../database.types";
 import type { Env } from "../middleware/auth";
+import { requireSecurityLevel } from "../middleware/auth";
 import { safeError } from "../middleware/helpers";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -55,8 +56,10 @@ app.get("/keyword-details", async (c) => {
   return c.json({ success: true, data: formattedData });
 });
 
-// CSV 데이터 저장 (upsert)
+// CSV 데이터 저장 (upsert) - F1 전용
 app.post("/keyword-details", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
@@ -81,8 +84,10 @@ app.post("/keyword-details", async (c) => {
   return c.json({ success: true, count: body.length });
 });
 
-// 키워드 상세 데이터 삭제 (날짜 범위)
+// 키워드 상세 데이터 삭제 (날짜 범위) - F1 전용
 app.delete("/keyword-details", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const startDate = c.req.query("startDate");
   const endDate = c.req.query("endDate");
@@ -140,8 +145,10 @@ app.get("/inquiries", async (c) => {
   return c.json({ success: true, data: formattedData });
 });
 
-// 수동 문의 입력
+// 수동 문의 입력 - F1 전용
 app.post("/inquiries", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
@@ -201,8 +208,10 @@ app.get("/ga-summary", async (c) => {
   return c.json({ success: true, data: formattedData, fromDb: true });
 });
 
-// GA 요약 데이터 저장
+// GA 요약 데이터 저장 - F1 전용
 app.post("/ga-summary", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const { data: bodyData, reportDate } = await c.req.json();
 
@@ -262,8 +271,10 @@ app.get("/ga-totals", async (c) => {
   return c.json({ success: true, totals, fromDb: true });
 });
 
-// GA 전체 세션 데이터 저장
+// GA 전체 세션 데이터 저장 - F1 전용
 app.post("/ga-totals", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const { totals, reportDate } = await c.req.json();
 
