@@ -6,28 +6,39 @@ import { safeError } from "../middleware/helpers";
 
 const app = new Hono<{ Bindings: Env }>();
 
-// 키워드 상세 데이터 조회
+// 키워드 상세 데이터 조회 (페이지네이션으로 전체 데이터 반환)
 app.get("/keyword-details", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const startDate = c.req.query("startDate") || "";
   const endDate = c.req.query("endDate") || "";
 
-  let query = (supabase as any)
-    .schema("marketing")
-    .from("keyword_details")
-    .select("*")
-    .order("report_date", { ascending: false })
-    .order("total_cost", { ascending: false })
-    .limit(10000);
+  const PAGE_SIZE = 1000;
+  let allData: any[] = [];
+  let from = 0;
 
-  if (startDate && endDate) {
-    query = query.gte("report_date", startDate).lte("report_date", endDate);
+  while (true) {
+    let query = (supabase as any)
+      .schema("marketing")
+      .from("keyword_details")
+      .select("*")
+      .order("report_date", { ascending: false })
+      .order("total_cost", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (startDate && endDate) {
+      query = query.gte("report_date", startDate).lte("report_date", endDate);
+    }
+
+    const { data, error } = await query;
+    if (error) return safeError(c, error);
+    if (!data || data.length === 0) break;
+
+    allData = allData.concat(data);
+    if (data.length < PAGE_SIZE) break;
+    from += PAGE_SIZE;
   }
 
-  const { data, error } = await query;
-  if (error) return safeError(c, error);
-
-  const formattedData = (data || []).map((item: any) => ({
+  const formattedData = allData.map((item: any) => ({
     id: item.id,
     adGroup: item.ad_group,
     keyword: item.keyword,
