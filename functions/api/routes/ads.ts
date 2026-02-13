@@ -17,7 +17,8 @@ app.get("/keyword-details", async (c) => {
     .from("keyword_details")
     .select("*")
     .order("report_date", { ascending: false })
-    .order("total_cost", { ascending: false });
+    .order("total_cost", { ascending: false })
+    .limit(10000);
 
   if (startDate && endDate) {
     query = query.gte("report_date", startDate).lte("report_date", endDate);
@@ -106,8 +107,9 @@ app.get("/inquiries", async (c) => {
 
   if (startDate && endDate) {
     const kstStart = `${startDate}T00:00:00+09:00`;
-    const kstEnd = `${endDate}T23:59:59+09:00`;
-    query = query.gte("inquiry_date", kstStart).lte("inquiry_date", kstEnd);
+    const nextDay = new Date(new Date(endDate).getTime() + 86400000).toISOString().split("T")[0];
+    const kstEnd = `${nextDay}T00:00:00+09:00`;
+    query = query.gte("inquiry_date", kstStart).lt("inquiry_date", kstEnd);
   }
 
   const { data, error } = await query;
