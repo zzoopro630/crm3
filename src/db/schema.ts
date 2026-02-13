@@ -495,6 +495,63 @@ export type NewLeadOrderItem = typeof leadOrderItems.$inferInsert;
 
 export type OrderStatus = (typeof orderStatusEnum.enumValues)[number];
 
+// ============ Card Orders (명함 주문) ============
+export const cardOrderStatusEnum = pgEnum("card_order_status_enum", [
+  "pending",
+  "confirmed",
+  "printing",
+  "shipped",
+  "completed",
+  "cancelled",
+]);
+
+export const cardOrders = pgTable("card_orders", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  orderedBy: uuid("ordered_by")
+    .notNull()
+    .references(() => employees.id, { onDelete: "restrict" }),
+  totalQty: integer("total_qty").notNull().default(0),
+  deliveryFee: integer("delivery_fee").notNull().default(0),
+  totalAmount: integer("total_amount").notNull().default(0),
+  status: cardOrderStatusEnum("status").notNull().default("pending"),
+  recipientName: text("recipient_name"),
+  recipientPhone: text("recipient_phone"),
+  recipientAddress: text("recipient_address"),
+  recipientEmail: text("recipient_email"),
+  cancelledAt: timestamp("cancelled_at"),
+  cancelledBy: uuid("cancelled_by").references(() => employees.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type CardOrder = typeof cardOrders.$inferSelect;
+export type NewCardOrder = typeof cardOrders.$inferInsert;
+export type CardOrderStatus = (typeof cardOrderStatusEnum.enumValues)[number];
+
+// ============ Card Order Applicants (명함 주문 신청자) ============
+export const cardOrderApplicants = pgTable("card_order_applicants", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  orderId: integer("order_id")
+    .notNull()
+    .references(() => cardOrders.id, { onDelete: "cascade" }),
+  design: integer("design").notNull(), // 1~9
+  designLabel: text("design_label"), // 시안 이름
+  cardType: text("card_type").notNull(), // '로고형' | '전화번호형'
+  name: text("name").notNull(),
+  grade: text("grade"), // 직급
+  branch: text("branch"), // 지사
+  phone: text("phone"),
+  email: text("email"),
+  fax: text("fax"),
+  addrBase: text("addr_base"),
+  addrDetail: text("addr_detail"),
+  request: text("request"), // 요청사항
+  qty: integer("qty").notNull().default(1),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type CardOrderApplicant = typeof cardOrderApplicants.$inferSelect;
+export type NewCardOrderApplicant = typeof cardOrderApplicants.$inferInsert;
+
 // ============ ENUM Value Types ============
 export type SecurityLevel = (typeof securityLevelEnum.enumValues)[number];
 export type CustomerStatus = (typeof customerStatusEnum.enumValues)[number];

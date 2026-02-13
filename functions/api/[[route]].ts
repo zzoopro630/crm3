@@ -26,6 +26,7 @@ import dashboardCards from "./routes/dashboard-cards";
 import pages from "./routes/pages";
 import leadProducts from "./routes/lead-products";
 import leadOrders from "./routes/lead-orders";
+import cardOrders from "./routes/card-orders";
 
 // Hono 앱 생성
 const app = new Hono<{ Bindings: Env }>();
@@ -118,6 +119,7 @@ app.route("/api/dashboard-cards", dashboardCards);
 app.route("/api/pages", pages);
 app.route("/api/lead-products", leadProducts);
 app.route("/api/lead-orders", leadOrders);
+app.route("/api/card-orders", cardOrders);
 
 // Cloudflare Pages Functions export
 import { handle } from "hono/cloudflare-pages";

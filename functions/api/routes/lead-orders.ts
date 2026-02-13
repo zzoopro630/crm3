@@ -120,9 +120,15 @@ async function sendOrderEmail(c: any, order: any, items: any[], products: any[])
   }
 
   try {
-    await Promise.all(emailPromises);
-  } catch {
-    // best-effort: 이메일 실패해도 주문은 유지
+    const results = await Promise.all(emailPromises);
+    for (const res of results) {
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        console.error("[sendOrderEmail] Resend API error:", res.status, body);
+      }
+    }
+  } catch (err) {
+    console.error("[sendOrderEmail] Failed to send email:", err);
   }
 }
 
