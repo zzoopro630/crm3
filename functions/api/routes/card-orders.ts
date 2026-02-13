@@ -11,15 +11,15 @@ const UNIT_PRICE = 12000; // 1세트(1box, 200장) 단가
 
 // 디자인 라벨 맵
 const DESIGN_LABELS: Record<number, string> = {
-  1: "시안 1",
-  2: "시안 2",
-  3: "시안 3",
-  4: "시안 4",
-  5: "시안 5",
-  6: "시안 6",
-  7: "시안 7 (세로)",
-  8: "시안 8 (세로)",
-  9: "시안 9 (세로)",
+  1: "가로형1",
+  2: "가로형2",
+  3: "가로형3-블랙골드",
+  4: "가로형4-블루실버",
+  5: "가로형5-퍼플",
+  6: "가로형6-화이트골드",
+  7: "세로형1",
+  8: "세로형2-블랙골드",
+  9: "세로형3-화이트골드",
 };
 
 // 이메일 발송 (best-effort)
@@ -292,7 +292,7 @@ app.post("/", async (c) => {
       totalQty += a.qty;
     }
 
-    const deliveryFee = 0; // 배송비 없음 (필요시 로직 추가)
+    const deliveryFee = totalQty === 1 ? 3000 : 0; // 1세트: 3,000원, 2세트 이상: 무료
     const totalAmount = totalQty * UNIT_PRICE + deliveryFee;
 
     // 주문 저장
@@ -344,6 +344,7 @@ app.post("/", async (c) => {
       {
         id: order.id,
         totalQty: (order as any).total_qty,
+        deliveryFee: (order as any).delivery_fee,
         totalAmount: (order as any).total_amount,
         status: (order as any).status,
         createdAt: (order as any).created_at,
