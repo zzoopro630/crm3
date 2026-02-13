@@ -28,6 +28,7 @@ import {
   Clock,
   Cog,
   Minus,
+  FolderOpen,
 } from 'lucide-react';
 
 // ── 앱 설정 항목 정의 ──
@@ -106,11 +107,14 @@ interface MenuEntry {
 
 const menuEntries: MenuEntry[] = [
   { href: '/', defaultTitle: '대시보드', icon: LayoutDashboard },
-  { href: '/customers', defaultTitle: '고객리스트', icon: Users },
-  { href: '/customers/trash', defaultTitle: '휴지통', icon: Trash2 },
-  { href: '/inquiries', defaultTitle: '보험문의', icon: Headphones },
-  { href: '/consultant-inquiries', defaultTitle: '더플문의', icon: MessageSquare },
-  { href: '/recruit-inquiries', defaultTitle: '입사문의', icon: UserPlus },
+  // 섹션 타이틀
+  { href: 'section:customers', defaultTitle: '고객관리', icon: FolderOpen },
+  { href: '/customers', defaultTitle: '고객리스트', icon: Users, isSub: true },
+  { href: '/customers/trash', defaultTitle: '휴지통', icon: Trash2, isSub: true },
+  { href: 'section:inquiries', defaultTitle: '상담관리', icon: FolderOpen },
+  { href: '/inquiries', defaultTitle: '보험문의', icon: Headphones, isSub: true },
+  { href: '/consultant-inquiries', defaultTitle: '더플문의', icon: MessageSquare, isSub: true },
+  { href: '/recruit-inquiries', defaultTitle: '입사문의', icon: UserPlus, isSub: true },
   { href: '/team', defaultTitle: '팀 관리', icon: UsersRound },
   { href: '/contacts-direct', defaultTitle: '연락처', icon: BookUser },
   // 신청/주문

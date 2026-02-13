@@ -25,6 +25,7 @@ dist-ssr
 *.csv
 
 # Reference/temp files
+ref/
 sample.png
 *.sample.*
 temp/

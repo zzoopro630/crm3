@@ -79,6 +79,7 @@ interface NavItem {
 
 // 섹션 타입 정의
 interface NavSection {
+  key?: string;   // 섹션 식별자 (메뉴 라벨 커스터마이징용)
   title?: string;
   items: NavItem[];
 }
@@ -93,6 +94,7 @@ const staticNavSections: NavSection[] = [
   // 게시판 - placeholder, 동적으로 교체됨
   // 고객관리 섹션
   {
+    key: "section:customers",
     title: "고객관리",
     items: [
       { title: "고객리스트", href: "/customers", icon: Users },
@@ -101,6 +103,7 @@ const staticNavSections: NavSection[] = [
   },
   // 상담관리 섹션
   {
+    key: "section:inquiries",
     title: "상담관리",
     items: [
       { title: "보험문의", href: "/inquiries", icon: Headphones },
@@ -187,6 +190,7 @@ interface SidebarProps {
   isCollapsed?: boolean;
   onCollapseToggle?: () => void;
   onNavigateToMainMenu?: () => void;
+  isWideScreen?: boolean;
   onMouseLeave?: () => void;
 }
 
@@ -196,6 +200,7 @@ export function Sidebar({
   isCollapsed = false,
   onCollapseToggle,
   onNavigateToMainMenu,
+  isWideScreen = false,
   onMouseLeave,
 }: SidebarProps) {
   const location = useLocation();
@@ -215,6 +220,7 @@ export function Sidebar({
     }));
 
     const boardSection: NavSection = {
+      key: "section:board",
       title: "게시판",
       items: boardItems,
     };
@@ -226,6 +232,7 @@ export function Sidebar({
     }));
 
     const pageSection: NavSection = {
+      key: "section:pages",
       title: "페이지",
       items: pageItems,
     };
@@ -412,7 +419,8 @@ export function Sidebar({
           }}
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full",
-            effectiveCollapsed && "justify-center px-0",
+            // 완전 축소(w-16): 아이콘 센터링, 반축소(w-48): 좌측 정렬
+            effectiveCollapsed && !isInAnySubmenu && "justify-center px-0",
             isActive
               ? "bg-primary/10 text-primary"
               : "text-muted-foreground hover:bg-secondary hover:text-foreground",
@@ -443,7 +451,7 @@ export function Sidebar({
           )}
         </Link>
 
-        {/* 하위 메뉴: 축소 상태에서는 활성화된 서브메뉴만 표시 */}
+        {/* 하위 메뉴: 축소 상태에서는 활성화된 서브메뉴만 표시 (텍스트 포함) */}
         {hasSubmenu && (!effectiveCollapsed || (effectiveCollapsed && isActive)) && (
           <div
             className={cn(
@@ -463,7 +471,6 @@ export function Sidebar({
                   }}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors w-full",
-                    effectiveCollapsed && "justify-center px-0",
                     isSubActive
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-secondary hover:text-foreground",
@@ -474,7 +481,8 @@ export function Sidebar({
                   )}
                 >
                   <subItem.icon className="h-4 w-4 shrink-0" />
-                  {!effectiveCollapsed && (
+                  {/* 축소 상태에서도 활성 서브메뉴의 텍스트는 표시 */}
+                  {(!effectiveCollapsed || (effectiveCollapsed && isActive)) && (
                     <span className="truncate">{menuLabels[subItem.href] || subItem.title}</span>
                   )}
                 </Link>
@@ -509,7 +517,7 @@ export function Sidebar({
           "fixed left-0 top-0 z-50 h-full bg-card border-r border-border transition-all duration-300 ease-in-out lg:translate-x-0",
           // 모바일: 항상 w-64 (풀 드로어), 데스크탑: 축소 상태에 따라
           "w-64",
-          isCollapsed && !hoverExpanded && "lg:w-16",
+          isCollapsed && !hoverExpanded && (isInAnySubmenu ? "lg:w-48" : "lg:w-16"),
           isOpen ? "translate-x-0" : "-translate-x-full",
           // 호버 펼침 시 그림자 추가
           hoverExpanded && "shadow-xl"
@@ -527,19 +535,21 @@ export function Sidebar({
               )}
             </div>
             <div className="flex items-center gap-1">
-              {/* 데스크탑: 축소/확장 토글 버튼 */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onCollapseToggle}
-                className="hidden lg:flex text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
-              >
-                {isCollapsed ? (
-                  <ChevronRight className="h-5 w-5" />
-                ) : (
-                  <ChevronLeft className="h-5 w-5" />
-                )}
-              </Button>
+              {/* 데스크탑: 축소/확장 토글 버튼 (넓은 화면에서는 숨김) */}
+              {!isWideScreen && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onCollapseToggle}
+                  className="hidden lg:flex text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+                >
+                  {isCollapsed ? (
+                    <ChevronRight className="h-5 w-5" />
+                  ) : (
+                    <ChevronLeft className="h-5 w-5" />
+                  )}
+                </Button>
+              )}
               {/* 모바일: 닫기 버튼 */}
               <Button
                 variant="ghost"
@@ -560,7 +570,7 @@ export function Sidebar({
                 {section.title && !effectiveCollapsed && (
                   <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                     <FolderOpen className="h-3 w-3" />
-                    {section.title}
+                    {(section.key && menuLabels[section.key]) || section.title}
                   </div>
                 )}
                 {section.title && effectiveCollapsed && (
