@@ -60,14 +60,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
 
             // Listen for auth changes
-            supabase.auth.onAuthStateChange(async (_event, session) => {
+            supabase.auth.onAuthStateChange((_event, session) => {
                 if (session?.user) {
                     set({
                         user: session.user,
                         session,
                         isAuthenticated: true,
                     })
-                    await get().checkEmployeeStatus(session.user.email || '')
+                    get().checkEmployeeStatus(session.user.email || '')
                 } else {
                     set({
                         user: null,

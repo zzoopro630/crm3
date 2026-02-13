@@ -1,8 +1,7 @@
-import { supabase } from '@/utils/supabase'
+import { useAuthStore } from '@/stores/authStore'
 
 export async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
-  const { data: { session } } = await supabase.auth.getSession()
-  const token = session?.access_token
+  const token = useAuthStore.getState().session?.access_token
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
