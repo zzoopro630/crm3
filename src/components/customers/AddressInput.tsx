@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Search, X, Loader2, MapPin } from 'lucide-react'
@@ -49,7 +50,10 @@ export function AddressInput({ value, onChange, placeholder = '주소 검색' }:
         setResults([])
 
         try {
-            const response = await fetch(`/api/address/search?keyword=${encodeURIComponent(keyword)}`)
+            const token = useAuthStore.getState().session?.access_token
+            const headers: Record<string, string> = {}
+            if (token) headers['Authorization'] = `Bearer ${token}`
+            const response = await fetch(`/api/address/search?keyword=${encodeURIComponent(keyword)}`, { headers })
             const data: ApiResponse = await response.json()
 
             if (data.results?.common?.errorCode === '0') {
