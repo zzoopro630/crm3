@@ -211,7 +211,21 @@ export function Sidebar({
   const { data: boardCategories = [] } = useBoardCategories();
   const { data: publishedPages = [] } = usePages();
 
-  // 동적 게시판 + 페이지 섹션 생성
+  // 메뉴 라벨을 아이템에 적용하는 헬퍼
+  const applyLabels = (item: NavItem): NavItem => {
+    const labeledItem = menuLabels[item.href]
+      ? { ...item, title: menuLabels[item.href] }
+      : item;
+    if (labeledItem.submenuItems) {
+      return {
+        ...labeledItem,
+        submenuItems: labeledItem.submenuItems.map(applyLabels),
+      };
+    }
+    return labeledItem;
+  };
+
+  // 동적 게시판 + 페이지 섹션 생성 + 메뉴 라벨 적용
   const navSections = useMemo<NavSection[]>(() => {
     const boardItems: NavItem[] = boardCategories.map((cat) => ({
       title: cat.name,
@@ -247,8 +261,14 @@ export function Sidebar({
     if (pageItems.length > 0) {
       result.splice(insertIdx, 0, pageSection);
     }
-    return result;
-  }, [boardCategories, publishedPages]);
+
+    // 메뉴 라벨 적용: 섹션 타이틀 + 개별 아이템 + 서브메뉴 아이템
+    return result.map((section) => ({
+      ...section,
+      title: (section.key && menuLabels[section.key]) || section.title,
+      items: section.items.map(applyLabels),
+    }));
+  }, [boardCategories, publishedPages, menuLabels]);
 
   const navItems: NavItem[] = useMemo(
     () => navSections.flatMap((section) => section.items),
@@ -438,7 +458,7 @@ export function Sidebar({
           <item.icon className="h-5 w-5 shrink-0" />
           {!effectiveCollapsed && (
             <>
-              <span className="truncate">{menuLabels[item.href] || item.title}</span>
+              <span className="truncate">{item.title}</span>
               {hasSubmenu && (
                 <ChevronDown
                   className={cn(
@@ -483,7 +503,7 @@ export function Sidebar({
                   <subItem.icon className="h-4 w-4 shrink-0" />
                   {/* 축소 상태에서도 활성 서브메뉴의 텍스트는 표시 */}
                   {(!effectiveCollapsed || (effectiveCollapsed && isActive)) && (
-                    <span className="truncate">{menuLabels[subItem.href] || subItem.title}</span>
+                    <span className="truncate">{subItem.title}</span>
                   )}
                 </Link>
               );
@@ -570,7 +590,7 @@ export function Sidebar({
                 {section.title && !effectiveCollapsed && (
                   <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                     <FolderOpen className="h-3 w-3" />
-                    {(section.key && menuLabels[section.key]) || section.title}
+                    {section.title}
                   </div>
                 )}
                 {section.title && effectiveCollapsed && (
