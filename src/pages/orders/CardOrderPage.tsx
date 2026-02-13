@@ -497,6 +497,40 @@ function EditApplicantModal({
   );
 }
 
+// ── 히어로 헤더 ──
+
+function HeroHeader() {
+  return (
+    <div
+      className="relative w-full h-40 sm:h-48 md:h-56 bg-cover bg-center rounded-lg overflow-hidden mb-8"
+      style={{ backgroundImage: "url('/card-designs/main.jpg')" }}
+    >
+      <div className="absolute inset-0 bg-black/50" />
+      <div className="relative z-10 flex items-center justify-center h-full gap-3 sm:gap-4">
+        <img
+          src="/card-designs/thelogo.svg"
+          alt="logo"
+          className="h-10 sm:h-12 md:h-14 brightness-0 invert"
+        />
+        <div className="flex flex-col items-start">
+          <span
+            className="text-base sm:text-lg italic text-white/80"
+            style={{ fontFamily: "'Caveat Brush', cursive" }}
+          >
+            Be the First!
+          </span>
+          <span
+            className="text-3xl sm:text-4xl md:text-5xl text-white"
+            style={{ fontFamily: "'Paperlogy', sans-serif", fontWeight: 800, lineHeight: 1 }}
+          >
+            명함 신청
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── 메인 컴포넌트 ──
 
 export default function CardOrderPage() {
@@ -865,6 +899,7 @@ export default function CardOrderPage() {
   if (step === "success" && orderResult) {
     return (
       <div className="max-w-2xl mx-auto py-8 space-y-8">
+        <HeroHeader />
         <div className="text-center space-y-4">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full">
             <Check className="w-12 h-12 text-green-600" strokeWidth={3} />
@@ -1007,6 +1042,7 @@ export default function CardOrderPage() {
 
     return (
       <div className="max-w-2xl mx-auto space-y-6">
+        <HeroHeader />
         {/* 주문 요약 */}
         <div className="border rounded-lg p-5 space-y-4">
           <h3 className="font-bold flex items-center gap-2">
@@ -1161,6 +1197,7 @@ export default function CardOrderPage() {
   // ═══════════════════════════════════════════
   return (
     <div>
+      <HeroHeader />
       <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
         {/* 왼쪽: 프리뷰 + 디자인 선택 */}
         <div className="space-y-6">
