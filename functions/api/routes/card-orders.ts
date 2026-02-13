@@ -107,7 +107,7 @@ async function sendCardOrderEmail(c: any, order: any, applicants: any[]) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "CRM <noreply@crm.thefirst.co.kr>",
+        from: "CRM <admin@thefirst.co.kr>",
         to: adminEmail.split(",").map((e: string) => e.trim()),
         subject: `[명함신청] ${applicants.map((a: any) => a.name).join(", ")} / ${formattedDate}`,
         html: adminHtml,
@@ -125,7 +125,7 @@ async function sendCardOrderEmail(c: any, order: any, applicants: any[]) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "THE FIN. <noreply@crm.thefirst.co.kr>",
+          from: "TFC <admin@thefirst.co.kr>",
           to: [order.recipient_email],
           subject: `[${formattedDate}] 명함 신청 접수 확인`,
           html: customerHtml,

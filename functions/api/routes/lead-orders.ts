@@ -92,7 +92,7 @@ async function sendOrderEmail(c: any, order: any, items: any[], products: any[])
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "CRM <noreply@crm.thefirst.co.kr>",
+        from: "CRM <admin@thefirst.co.kr>",
         to: adminEmail.split(",").map((e: string) => e.trim()),
         subject: `[DB신청] ${order.name} / ${order.affiliation || "-"} / ${order.position || "-"} / ${formattedDate}`,
         html: adminHtml,
@@ -110,7 +110,7 @@ async function sendOrderEmail(c: any, order: any, items: any[], products: any[])
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "THE FIN. <noreply@crm.thefirst.co.kr>",
+          from: "TFC <admin@thefirst.co.kr>",
           to: [order.email],
           subject: `[${formattedDate}] ${order.name} ${order.position || ""}님, DB신청이 정상적으로 접수되었습니다.`,
           html: applicantHtml,
