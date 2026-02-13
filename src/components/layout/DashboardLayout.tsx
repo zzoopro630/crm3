@@ -24,6 +24,9 @@ export function DashboardLayout() {
     // 사용자가 수동으로 축소/확장을 설정했는지 여부
     const [manualCollapse, setManualCollapse] = useState<boolean | null>(null)
 
+    // 화면 크기 감지: wide(xl, >=1280), medium(lg, 1024~1279), small(<1024)
+    const [isWideScreen, setIsWideScreen] = useState(window.innerWidth >= 1280)
+
     // 왼쪽 가장자리 호버로 사이드바 열기 (마우스 환경 + 사이드바 숨김 상태)
     const [hasHover, setHasHover] = useState(false)
     const [isSmallScreen, setIsSmallScreen] = useState(false)
@@ -31,15 +34,20 @@ export function DashboardLayout() {
     useEffect(() => {
         const hoverMq = window.matchMedia('(hover: hover)')
         const screenMq = window.matchMedia('(max-width: 1023px)')
+        const wideMq = window.matchMedia('(min-width: 1280px)')
         setHasHover(hoverMq.matches)
         setIsSmallScreen(screenMq.matches)
+        setIsWideScreen(wideMq.matches)
         const onHoverChange = (e: MediaQueryListEvent) => setHasHover(e.matches)
         const onScreenChange = (e: MediaQueryListEvent) => setIsSmallScreen(e.matches)
+        const onWideChange = (e: MediaQueryListEvent) => setIsWideScreen(e.matches)
         hoverMq.addEventListener('change', onHoverChange)
         screenMq.addEventListener('change', onScreenChange)
+        wideMq.addEventListener('change', onWideChange)
         return () => {
             hoverMq.removeEventListener('change', onHoverChange)
             screenMq.removeEventListener('change', onScreenChange)
+            wideMq.removeEventListener('change', onWideChange)
         }
     }, [])
 
@@ -53,14 +61,19 @@ export function DashboardLayout() {
 
     // 경로 변경 시 자동 축소/확장
     useEffect(() => {
+        // 넓은 화면(xl): 항상 펼침
+        if (isWideScreen) {
+            setSidebarCollapsed(false)
+            return
+        }
         // 사용자가 수동으로 설정한 경우 해당 설정 유지
         if (manualCollapse !== null) {
             setSidebarCollapsed(manualCollapse)
             return
         }
-        // 서브메뉴 영역 진입 시 자동 축소, 일반 메뉴 시 확장
-        setSidebarCollapsed(isInSubmenuArea)
-    }, [location.pathname, isInSubmenuArea, manualCollapse])
+        // 중간 화면(lg~xl): 항상 축소
+        setSidebarCollapsed(true)
+    }, [location.pathname, isInSubmenuArea, manualCollapse, isWideScreen])
 
     // 일반 메뉴 클릭 시 수동 설정 초기화
     const handleNavigateToMainMenu = useCallback(() => {
@@ -72,6 +85,8 @@ export function DashboardLayout() {
         setSidebarOpen(!sidebarOpen)
     }
     const toggleSidebarCollapse = () => {
+        // 넓은 화면에서는 축소 토글 불가
+        if (isWideScreen) return
         const newValue = !sidebarCollapsed
         setSidebarCollapsed(newValue)
         setManualCollapse(newValue)
@@ -96,6 +111,7 @@ export function DashboardLayout() {
                 isCollapsed={sidebarCollapsed}
                 onCollapseToggle={toggleSidebarCollapse}
                 onNavigateToMainMenu={handleNavigateToMainMenu}
+                isWideScreen={isWideScreen}
                 onMouseLeave={openedByHoverRef.current ? () => {
                     openedByHoverRef.current = false
                     setSidebarOpen(false)
@@ -105,7 +121,9 @@ export function DashboardLayout() {
             {/* Main content area */}
             <div className={cn(
                 'min-h-screen flex flex-col transition-all duration-300',
-                sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
+                sidebarCollapsed
+                    ? (isInSubmenuArea ? 'lg:ml-48' : 'lg:ml-16')
+                    : 'lg:ml-64'
             )}>
                 <Header onSidebarToggle={toggleSidebar} logoutCountdownSeconds={logoutCountdownSeconds} />
 
