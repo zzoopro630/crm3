@@ -120,7 +120,9 @@ const menuEntries: MenuEntry[] = [
   // 신청/주문
   { href: '/orders', defaultTitle: '신청/주문', icon: ShoppingBag },
   { href: '/orders/lead', defaultTitle: '보험 리드', icon: ShoppingBag, isSub: true },
+  { href: '/orders/card', defaultTitle: '명함 신청', icon: ShoppingBag, isSub: true },
   { href: '/orders/lead/admin', defaultTitle: '주문 관리', icon: ClipboardList, isSub: true },
+  { href: '/orders/card/admin', defaultTitle: '명함 관리', icon: ClipboardList, isSub: true },
   // 광고 분석
   { href: '/ads', defaultTitle: '광고 분석', icon: BarChart3 },
   { href: '/ads/ndata', defaultTitle: 'N-DATA', icon: BarChart3, isSub: true },

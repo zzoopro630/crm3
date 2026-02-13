@@ -8,6 +8,7 @@ export interface Env {
   SUPER_ADMIN_EMAIL?: string;
   ENVIRONMENT?: string;
   RESEND_API_KEY?: string;
+  ADMIN_NOTIFICATION_EMAIL?: string;
 }
 
 export async function getAuthEmployee(c: any) {

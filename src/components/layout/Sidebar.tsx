@@ -37,6 +37,7 @@ import {
   BookOpen,
   Newspaper,
   ShoppingBag,
+  CreditCard,
   type LucideIcon,
 } from "lucide-react";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -66,6 +67,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Settings,
   Search,
   ShoppingBag,
+  CreditCard,
 };
 
 interface NavItem {
@@ -133,7 +135,9 @@ const staticNavSections: NavSection[] = [
         isSubmenu: true,
         submenuItems: [
           { title: "보험 리드", href: "/orders/lead", icon: ShoppingBag },
+          { title: "명함 신청", href: "/orders/card", icon: CreditCard },
           { title: "주문 관리", href: "/orders/lead/admin", icon: ClipboardList },
+          { title: "명함 관리", href: "/orders/card/admin", icon: ClipboardList },
         ],
       },
     ],

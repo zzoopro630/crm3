@@ -40,6 +40,8 @@ import PageViewPage from '@/pages/pages/PageViewPage'
 import PageManagementPage from '@/pages/pages/PageManagementPage'
 import LeadOrderPage from '@/pages/orders/LeadOrderPage'
 import LeadOrderAdminPage from '@/pages/orders/LeadOrderAdminPage'
+import CardOrderPage from '@/pages/orders/CardOrderPage'
+import CardOrderAdminPage from '@/pages/orders/CardOrderAdminPage'
 import './App.css'
 
 const queryClient = new QueryClient({
@@ -114,6 +116,8 @@ function AppContent() {
         {/* 주문 */}
         <Route path="/orders/lead" element={<LeadOrderPage />} />
         <Route path="/orders/lead/admin" element={<LeadOrderAdminPage />} />
+        <Route path="/orders/card" element={<CardOrderPage />} />
+        <Route path="/orders/card/admin" element={<CardOrderAdminPage />} />
 
         {/* Ads nested routes */}
         <Route path="/ads" element={<AdsPage />}>
