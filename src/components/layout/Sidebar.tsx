@@ -47,6 +47,11 @@ import { useBoardCategories } from "@/hooks/useBoardCategories";
 import { usePages } from "@/hooks/usePages";
 import type { MenuRoleMap } from "@/types/menuRole";
 
+// TanStack Query 기본값: 매 렌더 새 참조 방지
+const EMPTY_ORGS: any[] = [];
+const EMPTY_BOARD_CATEGORIES: any[] = [];
+const EMPTY_PAGES: any[] = [];
+
 // Lucide 아이콘 룩업 맵
 const ICON_MAP: Record<string, LucideIcon> = {
   Megaphone,
@@ -209,11 +214,11 @@ export function Sidebar({
 }: SidebarProps) {
   const location = useLocation();
   const { employee } = useAuthStore();
-  const { data: organizations = [] } = useOrganizations();
+  const { data: organizations = EMPTY_ORGS } = useOrganizations();
   const menuLabels = useMenuLabels();
   const { data: menuRoles } = useMenuRoles();
-  const { data: boardCategories = [] } = useBoardCategories();
-  const { data: publishedPages = [] } = usePages();
+  const { data: boardCategories = EMPTY_BOARD_CATEGORIES } = useBoardCategories();
+  const { data: publishedPages = EMPTY_PAGES } = usePages();
 
   // 메뉴 라벨을 아이템에 적용하는 헬퍼
   const applyLabels = (item: NavItem): NavItem => {
