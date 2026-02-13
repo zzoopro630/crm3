@@ -252,7 +252,7 @@ export default function MenuPermissionsPage() {
     }
 
     setRoles(map);
-  }, [settings, allEntries, DEFAULT_ROLES, settingsLoading, boardLoading]);
+  }, [settings, allEntries, DEFAULT_ROLES, settingsLoading, boardLoading, pagesLoading]);
 
   // 게시판 카테고리 변경 시 새 항목 추가
   useEffect(() => {

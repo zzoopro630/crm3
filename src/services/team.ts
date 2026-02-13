@@ -28,13 +28,9 @@ export interface TeamStats {
 /**
  * 하위 조직원 목록 조회 (본인 포함)
  */
-export async function getTeamMembers(employee: Employee): Promise<TeamMember[]> {
+export async function getTeamMembers(): Promise<TeamMember[]> {
     return apiRequest<TeamMember[]>('/api/team/members', {
         method: 'POST',
-        body: JSON.stringify({
-            employeeId: employee.id,
-            securityLevel: employee.securityLevel,
-        }),
     })
 }
 

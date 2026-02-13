@@ -19,6 +19,9 @@ interface AuthState {
     checkEmployeeStatus: (email: string) => Promise<void>
 }
 
+// onAuthStateChange 구독 해제 함수 (중복 등록 방지)
+let authSubscription: { unsubscribe: () => void } | null = null;
+
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     session: null,
@@ -59,8 +62,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 })
             }
 
-            // Listen for auth changes
-            supabase.auth.onAuthStateChange((_event, session) => {
+            // Listen for auth changes (이전 구독 해제 후 등록)
+            if (authSubscription) authSubscription.unsubscribe();
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
                 if (session?.user) {
                     set({
                         user: session.user,
@@ -77,7 +81,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                         isApproved: false,
                     })
                 }
-            })
+            });
+            authSubscription = subscription;
         } catch (error) {
             console.error('Auth initialization error:', error)
             set({ isLoading: false })

@@ -12,8 +12,10 @@ export function useAppSettings() {
   });
 }
 
+const EMPTY_SETTINGS: AppSetting[] = [];
+
 export function useMenuLabels() {
-  const { data: settings = [] } = useAppSettings();
+  const { data: settings = EMPTY_SETTINGS } = useAppSettings();
   return useMemo(() => {
     const labels: Record<string, string> = {};
     for (const s of settings) {

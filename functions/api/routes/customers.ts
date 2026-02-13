@@ -3,7 +3,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../database.types";
 import type { Env } from "../middleware/auth";
 import { requireSecurityLevel } from "../middleware/auth";
-import { safeError, parsePagination } from "../middleware/helpers";
+import { safeError, parsePagination, sanitizeSearch } from "../middleware/helpers";
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -11,7 +11,7 @@ app.get("/", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { page, limit, offset } = parsePagination(c);
-  const search = c.req.query("search") || "";
+  const search = sanitizeSearch(c.req.query("search") || "");
   const status = c.req.query("status") || "";
   const managerId = c.req.query("managerId") || "";
   const type = c.req.query("type") || "";
@@ -37,12 +37,15 @@ app.get("/", async (c) => {
     query = query.eq("type", type);
   }
 
-  const sortColumn =
-    sortBy === "createdAt"
-      ? "created_at"
-      : sortBy === "updatedAt"
-      ? "updated_at"
-      : sortBy;
+  const ALLOWED_SORT_COLUMNS: Record<string, string> = {
+    created_at: "created_at",
+    updated_at: "updated_at",
+    createdAt: "created_at",
+    updatedAt: "updated_at",
+    name: "name",
+    status: "status",
+  };
+  const sortColumn = ALLOWED_SORT_COLUMNS[sortBy] || "created_at";
 
   query = query.order(sortColumn, { ascending: sortOrder === "asc" });
   query = query.range(offset, offset + limit - 1);
@@ -106,7 +109,7 @@ app.get("/", async (c) => {
 app.get("/trash", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const { page, limit, offset } = parsePagination(c);
-  const search = c.req.query("search") || "";
+  const search = sanitizeSearch(c.req.query("search") || "");
 
   let query = supabase.from("customers").select("*", { count: "exact" }).not("deleted_at", "is", null);
 

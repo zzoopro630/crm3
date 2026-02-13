@@ -34,6 +34,8 @@ app.get("/", async (c) => {
 });
 
 app.post("/", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
 
@@ -66,6 +68,8 @@ app.post("/", async (c) => {
 });
 
 app.put("/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
@@ -101,6 +105,8 @@ app.put("/:id", async (c) => {
 });
 
 app.delete("/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
@@ -140,6 +146,8 @@ app.get("/trash", async (c) => {
 });
 
 app.post("/:id/restore", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
 
@@ -182,6 +190,8 @@ app.delete("/trash/empty", async (c) => {
 });
 
 app.post("/bulk", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
   const { contacts, managerNames } = body as {

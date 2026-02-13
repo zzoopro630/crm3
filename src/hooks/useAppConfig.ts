@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import type { AppSetting } from '@/types/appSettings';
 
 export interface AppConfig {
   sessionTimeoutMinutes: number;
@@ -7,8 +8,10 @@ export interface AppConfig {
   defaultFontSize: number; // px
 }
 
+const EMPTY_SETTINGS: AppSetting[] = [];
+
 export function useAppConfig(): AppConfig {
-  const { data: settings = [] } = useAppSettings();
+  const { data: settings = EMPTY_SETTINGS } = useAppSettings();
   return useMemo(() => {
     const map: Record<string, string> = {};
     for (const s of settings) {

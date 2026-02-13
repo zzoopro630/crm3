@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../database.types";
 import type { Env } from "../middleware/auth";
-import { safeError, parsePagination } from "../middleware/helpers";
+import { safeError, parsePagination, sanitizeSearch } from "../middleware/helpers";
 
 // 상담관리 (marketing.inquiries)
 export const inquiryRoutes = new Hono<{ Bindings: Env }>();
@@ -11,7 +11,7 @@ inquiryRoutes.get("/", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { page, limit, offset } = parsePagination(c);
-  const search = c.req.query("search") || "";
+  const search = sanitizeSearch(c.req.query("search") || "");
   const status = c.req.query("status") || "";
   const managerId = c.req.query("managerId") || "";
 
@@ -179,7 +179,7 @@ consultantInquiryRoutes.get("/", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { page, limit, offset } = parsePagination(c);
-  const search = c.req.query("search") || "";
+  const search = sanitizeSearch(c.req.query("search") || "");
   const status = c.req.query("status") || "";
   const managerId = c.req.query("managerId") || "";
 
@@ -309,7 +309,7 @@ recruitInquiryRoutes.get("/", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { page, limit, offset } = parsePagination(c);
-  const search = c.req.query("search") || "";
+  const search = sanitizeSearch(c.req.query("search") || "");
   const status = c.req.query("status") || "";
   const managerId = c.req.query("managerId") || "";
 
