@@ -297,12 +297,14 @@ function ProductsTab() {
   const handleSubmit = async () => {
     if (!form.dbType.trim() || !form.name.trim() || form.price <= 0) return;
 
-    if (editing) {
-      await updateProduct.mutateAsync({ id: editing.id, input: form });
-    } else {
-      await createProduct.mutateAsync(form);
-    }
-    setDialogOpen(false);
+    try {
+      if (editing) {
+        await updateProduct.mutateAsync({ id: editing.id, input: form });
+      } else {
+        await createProduct.mutateAsync(form);
+      }
+      setDialogOpen(false);
+    } catch { /* 글로벌 onError에서 toast 처리 */ }
   };
 
   const handleDelete = async () => {

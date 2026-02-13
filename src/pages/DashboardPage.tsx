@@ -201,11 +201,13 @@ export function DashboardPage() {
   }
 
   async function handleSubmit(input: DashboardCardInput) {
-    if (editingCard) {
-      await updateMutation.mutateAsync({ id: editingCard.id, input });
-    } else {
-      await createMutation.mutateAsync(input);
-    }
+    try {
+      if (editingCard) {
+        await updateMutation.mutateAsync({ id: editingCard.id, input });
+      } else {
+        await createMutation.mutateAsync(input);
+      }
+    } catch { /* 글로벌 onError에서 toast 처리 */ }
   }
 
   function handleDragEnd(event: DragEndEvent) {

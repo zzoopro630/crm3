@@ -137,31 +137,35 @@ export default function PostListPage() {
       ? JSON.stringify({ images: galleryImages })
       : form.content;
 
-    if (editingPost) {
-      const input: UpdatePostInput = {
-        title: form.title,
-        content,
-        isPinned: form.isPinned,
-        attachments: isGallery ? [] : form.attachments,
-      };
-      await updatePost.mutateAsync({ id: editingPost.id, input });
-    } else {
-      const input: CreatePostInput = {
-        title: form.title,
-        content,
-        category,
-        isPinned: form.isPinned,
-        attachments: isGallery ? [] : form.attachments,
-      };
-      await createPost.mutateAsync(input);
-    }
-    setDialogOpen(false);
+    try {
+      if (editingPost) {
+        const input: UpdatePostInput = {
+          title: form.title,
+          content,
+          isPinned: form.isPinned,
+          attachments: isGallery ? [] : form.attachments,
+        };
+        await updatePost.mutateAsync({ id: editingPost.id, input });
+      } else {
+        const input: CreatePostInput = {
+          title: form.title,
+          content,
+          category,
+          isPinned: form.isPinned,
+          attachments: isGallery ? [] : form.attachments,
+        };
+        await createPost.mutateAsync(input);
+      }
+      setDialogOpen(false);
+    } catch { /* 글로벌 onError에서 toast 처리 */ }
   };
 
   const handleDelete = async () => {
     if (deleteId === null) return;
-    await deletePost.mutateAsync(deleteId);
-    setDeleteId(null);
+    try {
+      await deletePost.mutateAsync(deleteId);
+      setDeleteId(null);
+    } catch { /* 글로벌 onError에서 toast 처리 */ }
   };
 
   const addAttachment = () => {

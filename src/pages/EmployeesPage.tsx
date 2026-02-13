@@ -440,12 +440,14 @@ export function EmployeesPage() {
 
   const handleSaveOverrides = async () => {
     if (!overrideEmployeeId) return;
-    await updateOverrides.mutateAsync({
-      employeeId: overrideEmployeeId,
-      overrides: localOverrides,
-    });
-    setOverrideEmployeeId(null);
-    setLocalOverrides([]);
+    try {
+      await updateOverrides.mutateAsync({
+        employeeId: overrideEmployeeId,
+        overrides: localOverrides,
+      });
+      setOverrideEmployeeId(null);
+      setLocalOverrides([]);
+    } catch { /* 글로벌 onError에서 toast 처리 */ }
   };
 
   const getSecurityLevelBadge = (level: string) => {
@@ -761,10 +763,12 @@ export function EmployeesPage() {
                     variant="outline"
                     onClick={async () => {
                       if (!window.confirm(`선택한 ${selectedIds.length}명의 사원을 복원하시겠습니까?`)) return;
-                      for (const id of selectedIds) {
-                        await restoreEmployee.mutateAsync(id);
-                      }
-                      setSelectedIds([]);
+                      try {
+                        for (const id of selectedIds) {
+                          await restoreEmployee.mutateAsync(id);
+                        }
+                        setSelectedIds([]);
+                      } catch { /* 글로벌 onError에서 toast 처리 */ }
                     }}
                     className="text-green-500 hover:text-green-600"
                     disabled={restoreEmployee.isPending}

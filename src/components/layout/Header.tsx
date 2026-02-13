@@ -78,7 +78,7 @@ export function Header({ onSidebarToggle, logoutCountdownSeconds = 30 }: HeaderP
         return () => {
             if (timerRef.current) clearInterval(timerRef.current)
         }
-    }, [showLogoutDialog])
+    }, [showLogoutDialog, logoutCountdownSeconds])
 
     // 카운트다운 0 도달 시 자동 로그아웃
     useEffect(() => {

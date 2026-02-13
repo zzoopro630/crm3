@@ -88,14 +88,18 @@ export default function PostDetailPage() {
       isPinned: form.isPinned,
       attachments: form.attachments,
     };
-    await updatePost.mutateAsync({ id: post.id, input });
-    setEditOpen(false);
+    try {
+      await updatePost.mutateAsync({ id: post.id, input });
+      setEditOpen(false);
+    } catch { /* 글로벌 onError에서 toast 처리 */ }
   };
 
   const handleDelete = async () => {
     if (!post) return;
-    await deletePost.mutateAsync(post.id);
-    navigate(basePath);
+    try {
+      await deletePost.mutateAsync(post.id);
+      navigate(basePath);
+    } catch { /* 글로벌 onError에서 toast 처리 */ }
   };
 
   const addAttachment = () => {

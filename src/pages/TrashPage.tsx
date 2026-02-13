@@ -47,7 +47,9 @@ export default function TrashPage() {
 
   const handleRestore = async (id: number) => {
     if (window.confirm("이 고객을 복원하시겠습니까?")) {
-      await restore.mutateAsync(id);
+      try {
+        await restore.mutateAsync(id);
+      } catch { /* 글로벌 onError에서 toast 처리 */ }
     }
   };
 
@@ -57,7 +59,9 @@ export default function TrashPage() {
         "이 고객을 완전히 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
       )
     ) {
-      await permanentDelete.mutateAsync(id);
+      try {
+        await permanentDelete.mutateAsync(id);
+      } catch { /* 글로벌 onError에서 toast 처리 */ }
     }
   };
 

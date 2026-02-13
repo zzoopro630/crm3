@@ -106,29 +106,31 @@ export default function PageManagementPage() {
   const handleSubmit = async () => {
     if (!form.title.trim() || !form.slug.trim()) return;
 
-    if (editing) {
-      await updatePage.mutateAsync({
-        id: editing.id,
-        input: {
+    try {
+      if (editing) {
+        await updatePage.mutateAsync({
+          id: editing.id,
+          input: {
+            title: form.title,
+            slug: form.slug,
+            content: form.content,
+            icon: form.icon,
+            sortOrder: form.sortOrder,
+            isPublished: form.isPublished,
+          },
+        });
+      } else {
+        await createPage.mutateAsync({
           title: form.title,
           slug: form.slug,
           content: form.content,
           icon: form.icon,
           sortOrder: form.sortOrder,
           isPublished: form.isPublished,
-        },
-      });
-    } else {
-      await createPage.mutateAsync({
-        title: form.title,
-        slug: form.slug,
-        content: form.content,
-        icon: form.icon,
-        sortOrder: form.sortOrder,
-        isPublished: form.isPublished,
-      });
-    }
-    setDialogOpen(false);
+        });
+      }
+      setDialogOpen(false);
+    } catch { /* 글로벌 onError에서 toast 처리 */ }
   };
 
   const handleDelete = async () => {
