@@ -139,6 +139,42 @@ JUSO_API_KEY=...  # 주소 검색 API
 - **외래키 조인 실패**: `npx tsx src/db/add-foreign-keys.ts`
 - **무한 로딩**: 브라우저 콘솔 확인, Supabase 연결 상태 점검
 
+## DB 마이그레이션 규칙 (필수)
+
+DB 스키마를 변경하는 모든 작업 후 반드시 마이그레이션 기록을 남긴다.
+
+### Drizzle 추적 스키마 (public, seo)
+
+테이블 추가/수정/삭제 시:
+1. `src/db/schema.ts` 코드 수정
+2. `npm run db:generate` → `drizzle/` 에 마이그레이션 SQL + 스냅샷 자동 생성
+3. 생성된 마이그레이션 파일을 PR에 함께 커밋
+
+```bash
+# 예시: 컬럼 추가 후
+npm run db:generate   # drizzle/ 에 migration.sql 생성
+git add drizzle/ src/db/schema.ts
+```
+
+### Drizzle 미추적 스키마 (marketing 등)
+
+`marketing.inquiries`, `marketing.recruit_inquiries` 등은 Drizzle `schemaFilter`에 미포함.
+직접 SQL로 변경한 경우:
+1. `drizzle/` 폴더에 수동 SQL 파일 생성 (형식: `NNNN_설명.sql`)
+2. 실행한 SQL을 그대로 기록 (CREATE, ALTER, 트리거 등)
+3. PR에 함께 커밋
+
+```bash
+# 예시: marketing 스키마 트리거 추가 후
+# drizzle/0011_recruit_trigger.sql 에 SQL 기록
+git add drizzle/0011_recruit_trigger.sql
+```
+
+### 주의사항
+- `db:push`는 개발 중 빠른 적용용. 마이그레이션 기록은 `db:generate`로 생성
+- 마이그레이션 파일 없이 DB만 변경하면 로컬/배포 환경 불일치 발생
+- RLS 정책, 트리거, 함수 등 Drizzle이 추적하지 않는 변경도 수동 SQL로 기록
+
 ## 작업 규칙
 
 - SQL Editor 명령이 필요한 경우 Drizzle ORM으로 처리
