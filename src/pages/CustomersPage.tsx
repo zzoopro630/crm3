@@ -767,8 +767,6 @@ export function CustomersPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent
           className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 max-w-lg max-h-[90vh] overflow-y-auto"
-          onEscapeKeyDown={(e) => e.preventDefault()}
-          onInteractOutside={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <DialogTitle className="text-zinc-900 dark:text-white">
