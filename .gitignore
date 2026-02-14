@@ -37,8 +37,8 @@ tmp/
 # Claude Code
 .claude/
 
-# Work logs
-docs/work-log-*.md
+# Docs (로컬 작업 기록)
+docs/
 
 # Editor directories and files
 .vscode/*
@@ -53,7 +53,7 @@ docs/work-log-*.md
 
 # Supabase
 supabase/.temp
-docs/inquiry-system-plan.md
+
 
 # Google Service Account Keys
 *.json
