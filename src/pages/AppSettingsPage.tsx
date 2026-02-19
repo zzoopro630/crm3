@@ -126,9 +126,9 @@ const menuEntries: MenuEntry[] = [
   // 광고 분석
   { href: '/ads', defaultTitle: '광고 분석', icon: BarChart3 },
   { href: '/ads/ndata', defaultTitle: 'N-DATA', icon: BarChart3, isSub: true },
-  { href: '/ads/powerlink', defaultTitle: '파워링크', icon: Zap, isSub: true },
   { href: '/ads/report', defaultTitle: '보고서', icon: FileText, isSub: true },
   { href: '/ads/weekly', defaultTitle: '주간데이터', icon: TrendingUp, isSub: true },
+  { href: '/ads/powerlink', defaultTitle: '파워링크', icon: Zap, isSub: true },
   { href: '/ads/rank-dashboard', defaultTitle: '순위 대시보드', icon: LayoutDashboard, isSub: true },
   { href: '/ads/rank-keywords', defaultTitle: '사이트/키워드', icon: Search, isSub: true },
   { href: '/ads/rank-urls', defaultTitle: 'URL 추적', icon: Link2, isSub: true },

@@ -26,8 +26,13 @@ const ROUTE_TITLES: Record<string, string> = {
   "/board": "게시판",
   "/ads": "광고 분석",
   "/ads/ndata": "N-DATA",
+  "/ads/powerlink": "파워링크",
   "/ads/report": "보고서",
   "/ads/weekly": "주간데이터",
+  "/ads/rank-dashboard": "순위 대시보드",
+  "/ads/rank-keywords": "사이트/키워드",
+  "/ads/rank-urls": "URL 추적",
+  "/ads/rank-history": "순위 기록",
 };
 
 interface BreadcrumbItem {
