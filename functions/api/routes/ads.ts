@@ -24,6 +24,7 @@ app.get("/keyword-details", async (c) => {
       .select("*")
       .order("report_date", { ascending: false })
       .order("total_cost", { ascending: false })
+      .order("id", { ascending: true })
       .range(from, from + PAGE_SIZE - 1);
 
     if (startDate && endDate) {
