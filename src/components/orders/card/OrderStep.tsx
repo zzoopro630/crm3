@@ -118,29 +118,31 @@ export function OrderStep({
   const totalPrice = productPrice + deliveryFee;
 
   return (
-    <div>
+    <div className="overflow-hidden">
       <HeroHeader />
-      <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+      <div className="grid lg:grid-cols-2 gap-6 lg:gap-12">
         {/* Left: Preview + Design */}
-        <div className="space-y-6">
-          {/* 3D Preview */}
+        <div className="space-y-6 min-w-0">
+          {/* 3D Preview - 모바일에서 숨김, 시안 선택 후 컴팩트 표시 */}
           {design ? (
-            <CardContainer containerClassName="py-0">
-              <CardBody>
-                <CardItem translateZ={50}>
-                  <img
-                    key={`${design}-${cardType}`}
-                    src={getCardImagePath(design, cardType)}
-                    alt={`Design ${design}`}
-                    className="max-h-[250px] sm:max-h-[350px] lg:max-h-[400px] object-contain rounded-sm"
-                    style={{ filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.2))" }}
-                  />
-                </CardItem>
-              </CardBody>
-            </CardContainer>
+            <div className="hidden lg:block">
+              <CardContainer containerClassName="py-0">
+                <CardBody>
+                  <CardItem translateZ={50}>
+                    <img
+                      key={`${design}-${cardType}`}
+                      src={getCardImagePath(design, cardType)}
+                      alt={`Design ${design}`}
+                      className="max-h-[400px] object-contain rounded-sm"
+                      style={{ filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.2))" }}
+                    />
+                  </CardItem>
+                </CardBody>
+              </CardContainer>
+            </div>
           ) : (
             <div className={cn(
-              "p-6 w-fit mx-auto flex items-center justify-center border rounded-lg transition-all",
+              "hidden lg:flex p-6 mx-auto items-center justify-center border rounded-lg transition-all",
               errors.includes("design") ? "border-red-500 shadow-red-100 shadow-lg" : "border-border"
             )}>
               <div className="text-center py-8">
@@ -149,6 +151,23 @@ export function OrderStep({
               </div>
             </div>
           )}
+
+          {/* 모바일 컴팩트 미리보기 */}
+          {design ? (
+            <div className="lg:hidden flex justify-center">
+              <img
+                key={`mobile-${design}-${cardType}`}
+                src={getCardImagePath(design, cardType)}
+                alt={`Design ${design}`}
+                className="max-h-[200px] object-contain rounded-sm"
+                style={{ filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.2))" }}
+              />
+            </div>
+          ) : errors.includes("design") ? (
+            <div className="lg:hidden p-3 border border-red-500 rounded-lg text-center">
+              <p className="text-sm text-red-500 font-medium">시안을 선택해주세요</p>
+            </div>
+          ) : null}
 
           {/* Design carousel */}
           <div>
@@ -230,7 +249,7 @@ export function OrderStep({
         </div>
 
         {/* Right: Applicant form */}
-        <div className="space-y-6">
+        <div className="space-y-6 min-w-0">
           <div className="border rounded-lg p-4 sm:p-6">
             <h2 className="text-xl font-bold mb-6">신청자 정보 입력</h2>
             <div className="space-y-5">
@@ -357,15 +376,17 @@ export function OrderStep({
             )}
           </div>
 
-          {/* Next step button */}
-          <div className="sticky bottom-0 z-10 bg-background pt-3 pb-2">
+          {/* Next step button - 모바일: fixed, 데스크톱: sticky */}
+          <div className="fixed bottom-0 left-0 right-0 z-30 bg-background border-t p-3 lg:static lg:border-0 lg:p-0 lg:pt-2">
             <Button onClick={onGoShipping} className="w-full shadow-xl" size="lg">
               다음 단계 →
             </Button>
-            <p className="text-xs text-muted-foreground text-center mt-2">
+            <p className="hidden lg:block text-xs text-muted-foreground text-center mt-2">
               * 다음 단계에서 최종 주문 내용 확인 및 배송지 입력을 하실 수 있습니다.
             </p>
           </div>
+          {/* 모바일 fixed 버튼 영역 확보 */}
+          <div className="h-16 lg:hidden" />
         </div>
       </div>
 
