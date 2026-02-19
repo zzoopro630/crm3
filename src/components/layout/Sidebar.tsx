@@ -82,6 +82,7 @@ interface NavItem {
   allowedOrgs?: string[];
   isSubmenu?: boolean;
   submenuItems?: NavItem[];
+  separator?: boolean; // 이 아이템 위에 구분선 표시
 }
 
 // 섹션 타입 정의
@@ -156,11 +157,14 @@ const staticNavSections: NavSection[] = [
         icon: BarChart3,
         isSubmenu: true,
         submenuItems: [
+          // 파워컨텐츠 그룹
           { title: "N-DATA", href: "/ads/ndata", icon: BarChart3 },
-          { title: "파워링크", href: "/ads/powerlink", icon: Zap },
           { title: "보고서", href: "/ads/report", icon: FileText },
           { title: "주간데이터", href: "/ads/weekly", icon: TrendingUp },
-          { title: "순위 대시보드", href: "/ads/rank-dashboard", icon: LayoutDashboard },
+          // 파워링크 (단독)
+          { title: "파워링크", href: "/ads/powerlink", icon: Zap, separator: true },
+          // 키워드 현황 그룹
+          { title: "순위 대시보드", href: "/ads/rank-dashboard", icon: LayoutDashboard, separator: true },
           { title: "사이트/키워드", href: "/ads/rank-keywords", icon: Search },
           { title: "URL 추적", href: "/ads/rank-urls", icon: Link2 },
           { title: "순위 기록", href: "/ads/rank-history", icon: History },
@@ -492,8 +496,11 @@ export function Sidebar({
             {item.submenuItems?.map((subItem) => {
               const isSubActive = location.pathname === subItem.href;
               return (
+                <div key={subItem.href}>
+                {subItem.separator && (
+                  <div className="border-t border-border my-1 mx-1" />
+                )}
                 <Link
-                  key={subItem.href}
                   to={subItem.href}
                   onClick={() => {
                     if (window.innerWidth < 1024) onToggle();
@@ -515,6 +522,7 @@ export function Sidebar({
                     <span className="truncate">{subItem.title}</span>
                   )}
                 </Link>
+                </div>
               );
             })}
           </div>
