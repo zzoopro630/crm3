@@ -132,7 +132,7 @@ export function OrderStep({
                     key={`${design}-${cardType}`}
                     src={getCardImagePath(design, cardType)}
                     alt={`Design ${design}`}
-                    className="max-h-[400px] object-contain rounded-sm"
+                    className="max-h-[250px] sm:max-h-[350px] lg:max-h-[400px] object-contain rounded-sm"
                     style={{ filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.2))" }}
                   />
                 </CardItem>
@@ -244,7 +244,7 @@ export function OrderStep({
                   <select
                     value={grade}
                     onChange={(e) => setGrade(e.target.value)}
-                    className={cn("w-full h-9 px-3 border rounded-md bg-background text-sm", errors.includes("grade") && "border-red-500")}
+                    className={cn("w-full h-10 px-3 border rounded-md bg-background text-sm", errors.includes("grade") && "border-red-500")}
                   >
                     <option value="">선택</option>
                     {GRADE_OPTIONS.map((g) => <option key={g} value={g}>{g}</option>)}
@@ -257,7 +257,7 @@ export function OrderStep({
                   <select
                     value={branch}
                     onChange={(e) => setBranch(e.target.value)}
-                    className={cn("w-full h-9 px-3 border rounded-md bg-background text-sm", errors.includes("branch") && "border-red-500")}
+                    className={cn("w-full h-10 px-3 border rounded-md bg-background text-sm", errors.includes("branch") && "border-red-500")}
                   >
                     <option value="">선택</option>
                     {BRANCH_OPTIONS.map((b) => <option key={b} value={b}>{b}</option>)}
@@ -358,7 +358,7 @@ export function OrderStep({
           </div>
 
           {/* Next step button */}
-          <div className="sticky bottom-0 z-10">
+          <div className="sticky bottom-0 z-10 bg-background pt-3 pb-2">
             <Button onClick={onGoShipping} className="w-full shadow-xl" size="lg">
               다음 단계 →
             </Button>

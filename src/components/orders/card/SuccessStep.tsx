@@ -66,15 +66,15 @@ export function SuccessStep({ orderResult, applicants, onRestart }: Props) {
       </div>
 
       {/* Payment info */}
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-xl p-8 text-center shadow-xl">
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-xl p-5 sm:p-8 text-center shadow-xl">
         <div className="flex items-center justify-center gap-2 mb-4">
           <CreditCard className="w-6 h-6 text-yellow-400" />
           <h3 className="text-lg font-bold text-gray-300">입금 계좌 안내</h3>
         </div>
-        <div className="text-2xl font-bold mb-2 tracking-wide">
+        <div className="text-lg sm:text-2xl font-bold mb-2 tracking-wide">
           카카오뱅크 3333-322-537940
         </div>
-        <div className="text-lg font-bold text-gray-300">
+        <div className="text-base sm:text-lg font-bold text-gray-300">
           예금주: 송낙주(영업지원팀)
         </div>
       </div>
