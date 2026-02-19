@@ -37,7 +37,7 @@ export function EditApplicantModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-background rounded-xl shadow-2xl w-full max-w-sm max-h-[85vh] overflow-y-auto">
+      <div className="relative bg-background rounded-xl shadow-2xl w-full max-w-sm max-h-[85dvh] overflow-y-auto">
         <div className="p-4 border-b flex justify-between items-center sticky top-0 bg-background z-10">
           <h3 className="text-lg font-bold">신청 정보 수정</h3>
           <button
@@ -76,7 +76,7 @@ export function EditApplicantModal({
               <select
                 value={editData.grade}
                 onChange={(e) => setEditData({ ...editData, grade: e.target.value })}
-                className="w-full h-9 px-3 border rounded-md bg-background text-sm"
+                className="w-full h-10 px-3 border rounded-md bg-background text-sm"
               >
                 {GRADE_OPTIONS.map((g) => (
                   <option key={g} value={g}>{g}</option>
@@ -88,7 +88,7 @@ export function EditApplicantModal({
               <select
                 value={editData.branch}
                 onChange={(e) => setEditData({ ...editData, branch: e.target.value })}
-                className="w-full h-9 px-3 border rounded-md bg-background text-sm"
+                className="w-full h-10 px-3 border rounded-md bg-background text-sm"
               >
                 {BRANCH_OPTIONS.map((b) => (
                   <option key={b} value={b}>{b}</option>

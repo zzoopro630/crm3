@@ -183,7 +183,7 @@ export function QuantityInput({
         <button
           type="button"
           onClick={() => current > 1 && setQty(String(current - 1))}
-          className="w-10 h-10 flex items-center justify-center bg-muted hover:bg-muted/70 transition-colors text-lg font-bold"
+          className="w-11 h-11 flex items-center justify-center bg-muted hover:bg-muted/70 transition-colors text-lg font-bold"
         >
           −
         </button>
@@ -194,14 +194,14 @@ export function QuantityInput({
           onChange={(e) => setQty(e.target.value)}
           placeholder="0"
           className={cn(
-            "w-14 h-10 text-center text-lg font-bold border-0 focus:outline-none bg-background",
+            "w-14 h-11 text-center text-lg font-bold border-0 focus:outline-none bg-background",
             isInvalid && "bg-red-50 dark:bg-red-900/20"
           )}
         />
         <button
           type="button"
           onClick={() => setQty(String(current + 1))}
-          className="w-10 h-10 flex items-center justify-center bg-muted hover:bg-muted/70 transition-colors text-lg font-bold"
+          className="w-11 h-11 flex items-center justify-center bg-muted hover:bg-muted/70 transition-colors text-lg font-bold"
         >
           +
         </button>

@@ -100,7 +100,7 @@ export function ShippingStep({
 
       {/* Shipping form */}
       <div className="border rounded-lg p-5 space-y-5">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
           <h3 className="font-bold flex items-center gap-2">
             <Truck className="w-5 h-5" /> 배송지 정보
           </h3>
@@ -114,7 +114,7 @@ export function ShippingStep({
                 }
               }}
               defaultValue=""
-              className="px-3 py-1.5 text-sm font-medium border rounded-lg bg-primary text-primary-foreground cursor-pointer"
+              className="px-3 py-2 text-sm font-medium border rounded-lg bg-primary text-primary-foreground cursor-pointer max-w-full sm:max-w-[200px] truncate"
             >
               <option value="" disabled>신청자 정보로 채우기</option>
               {applicants.map((a, idx) => (
@@ -155,11 +155,11 @@ export function ShippingStep({
       </div>
 
       {/* Buttons */}
-      <div className="flex items-center justify-between">
-        <Button variant="outline" onClick={onBack}>
+      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <Button variant="outline" onClick={onBack} className="w-full sm:w-auto">
           <ChevronLeft className="h-4 w-4 mr-1" /> 이전
         </Button>
-        <Button onClick={onSubmit} disabled={isSending} size="lg">
+        <Button onClick={onSubmit} disabled={isSending} size="lg" className="w-full sm:w-auto">
           {isSending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
           {isSending ? "주문 처리 중..." : "최종 주문 및 결제 확인"}
         </Button>
