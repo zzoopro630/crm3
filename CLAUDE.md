@@ -180,3 +180,43 @@ git add drizzle/0011_recruit_trigger.sql
 - SQL Editor 명령이 필요한 경우 Drizzle ORM으로 처리
 - Playwright MCP 사용 금지
 - curl 명령 대신 psql 명령 사용
+
+## Golden Rules
+
+### Immutable
+
+- main 직접 커밋 금지. 항상 feature 브랜치에서 작업 후 PR 생성.
+- 시크릿/키값 하드코딩 금지. 환경변수로 관리. `sb_secret_` 키는 백엔드 전용.
+- 프론트엔드 UI 숨김은 보안이 아님. API 엔드포인트에서 반드시 권한/인가 재검증.
+- Supabase `onAuthStateChange` 콜백 내에서 `getSession()` 호출 금지 (auth lock 데드락).
+- `apiClient`에서 `supabase.auth.getSession()` 직접 호출 금지 (store 캐시 토큰 사용).
+
+### Do's
+
+- PR 전 반드시 `npm run build` + `npm run test` 통과 확인.
+- 사용자 입력은 백엔드에서 sanitize (필터 인젝션, SQL 인젝션, XSS 방지).
+- sortBy, 필터 등 동적 쿼리 파라미터는 화이트리스트 검증.
+- 날짜 범위 쿼리: `lte(T23:59:59)` 대신 `lt(nextDay T00:00:00)` 사용.
+- 대량 데이터 조회 시 `.range()` 페이지네이션 사용 (Supabase max-rows 1000 제한).
+- DB 스키마 변경 후 Drizzle + Supabase 마이그레이션 기록 필수.
+- 단일 파일 500줄 초과 시 분할 검토.
+- `useState` setter에서 변경 없으면 `prev` 그대로 반환 (`{ ...prev }` 금지).
+- TanStack Query `data: x = []` 기본값은 매 렌더 새 참조 -- 모듈 레벨 상수 사용.
+- 모바일/태블릿 동작 반드시 고려 (visibilitychange, touch, 768~1024px 중간 구간).
+
+### Don'ts
+
+- Supabase `.limit()`으로 서버 max-rows(1000) 초과 시도 금지. `.range()` 사용.
+- Cloudflare Workers 루프 내 개별 API 호출 금지 (서브리퀘스트 50개 제한). batch/upsert 사용.
+- `npx shadcn@latest add` 후 기존 커스텀 컴포넌트 덮어쓰기 여부 미확인 금지.
+- 증상만 패치하지 말 것. 근본 원인 분석 후 구조적 수정.
+
+## Context Map (Subdirectory Routing)
+
+- **[Backend API (Hono/CF Workers)](./functions/api/CLAUDE.md)** -- REST API 라우트, 미들웨어, 인증/인가, Supabase 쿼리 작업 시.
+- **[Frontend (React/Tailwind/Shadcn)](./src/CLAUDE.md)** -- 페이지, 컴포넌트, 훅, 서비스, 스토어, 타입 작업 시.
+
+## Maintenance Policy
+
+- 규칙과 실제 코드 사이에 괴리가 발생하면 즉시 해당 CLAUDE.md 업데이트를 제안할 것.
+- 새로운 패턴이나 라이브러리 도입 시 관련 CLAUDE.md에 반영할 것.
