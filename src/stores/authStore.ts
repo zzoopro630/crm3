@@ -64,7 +64,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
             // Listen for auth changes (이전 구독 해제 후 등록)
             if (authSubscription) authSubscription.unsubscribe();
-            const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
                 if (session?.user) {
                     set({
                         user: session.user,
@@ -72,7 +72,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                         isAuthenticated: true,
                     })
                     get().checkEmployeeStatus(session.user.email || '')
-                } else {
+                } else if (event === 'SIGNED_OUT') {
+                    // SIGNED_OUT 이벤트만 상태 클리어
+                    // INITIAL_SESSION 등에서 null이 올 경우 기존 세션을 보존 (race condition 방지)
                     set({
                         user: null,
                         session: null,

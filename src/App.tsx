@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/authStore'
 import { useThemeStore, applyTheme } from '@/stores/themeStore'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
@@ -62,7 +62,10 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const initialize = useAuthStore((state) => state.initialize)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const theme = useThemeStore((state) => state.theme)
+  const qc = useQueryClient()
+  const prevAuthRef = useRef(isAuthenticated)
 
   useEffect(() => {
     initialize()
@@ -71,6 +74,14 @@ function AppContent() {
   useEffect(() => {
     applyTheme(theme)
   }, [theme])
+
+  // 로그아웃 시 쿼리 캐시 클리어 (재로그인 시 stale 데이터 방지)
+  useEffect(() => {
+    if (prevAuthRef.current && !isAuthenticated) {
+      qc.clear()
+    }
+    prevAuthRef.current = isAuthenticated
+  }, [isAuthenticated, qc])
 
   return (
     <Routes>
