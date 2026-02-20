@@ -2,12 +2,22 @@ import { Hono } from "hono";
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../database.types";
 import type { Env } from "../middleware/auth";
+import { requireSecurityLevel } from "../middleware/auth";
 import { safeError, parsePagination, sanitizeSearch } from "../middleware/helpers";
+
+// 상담관리 status 화이트리스트
+const VALID_STATUSES = [
+  "new", "contacted", "consulting", "closed",
+  "called", "texted", "no_answer", "rejected",
+  "wrong_number", "ineligible", "upsell",
+];
 
 // 상담관리 (marketing.inquiries)
 export const inquiryRoutes = new Hono<{ Bindings: Env }>();
 
 inquiryRoutes.get("/", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "F3", "F4"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { page, limit, offset } = parsePagination(c);
@@ -89,9 +99,17 @@ inquiryRoutes.get("/", async (c) => {
 });
 
 inquiryRoutes.put("/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "F3", "F4"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
+
+  // status 화이트리스트 검증
+  if (body.status !== undefined && !VALID_STATUSES.includes(body.status)) {
+    return c.json({ error: `잘못된 상태값: ${body.status}` }, 400);
+  }
 
   const updateData: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -134,14 +152,23 @@ inquiryRoutes.put("/:id", async (c) => {
 });
 
 inquiryRoutes.post("/", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "F3", "F4"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
+
+  // status 화이트리스트 검증
+  const status = body.status || "new";
+  if (!VALID_STATUSES.includes(status)) {
+    return c.json({ error: `잘못된 상태값: ${status}` }, 400);
+  }
 
   const insertData: Record<string, unknown> = {
     customer_name: body.customerName,
     phone: body.phone,
     product_name: body.productName || null,
-    status: body.status || "new",
+    status,
     manager_id: body.managerId || null,
     memo: body.memo || null,
     inquiry_date: new Date().toISOString(),
@@ -176,6 +203,8 @@ inquiryRoutes.post("/", async (c) => {
 export const consultantInquiryRoutes = new Hono<{ Bindings: Env }>();
 
 consultantInquiryRoutes.get("/", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "F3", "F4"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { page, limit, offset } = parsePagination(c);
@@ -257,9 +286,16 @@ consultantInquiryRoutes.get("/", async (c) => {
 });
 
 consultantInquiryRoutes.put("/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "F3", "F4"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
+
+  if (body.status !== undefined && !VALID_STATUSES.includes(body.status)) {
+    return c.json({ error: `잘못된 상태값: ${body.status}` }, 400);
+  }
 
   const updateData: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -306,6 +342,8 @@ consultantInquiryRoutes.put("/:id", async (c) => {
 export const recruitInquiryRoutes = new Hono<{ Bindings: Env }>();
 
 recruitInquiryRoutes.get("/", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "F3", "F4"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { page, limit, offset } = parsePagination(c);
@@ -388,9 +426,16 @@ recruitInquiryRoutes.get("/", async (c) => {
 });
 
 recruitInquiryRoutes.put("/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "F3", "F4"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
+
+  if (body.status !== undefined && !VALID_STATUSES.includes(body.status)) {
+    return c.json({ error: `잘못된 상태값: ${body.status}` }, 400);
+  }
 
   const updateData: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
