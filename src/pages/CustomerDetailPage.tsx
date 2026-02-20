@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCustomer, useUpdateCustomer, useDeleteCustomer } from '@/hooks/useCustomers'
-import { useEmployees } from '@/hooks/useEmployees'
-import { useSources } from '@/hooks/useSources'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -39,8 +37,6 @@ export function CustomerDetailPage() {
     const customerId = id ? parseInt(id) : null
 
     const { data: customer, isLoading } = useCustomer(customerId)
-    const { data: employees } = useEmployees()
-    const { data: sources } = useSources()
     const updateCustomer = useUpdateCustomer()
     const deleteCustomer = useDeleteCustomer()
 
@@ -60,13 +56,13 @@ export function CustomerDetailPage() {
                 phone: customer.phone || '',
                 email: customer.email || '',
                 address: customer.address || '',
+                addressDetail: customer.addressDetail || '',
                 gender: customer.gender || '',
                 birthdate: customer.birthdate || '',
                 company: customer.company || '',
                 jobTitle: customer.jobTitle || '',
                 source: customer.source || '',
                 status: customer.status,
-                managerId: customer.managerId,
             })
             setIsEditing(true)
         }
@@ -291,33 +287,33 @@ export function CustomerDetailPage() {
                                     )}
                                 </div>
                                 {isEditing ? (
-                                    <Input
-                                        value={formData.address || ''}
-                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                        className="w-full h-7 text-sm"
-                                        placeholder="주소 검색..."
-                                    />
+                                    <div className="space-y-1">
+                                        <Input
+                                            value={formData.address || ''}
+                                            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                            className="w-full h-7 text-sm"
+                                            placeholder="주소 검색..."
+                                        />
+                                        <Input
+                                            value={formData.addressDetail || ''}
+                                            onChange={(e) => setFormData({ ...formData, addressDetail: e.target.value })}
+                                            className="w-full h-7 text-sm"
+                                            placeholder="상세주소 입력"
+                                        />
+                                    </div>
                                 ) : (
-                                    <p className="text-zinc-900 dark:text-white text-xs leading-relaxed">{customer.address || '-'}</p>
+                                    <div>
+                                        <p className="text-zinc-900 dark:text-white text-xs leading-relaxed">{customer.address || '-'}</p>
+                                        {customer.addressDetail && (
+                                            <p className="text-zinc-600 dark:text-zinc-400 text-xs">{customer.addressDetail}</p>
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
                             <div className="flex justify-between">
                                 <span className="text-zinc-500">담당자</span>
-                                {isEditing ? (
-                                    <select
-                                        value={formData.managerId || ''}
-                                        onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
-                                        className="w-24 h-7 text-sm rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
-                                    >
-                                        <option value="">선택</option>
-                                        {employees?.map(emp => (
-                                            <option key={emp.id} value={emp.id}>{emp.fullName}</option>
-                                        ))}
-                                    </select>
-                                ) : (
-                                    <span className="text-zinc-900 dark:text-white">{customer.managerName || '-'}</span>
-                                )}
+                                <span className="text-zinc-900 dark:text-white">{customer.managerName || '-'}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-zinc-500">상태</span>
@@ -340,16 +336,12 @@ export function CustomerDetailPage() {
                             <div className="flex justify-between">
                                 <span className="text-zinc-500">유입경로</span>
                                 {isEditing ? (
-                                    <select
+                                    <Input
                                         value={formData.source || ''}
                                         onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                                        className="w-24 h-7 text-sm rounded border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900"
-                                    >
-                                        <option value="">선택</option>
-                                        {sources?.map(src => (
-                                            <option key={src.id} value={src.name}>{src.name}</option>
-                                        ))}
-                                    </select>
+                                        className="w-32 h-7 text-sm"
+                                        placeholder="유입경로 입력"
+                                    />
                                 ) : (
                                     <span className="text-zinc-900 dark:text-white">{customer.source || '-'}</span>
                                 )}

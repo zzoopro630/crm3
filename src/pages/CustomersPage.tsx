@@ -444,7 +444,7 @@ export function CustomersPage() {
             <Search className="h-4 w-4" />
           </button>
           <Input
-            placeholder="이름 또는 전화번호로 검색..."
+            placeholder="이름/전화번호 검색"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
