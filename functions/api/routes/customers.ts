@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../database.types";
 import type { Env } from "../middleware/auth";
-import { requireSecurityLevel } from "../middleware/auth";
+import { requireSecurityLevel, getAuthEmployee } from "../middleware/auth";
 import { safeError, parsePagination, sanitizeSearch } from "../middleware/helpers";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -273,7 +273,24 @@ app.post("/", async (c) => {
 
 app.put("/:id", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+
   const id = c.req.param("id");
+
+  // F5는 본인 담당 고객만 수정 가능
+  if (!["F1", "F2", "F3", "F4"].includes(emp.security_level)) {
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("manager_id")
+      .eq("id", id)
+      .single();
+    if (!customer) return c.json({ error: "고객을 찾을 수 없습니다." }, 404);
+    if (customer.manager_id !== emp.id) {
+      return c.json({ error: "본인 담당 고객만 수정할 수 있습니다." }, 403);
+    }
+  }
+
   const body = await c.req.json();
 
   const dbInput: Record<string, unknown> = {
@@ -372,8 +389,11 @@ app.post("/:id/restore", async (c) => {
   return c.json({ success: true });
 });
 
-// 고객 이관 (Team 섹션에서 사용)
+// 고객 이관 (Team 섹션에서 사용) — F1~F4만 허용
 app.put("/:id/transfer", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "F3", "F4"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();

@@ -53,15 +53,12 @@ app.get("/email/:email", async (c) => {
     );
   }
 
+  // Public 엔드포인트 — 민감 필드(securityLevel, organizationId) 제외
   return c.json({
     id: data.id,
     email: data.email,
     fullName: data.full_name,
-    securityLevel: data.security_level,
-    organizationId: data.organization_id,
     isActive: data.is_active,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
   });
 });
 

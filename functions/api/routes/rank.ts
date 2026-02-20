@@ -3,6 +3,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../database.types";
 import type { Env } from "../middleware/auth";
 import { checkUrlTracking, checkNaverWebRank } from "../../lib/naver-crawler";
+import { requireSecurityLevel } from "../middleware/auth";
 import { safeError } from "../middleware/helpers";
 
 function toCamelCase(obj: Record<string, unknown>): Record<string, unknown> {
@@ -45,6 +46,8 @@ app.get("/sites", async (c) => {
 });
 
 app.post("/sites", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "M1", "M2"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const seo = (supabase as any).schema("seo");
   const { name, url } = await c.req.json();
@@ -62,6 +65,8 @@ app.post("/sites", async (c) => {
 });
 
 app.put("/sites/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "M1", "M2"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const seo = (supabase as any).schema("seo");
   const id = c.req.param("id");
@@ -83,6 +88,8 @@ app.put("/sites/:id", async (c) => {
 });
 
 app.delete("/sites/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "M1", "M2"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const seo = (supabase as any).schema("seo");
   const id = c.req.param("id");
@@ -143,6 +150,8 @@ app.get("/keywords", async (c) => {
 });
 
 app.post("/keywords", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "M1", "M2"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const seo = (supabase as any).schema("seo");
   const { keyword, siteId } = await c.req.json();
@@ -160,6 +169,8 @@ app.post("/keywords", async (c) => {
 });
 
 app.delete("/keywords/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "M1", "M2"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const seo = (supabase as any).schema("seo");
   const id = c.req.param("id");
@@ -239,6 +250,8 @@ app.get("/rankings/dashboard/summary", async (c) => {
 });
 
 app.post("/rankings/check", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "M1", "M2"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const seo = (supabase as any).schema("seo");
   const { keywordIds } = await c.req.json();
@@ -337,6 +350,8 @@ app.get("/url-tracking", async (c) => {
 });
 
 app.post("/url-tracking", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "M1", "M2"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const seo = (supabase as any).schema("seo");
   const { keyword, targetUrl, section, memo } = await c.req.json();
@@ -361,6 +376,8 @@ app.post("/url-tracking", async (c) => {
 });
 
 app.delete("/url-tracking/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "M1", "M2"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const seo = (supabase as any).schema("seo");
   const id = c.req.param("id");
@@ -375,6 +392,8 @@ app.delete("/url-tracking/:id", async (c) => {
 });
 
 app.put("/url-tracking/:id", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "M1", "M2"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const seo = (supabase as any).schema("seo");
   const id = c.req.param("id");
@@ -398,6 +417,8 @@ app.put("/url-tracking/:id", async (c) => {
 });
 
 app.post("/url-tracking/check", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "M1", "M2"]);
+  if (denied) return denied;
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const seo = (supabase as any).schema("seo");
   const { trackedUrlIds } = await c.req.json();

@@ -25,6 +25,9 @@ app.get("/", async (c) => {
 });
 
 app.post("/", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1"]);
+  if (denied) return denied;
+
   const emp = await getAuthEmployee(c);
   if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
 

@@ -71,7 +71,22 @@ app.post("/", async (c) => {
 
 app.put("/:id", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+
   const id = c.req.param("id");
+
+  // 작성자 본인 또는 F1만 수정 가능
+  const { data: existing } = await supabase
+    .from("customer_notes")
+    .select("created_by")
+    .eq("id", id)
+    .single();
+  if (!existing) return c.json({ error: "메모를 찾을 수 없습니다." }, 404);
+  if (emp.security_level !== "F1" && existing.created_by !== emp.id) {
+    return c.json({ error: "본인이 작성한 메모만 수정할 수 있습니다." }, 403);
+  }
+
   const body = await c.req.json();
 
   const { data, error } = await supabase
@@ -93,7 +108,21 @@ app.put("/:id", async (c) => {
 
 app.delete("/:id", async (c) => {
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+
   const id = c.req.param("id");
+
+  // 작성자 본인 또는 F1만 삭제 가능
+  const { data: existing } = await supabase
+    .from("customer_notes")
+    .select("created_by")
+    .eq("id", id)
+    .single();
+  if (!existing) return c.json({ error: "메모를 찾을 수 없습니다." }, 404);
+  if (emp.security_level !== "F1" && existing.created_by !== emp.id) {
+    return c.json({ error: "본인이 작성한 메모만 삭제할 수 있습니다." }, 403);
+  }
 
   const { error } = await supabase.from("customer_notes").delete().eq("id", id);
 
