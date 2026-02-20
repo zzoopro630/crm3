@@ -31,6 +31,13 @@ sample.png
 temp/
 tmp/
 
+# Sub-projects (CRM3 코어와 별도)
+insu-analysis/
+ranktracker/
+
+# Agent workflow files
+.agent/
+
 # Workspace files
 *.code-workspace
 
