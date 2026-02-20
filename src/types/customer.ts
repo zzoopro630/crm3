@@ -95,6 +95,7 @@ export interface CreateCustomerInput {
   phone?: string;
   email?: string;
   address?: string;
+  addressDetail?: string;
   gender?: string; // 폼에서는 빈 문자열 허용
   birthdate?: string;
   company?: string;

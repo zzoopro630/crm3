@@ -100,11 +100,6 @@ export function CustomersPage() {
   const { data: allEmployees } = useEmployees();
   const { data: sources } = useSources();
 
-  // F1~F4는 다른 사원에게 고객 배정 가능
-  const canAssignToOthers =
-    employee && ["F1", "F2", "F3", "F4"].includes(employee.securityLevel);
-  const activeEmployees = allEmployees?.filter((emp) => emp.isActive) || [];
-
   // 모든 사용자는 기본적으로 자신의 고객만 볼 수 있음
   const isF5Only = employee?.securityLevel === "F5";
   const defaultManagerId = employee?.id;
@@ -201,14 +196,16 @@ export function CustomersPage() {
     phone: "",
     email: "",
     address: "",
+    addressDetail: "",
     gender: "",
     birthdate: "",
     company: "",
     jobTitle: "",
     source: "",
     status: "new",
+    memo: "",
+    interestProduct: "",
   });
-  const [selectedManagerId, setSelectedManagerId] = useState<string>("");
   const [formErrors, setFormErrors] = useState<{
     name?: string;
     phone?: string;
@@ -352,14 +349,16 @@ export function CustomersPage() {
       phone: "",
       email: "",
       address: "",
+      addressDetail: "",
       gender: "",
       birthdate: "",
       company: "",
       jobTitle: "",
       source: "",
       status: "new",
+      memo: "",
+      interestProduct: "",
     });
-    setSelectedManagerId(employee?.id || "");
     setIsDialogOpen(true);
   };
 
@@ -407,7 +406,7 @@ export function CustomersPage() {
     try {
       await createCustomer.mutateAsync({
         input: formData,
-        managerId: selectedManagerId || employee.id,
+        managerId: employee.id,
       });
       setIsDialogOpen(false);
     } catch (error) {
@@ -795,27 +794,6 @@ export function CustomersPage() {
                 <p className="text-sm text-red-500">{formErrors.name}</p>
               )}
             </div>
-            {canAssignToOthers && (
-              <div className="space-y-2">
-                <Label htmlFor="manager">담당자</Label>
-                <select
-                  id="manager"
-                  value={selectedManagerId}
-                  onChange={(e) => setSelectedManagerId(e.target.value)}
-                  className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
-                >
-                  {activeEmployees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.fullName} (
-                      {emp.department || emp.positionName || emp.securityLevel})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-zinc-500">
-                  다른 사원에게 고객을 배정할 수 있습니다
-                </p>
-              </div>
-            )}
             <div className="space-y-2">
               <Label htmlFor="phone">
                 전화번호 <span className="text-red-500">*</span>
@@ -859,29 +837,31 @@ export function CustomersPage() {
                 <p className="text-xs text-red-500">{formErrors.email}</p>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="gender">성별</Label>
-              <select
-                id="gender"
-                value={formData.gender}
-                onChange={(e) =>
-                  setFormData({ ...formData, gender: e.target.value })
-                }
-                className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
-              >
-                <option value="">선택</option>
-                {GENDER_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="gender">성별</Label>
+                <select
+                  id="gender"
+                  value={formData.gender}
+                  onChange={(e) =>
+                    setFormData({ ...formData, gender: e.target.value })
+                  }
+                  className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
+                >
+                  <option value="">선택</option>
+                  {GENDER_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <BirthdateSelector
+                value={formData.birthdate || ""}
+                onChange={(date) => setFormData({ ...formData, birthdate: date })}
+                error={formErrors.birthdate}
+              />
             </div>
-            <BirthdateSelector
-              value={formData.birthdate || ""}
-              onChange={(date) => setFormData({ ...formData, birthdate: date })}
-              error={formErrors.birthdate}
-            />
             <div className="space-y-2">
               <Label>주소</Label>
               <AddressInput
@@ -891,46 +871,50 @@ export function CustomersPage() {
                 }
                 placeholder="주소 검색"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="company">회사</Label>
               <Input
-                id="company"
-                value={formData.company}
+                value={formData.addressDetail || ""}
                 onChange={(e) =>
-                  setFormData({ ...formData, company: e.target.value })
+                  setFormData({ ...formData, addressDetail: e.target.value })
                 }
+                placeholder="상세주소 입력"
                 className="bg-white dark:bg-zinc-800"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="jobTitle">직급</Label>
-              <Input
-                id="jobTitle"
-                value={formData.jobTitle}
-                onChange={(e) =>
-                  setFormData({ ...formData, jobTitle: e.target.value })
-                }
-                className="bg-white dark:bg-zinc-800"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="company">회사</Label>
+                <Input
+                  id="company"
+                  value={formData.company}
+                  onChange={(e) =>
+                    setFormData({ ...formData, company: e.target.value })
+                  }
+                  className="bg-white dark:bg-zinc-800"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="jobTitle">직급</Label>
+                <Input
+                  id="jobTitle"
+                  value={formData.jobTitle}
+                  onChange={(e) =>
+                    setFormData({ ...formData, jobTitle: e.target.value })
+                  }
+                  className="bg-white dark:bg-zinc-800"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="source">유입경로</Label>
-              <select
+              <Input
                 id="source"
                 value={formData.source}
                 onChange={(e) =>
                   setFormData({ ...formData, source: e.target.value })
                 }
-                className="w-full h-10 px-3 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white"
-              >
-                <option value="">선택 안함</option>
-                {sources?.map((source) => (
-                  <option key={source.id} value={source.name}>
-                    {source.name}
-                  </option>
-                ))}
-              </select>
+                placeholder="유입경로 입력"
+                className="bg-white dark:bg-zinc-800"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">상태</Label>
@@ -948,6 +932,31 @@ export function CustomersPage() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="interestProduct">관심 상품</Label>
+              <Input
+                id="interestProduct"
+                value={formData.interestProduct}
+                onChange={(e) =>
+                  setFormData({ ...formData, interestProduct: e.target.value })
+                }
+                placeholder="관심 상품명 입력"
+                className="bg-white dark:bg-zinc-800"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="memo">메모</Label>
+              <textarea
+                id="memo"
+                value={formData.memo}
+                onChange={(e) =>
+                  setFormData({ ...formData, memo: e.target.value })
+                }
+                placeholder="고객 메모 입력"
+                rows={3}
+                className="w-full px-3 py-2 rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white text-sm resize-none"
+              />
             </div>
             <div className="flex gap-2 pt-4">
               <Button
