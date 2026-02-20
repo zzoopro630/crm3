@@ -216,23 +216,26 @@ app.post("/", async (c) => {
     return c.json({ error: "name은 필수입니다." }, 400);
   }
 
+  // 빈 문자열을 null로 변환 (enum/date 컬럼에 빈 문자열 입력 방지)
+  const toNull = (v: unknown) => (typeof v === "string" && v.trim() === "" ? null : v);
+
   const dbInput = {
     name: body.name,
-    phone: body.phone,
-    email: body.email,
-    address: body.address,
-    address_detail: body.addressDetail,
-    gender: body.gender,
-    birthdate: body.birthdate,
-    company: body.company,
-    job_title: body.jobTitle,
-    source: body.source,
+    phone: toNull(body.phone),
+    email: toNull(body.email),
+    address: toNull(body.address),
+    address_detail: toNull(body.addressDetail),
+    gender: toNull(body.gender),
+    birthdate: toNull(body.birthdate),
+    company: toNull(body.company),
+    job_title: toNull(body.jobTitle),
+    source: toNull(body.source),
     status: body.status || "new",
     manager_id: body.managerId,
     type: body.type || "personal",
-    interest_product: body.interestProduct,
-    memo: body.memo,
-    admin_comment: body.adminComment,
+    interest_product: toNull(body.interestProduct),
+    memo: toNull(body.memo),
+    admin_comment: toNull(body.adminComment),
   };
 
   const { data, error } = await supabase
