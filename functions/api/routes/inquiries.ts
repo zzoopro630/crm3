@@ -2,12 +2,26 @@ import { Hono } from "hono";
 import { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../database.types";
 import type { Env } from "../middleware/auth";
+import { getAuthEmployee, requireSecurityLevel } from "../middleware/auth";
 import { safeError, parsePagination, sanitizeSearch } from "../middleware/helpers";
+
+// 상담관리 status 화이트리스트
+const VALID_STATUSES = [
+  "new", "contacted", "consulting", "closed",
+  "called", "texted", "no_answer", "rejected",
+  "wrong_number", "ineligible", "upsell",
+];
+
+// F1-F4: 전체 접근, F5: 본인 배정 문의만
+const MANAGER_LEVELS = ["F1", "F2", "F3", "F4"];
 
 // 상담관리 (marketing.inquiries)
 export const inquiryRoutes = new Hono<{ Bindings: Env }>();
 
 inquiryRoutes.get("/", async (c) => {
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { page, limit, offset } = parsePagination(c);
@@ -22,6 +36,11 @@ inquiryRoutes.get("/", async (c) => {
     .not("source_url", "ilike", "%contact-forms/456%")
     .not("utm_campaign", "ilike", "%recruit%");
 
+  // F5: 본인 배정 문의만 조회 가능
+  if (!MANAGER_LEVELS.includes(emp.security_level)) {
+    query = query.eq("manager_id", emp.id);
+  }
+
   if (search) {
     query = query.or(`customer_name.ilike.%${search}%,phone.ilike.%${search}%`);
   }
@@ -32,7 +51,7 @@ inquiryRoutes.get("/", async (c) => {
       query = query.eq("status", status);
     }
   }
-  if (managerId) {
+  if (managerId && MANAGER_LEVELS.includes(emp.security_level)) {
     query = query.eq("manager_id", managerId);
   }
 
@@ -89,9 +108,22 @@ inquiryRoutes.get("/", async (c) => {
 });
 
 inquiryRoutes.put("/:id", async (c) => {
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
+
+  // status 화이트리스트 검증
+  if (body.status !== undefined && !VALID_STATUSES.includes(body.status)) {
+    return c.json({ error: `잘못된 상태값: ${body.status}` }, 400);
+  }
+
+  // F5: 담당자 배정(managerId) 변경 불가
+  if (!MANAGER_LEVELS.includes(emp.security_level) && body.managerId !== undefined) {
+    return c.json({ error: "담당자 변경 권한이 없습니다." }, 403);
+  }
 
   const updateData: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -103,11 +135,18 @@ inquiryRoutes.put("/:id", async (c) => {
   if (body.email !== undefined) updateData.email = body.email;
   if (body.adminComment !== undefined) updateData.admin_comment = body.adminComment;
 
-  const { data, error } = await (supabase as any)
+  let updateQuery = (supabase as any)
     .schema("marketing")
     .from("inquiries")
     .update(updateData)
-    .eq("id", id)
+    .eq("id", id);
+
+  // F5: 본인 배정 문의만 수정 가능
+  if (!MANAGER_LEVELS.includes(emp.security_level)) {
+    updateQuery = updateQuery.eq("manager_id", emp.id);
+  }
+
+  const { data, error } = await updateQuery
     .select("*")
     .single();
 
@@ -134,14 +173,23 @@ inquiryRoutes.put("/:id", async (c) => {
 });
 
 inquiryRoutes.post("/", async (c) => {
+  const denied = await requireSecurityLevel(c, ["F1", "F2", "F3", "F4"]);
+  if (denied) return denied;
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const body = await c.req.json();
+
+  // status 화이트리스트 검증
+  const status = body.status || "new";
+  if (!VALID_STATUSES.includes(status)) {
+    return c.json({ error: `잘못된 상태값: ${status}` }, 400);
+  }
 
   const insertData: Record<string, unknown> = {
     customer_name: body.customerName,
     phone: body.phone,
     product_name: body.productName || null,
-    status: body.status || "new",
+    status,
     manager_id: body.managerId || null,
     memo: body.memo || null,
     inquiry_date: new Date().toISOString(),
@@ -176,6 +224,9 @@ inquiryRoutes.post("/", async (c) => {
 export const consultantInquiryRoutes = new Hono<{ Bindings: Env }>();
 
 consultantInquiryRoutes.get("/", async (c) => {
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { page, limit, offset } = parsePagination(c);
@@ -188,6 +239,10 @@ consultantInquiryRoutes.get("/", async (c) => {
     .from("consultant_inquiries")
     .select("*", { count: "exact" });
 
+  if (!MANAGER_LEVELS.includes(emp.security_level)) {
+    query = query.eq("manager_id", emp.id);
+  }
+
   if (search) {
     query = query.or(`customer_name.ilike.%${search}%,phone.ilike.%${search}%`);
   }
@@ -198,7 +253,7 @@ consultantInquiryRoutes.get("/", async (c) => {
       query = query.eq("status", status);
     }
   }
-  if (managerId) {
+  if (managerId && MANAGER_LEVELS.includes(emp.security_level)) {
     query = query.eq("manager_id", managerId);
   }
 
@@ -257,9 +312,20 @@ consultantInquiryRoutes.get("/", async (c) => {
 });
 
 consultantInquiryRoutes.put("/:id", async (c) => {
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
+
+  if (body.status !== undefined && !VALID_STATUSES.includes(body.status)) {
+    return c.json({ error: `잘못된 상태값: ${body.status}` }, 400);
+  }
+
+  if (!MANAGER_LEVELS.includes(emp.security_level) && body.managerId !== undefined) {
+    return c.json({ error: "담당자 변경 권한이 없습니다." }, 403);
+  }
 
   const updateData: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -270,11 +336,17 @@ consultantInquiryRoutes.put("/:id", async (c) => {
   if (body.memo !== undefined) updateData.memo = body.memo;
   if (body.adminComment !== undefined) updateData.admin_comment = body.adminComment;
 
-  const { data, error } = await (supabase as any)
+  let updateQuery = (supabase as any)
     .schema("marketing")
     .from("consultant_inquiries")
     .update(updateData)
-    .eq("id", id)
+    .eq("id", id);
+
+  if (!MANAGER_LEVELS.includes(emp.security_level)) {
+    updateQuery = updateQuery.eq("manager_id", emp.id);
+  }
+
+  const { data, error } = await updateQuery
     .select("*")
     .single();
 
@@ -306,6 +378,9 @@ consultantInquiryRoutes.put("/:id", async (c) => {
 export const recruitInquiryRoutes = new Hono<{ Bindings: Env }>();
 
 recruitInquiryRoutes.get("/", async (c) => {
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
 
   const { page, limit, offset } = parsePagination(c);
@@ -318,6 +393,10 @@ recruitInquiryRoutes.get("/", async (c) => {
     .from("recruit_inquiries")
     .select("*", { count: "exact" });
 
+  if (!MANAGER_LEVELS.includes(emp.security_level)) {
+    query = query.eq("manager_id", emp.id);
+  }
+
   if (search) {
     query = query.or(`customer_name.ilike.%${search}%,phone.ilike.%${search}%`);
   }
@@ -328,7 +407,7 @@ recruitInquiryRoutes.get("/", async (c) => {
       query = query.eq("status", status);
     }
   }
-  if (managerId) {
+  if (managerId && MANAGER_LEVELS.includes(emp.security_level)) {
     query = query.eq("manager_id", managerId);
   }
 
@@ -388,9 +467,20 @@ recruitInquiryRoutes.get("/", async (c) => {
 });
 
 recruitInquiryRoutes.put("/:id", async (c) => {
+  const emp = await getAuthEmployee(c);
+  if (!emp) return c.json({ error: "사원 정보를 찾을 수 없습니다." }, 403);
+
   const supabase = c.get("supabase" as never) as SupabaseClient<Database>;
   const id = c.req.param("id");
   const body = await c.req.json();
+
+  if (body.status !== undefined && !VALID_STATUSES.includes(body.status)) {
+    return c.json({ error: `잘못된 상태값: ${body.status}` }, 400);
+  }
+
+  if (!MANAGER_LEVELS.includes(emp.security_level) && body.managerId !== undefined) {
+    return c.json({ error: "담당자 변경 권한이 없습니다." }, 403);
+  }
 
   const updateData: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -401,11 +491,17 @@ recruitInquiryRoutes.put("/:id", async (c) => {
   if (body.memo !== undefined) updateData.memo = body.memo;
   if (body.adminComment !== undefined) updateData.admin_comment = body.adminComment;
 
-  const { data, error } = await (supabase as any)
+  let updateQuery = (supabase as any)
     .schema("marketing")
     .from("recruit_inquiries")
     .update(updateData)
-    .eq("id", id)
+    .eq("id", id);
+
+  if (!MANAGER_LEVELS.includes(emp.security_level)) {
+    updateQuery = updateQuery.eq("manager_id", emp.id);
+  }
+
+  const { data, error } = await updateQuery
     .select("*")
     .single();
 

@@ -1,10 +1,10 @@
-// Supabase Edge Function: WordPress CF7 입사문의 Webhook Handler
+// Supabase Edge Function: WordPress CF7 Webhook Handler
 import { Hono } from "https://deno.land/x/hono@v3.12.0/mod.ts";
 import { cors } from "https://deno.land/x/hono@v3.12.0/middleware.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://esm.sh/zod@3.22.4";
 
-const app = new Hono().basePath("/webhook-recruit");
+const app = new Hono().basePath("/webhook-inquiry");
 
 // Supabase 클라이언트 초기화
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
@@ -34,7 +34,7 @@ function maskPii(body: Record<string, unknown>): Record<string, unknown> {
 
 // Rate limiter (IP당 분당 요청 수 제한)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 10;
+const RATE_LIMIT = 10; // IP당 분당 최대 요청 수
 const RATE_WINDOW_MS = 60_000;
 
 function checkRateLimit(ip: string): boolean {
@@ -49,20 +49,19 @@ function checkRateLimit(ip: string): boolean {
 }
 
 // 입력 검증 스키마
-const recruitSchema = z.object({
+const inquirySchema = z.object({
   name: z.string().max(100).optional().nullable(),
   phone: z.string().max(30).optional().nullable(),
-  age: z.string().max(20).optional().nullable(),
-  area: z.string().max(100).optional().nullable(),
-  career: z.string().max(200).optional().nullable(),
-  request: z.string().max(5000).optional().nullable(),
-  referer_page: z.string().max(2000).optional().nullable(),
+  product: z.string().max(200).optional().nullable(),
   utm_campaign: z.string().max(500).optional().nullable(),
   source_url: z.string().max(2000).optional().nullable(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  birthday: z.string().max(20).optional().nullable(),
+  sex: z.string().max(10).optional().nullable(),
+  request: z.string().max(5000).optional().nullable(),
 });
 
-// CORS 설정
+// CORS 설정 — WordPress 도메인만 허용 (서버-서버 호출은 Origin 없이 통과)
 const allowedOrigins = (Deno.env.get("ALLOWED_ORIGINS") || "").split(",").filter(Boolean);
 app.use(
   "/*",
@@ -95,10 +94,10 @@ app.post("/", async (c) => {
     const rawBody = await c.req.json();
 
     // P2-2: PII 마스킹 로그
-    console.log("Received recruit inquiry:", maskPii(rawBody));
+    console.log("Received inquiry:", maskPii(rawBody));
 
     // P1-1: 입력 검증
-    const parsed = recruitSchema.safeParse(rawBody);
+    const parsed = inquirySchema.safeParse(rawBody);
     if (!parsed.success) {
       console.warn("Validation failed:", parsed.error.flatten());
       return c.json({ error: "Invalid input", details: parsed.error.flatten().fieldErrors }, 400);
@@ -107,30 +106,55 @@ app.post("/", async (c) => {
     // HTML 태그 제거
     const name = stripHtml(parsed.data.name);
     const phone = stripHtml(parsed.data.phone);
-    const age = stripHtml(parsed.data.age);
-    const area = stripHtml(parsed.data.area);
-    const career = stripHtml(parsed.data.career);
-    const request = stripHtml(parsed.data.request);
-    const referer_page = parsed.data.referer_page?.trim() || null;
+    const product = stripHtml(parsed.data.product);
     const utm_campaign = stripHtml(parsed.data.utm_campaign);
-    const source_url = parsed.data.source_url?.trim() || null;
+    const source_url = parsed.data.source_url?.trim() || "";
     const date = parsed.data.date || null;
+    const birthday = stripHtml(parsed.data.birthday);
+    const sex = stripHtml(parsed.data.sex);
+    const request = stripHtml(parsed.data.request);
 
-    // 중복 체크: 같은 연락처가 10분 이내 제출된 경우
+    // 중복 체크: 같은 연락처 + utm_campaign이 10분 이내 제출된 경우
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 
     const { data: existing } = await supabase
       .schema("marketing")
-      .from("recruit_inquiries")
-      .select("id")
+      .from("inquiries")
+      .select("id, request")
       .eq("phone", phone || "")
+      .eq("utm_campaign", utm_campaign || "")
       .gte("created_at", tenMinutesAgo)
       .order("created_at", { ascending: false })
       .limit(1)
       .single();
 
     if (existing) {
-      console.log("Recruit duplicate detected - ignored:", existing.id);
+      const newHasRequest = request && request.trim() !== "";
+
+      if (newHasRequest) {
+        // 새 요청사항이 있으면 → 기존 데이터 업데이트
+        const { error: updateError } = await supabase
+          .schema("marketing")
+          .from("inquiries")
+          .update({ request })
+          .eq("id", existing.id);
+
+        if (updateError) {
+          console.error("DB Update Error:", updateError);
+          throw updateError;
+        }
+
+        console.log("Duplicate detected - updated with new request:", existing.id);
+        return c.json({
+          success: true,
+          message: "Duplicate updated with request",
+          id: existing.id,
+          duplicate: true,
+        });
+      }
+
+      // 새 요청사항이 없으면 → 무시
+      console.log("Duplicate detected - ignored:", existing.id);
       return c.json({
         success: true,
         message: "Duplicate ignored",
@@ -139,22 +163,23 @@ app.post("/", async (c) => {
       });
     }
 
-    // 신규 저장 (marketing.recruit_inquiries)
+    // 신규 저장 (marketing 스키마)
     const { data, error } = await supabase
       .schema("marketing")
-      .from("recruit_inquiries")
-      .insert([{
-        customer_name: name,
-        phone: phone,
-        age: age || null,
-        area: area || null,
-        career: career || null,
-        request: request || null,
-        referer_page: referer_page || null,
-        utm_campaign: utm_campaign || null,
-        source_url: source_url || null,
-        inquiry_date: date || new Date().toISOString().split("T")[0],
-      }])
+      .from("inquiries")
+      .insert([
+        {
+          customer_name: name,
+          phone: phone,
+          product_name: product,
+          utm_campaign: utm_campaign,
+          source_url: source_url,
+          inquiry_date: date || new Date().toISOString().split("T")[0],
+          birthday: birthday || null,
+          sex: sex || null,
+          request: request || null,
+        },
+      ])
       .select();
 
     if (error) {
@@ -164,7 +189,7 @@ app.post("/", async (c) => {
 
     return c.json({
       success: true,
-      message: "Recruit inquiry saved successfully",
+      message: "Inquiry saved successfully",
       id: data?.[0]?.id,
     });
   } catch (error: any) {
