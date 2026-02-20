@@ -74,6 +74,25 @@ app.get("/", async (c) => {
     }
   }
 
+  // 최신 메모 조회 (customer_notes에서 각 고객의 가장 최근 메모 1건)
+  const customerIds = (data || []).map((c) => c.id);
+  let latestNotesMap: Record<number, string> = {};
+  if (customerIds.length > 0) {
+    const { data: notes } = await supabase
+      .from("customer_notes")
+      .select("customer_id, content, created_at")
+      .in("customer_id", customerIds)
+      .order("created_at", { ascending: false });
+
+    if (notes) {
+      for (const note of notes) {
+        if (!latestNotesMap[note.customer_id]) {
+          latestNotesMap[note.customer_id] = note.content;
+        }
+      }
+    }
+  }
+
   const customers = (data || []).map((row) => ({
     id: row.id,
     name: row.name,
@@ -92,6 +111,7 @@ app.get("/", async (c) => {
     adminComment: row.admin_comment,
     managerId: row.manager_id,
     managerName: managersMap[row.manager_id] || null,
+    latestNote: latestNotesMap[row.id] || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));

@@ -56,6 +56,7 @@ export interface CustomerWithManager {
   annualIncome: string | null;
   maritalStatus: string | null;
   notes: string | null;
+  latestNote: string | null;
   createdAt: Date | null;
   updatedAt: Date | null;
 }
