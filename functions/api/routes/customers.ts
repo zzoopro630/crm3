@@ -221,6 +221,7 @@ app.post("/", async (c) => {
     phone: body.phone,
     email: body.email,
     address: body.address,
+    address_detail: body.addressDetail,
     gender: body.gender,
     birthdate: body.birthdate,
     company: body.company,
@@ -260,6 +261,7 @@ app.put("/:id", async (c) => {
   if (body.phone !== undefined) dbInput.phone = body.phone;
   if (body.email !== undefined) dbInput.email = body.email;
   if (body.address !== undefined) dbInput.address = body.address;
+  if (body.addressDetail !== undefined) dbInput.address_detail = body.addressDetail;
   if (body.gender !== undefined) dbInput.gender = body.gender;
   if (body.birthdate !== undefined) dbInput.birthdate = body.birthdate;
   if (body.company !== undefined) dbInput.company = body.company;
