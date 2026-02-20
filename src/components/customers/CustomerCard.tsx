@@ -1,14 +1,9 @@
 import { Link } from 'react-router-dom'
 import { StatusSelector } from './StatusSelector'
-import { SourceSelector } from './SourceSelector'
-import { ManagerSelector } from './ManagerSelector'
-import { Button } from '@/components/ui/button'
-import { Trash2 } from 'lucide-react'
 import type { CustomerWithManager } from '@/types/customer'
 
 interface CustomerCardProps {
     customer: CustomerWithManager
-    onDelete: (id: number) => void
     canTransfer: boolean
     isSelected?: boolean
     onSelect?: (id: number, selected: boolean) => void
@@ -16,7 +11,6 @@ interface CustomerCardProps {
 
 export function CustomerCard({
     customer,
-    onDelete,
     canTransfer,
     isSelected,
     onSelect,
@@ -53,7 +47,7 @@ export function CustomerCard({
             </div>
 
             {/* Body: 정보 */}
-            <div className="space-y-2 text-sm text-muted-foreground mb-3">
+            <div className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center justify-between">
                     <span>전화번호</span>
                     {customer.phone ? (
@@ -69,36 +63,18 @@ export function CustomerCard({
                 </div>
                 <div className="flex items-center justify-between">
                     <span>유입경로</span>
-                    <SourceSelector
-                        customerId={customer.id}
-                        currentSource={customer.source}
-                    />
-                </div>
-                <div className="flex items-center justify-between">
-                    <span>담당자</span>
-                    <ManagerSelector
-                        customerId={customer.id}
-                        currentManagerId={customer.managerId}
-                        currentManagerName={customer.managerName}
-                    />
+                    <span className="text-foreground">{customer.source || '-'}</span>
                 </div>
                 <div className="flex items-center justify-between">
                     <span>등록일</span>
                     <span>{customer.createdAt ? new Date(customer.createdAt).toLocaleDateString('ko-KR') : '-'}</span>
                 </div>
-            </div>
-
-            {/* Footer: 액션 버튼 */}
-            <div className="flex justify-end pt-2 border-t border-border">
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDelete(customer.id)}
-                    className="text-red-500 hover:text-red-600"
-                >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    삭제
-                </Button>
+                {customer.latestNote && (
+                    <div className="flex items-center justify-between">
+                        <span>메모</span>
+                        <span className="text-foreground truncate max-w-[200px]">{customer.latestNote}</span>
+                    </div>
+                )}
             </div>
         </div>
     )
