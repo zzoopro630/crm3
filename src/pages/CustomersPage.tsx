@@ -412,16 +412,6 @@ export function CustomersPage() {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm("정말 이 고객을 삭제하시겠습니까?")) {
-      try {
-        await deleteCustomer.mutateAsync(id);
-      } catch (error) {
-        console.error("Failed to delete customer:", error);
-      }
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -582,7 +572,6 @@ export function CustomersPage() {
                   <CustomerCard
                     key={customer.id}
                     customer={customer}
-                    onDelete={handleDelete}
                     canTransfer={!!canTransfer}
                     isSelected={selectedIds.includes(customer.id)}
                     onSelect={(id, selected) =>
