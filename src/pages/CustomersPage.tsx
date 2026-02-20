@@ -646,6 +646,9 @@ export function CustomersPage() {
                         {sortConfig.key === "createdAt" &&
                           (sortConfig.direction === "asc" ? "↑" : "↓")}
                       </th>
+                      <th className="text-left py-4 px-4 text-sm font-medium text-muted-foreground">
+                        메모
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -705,6 +708,9 @@ export function CustomersPage() {
                                   "ko-KR"
                                 )
                               : "-"}
+                          </td>
+                          <td className="py-4 px-4 text-sm text-muted-foreground max-w-[200px] truncate">
+                            {customer.latestNote || "-"}
                           </td>
                         </tr>
                       );
