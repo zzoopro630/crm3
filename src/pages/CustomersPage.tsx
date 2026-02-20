@@ -41,9 +41,7 @@ import { Link } from "react-router-dom";
 import { ExcelUpload } from "@/components/customers/ExcelUpload";
 import { AddressInput } from "@/components/customers/AddressInput";
 import { BirthdateSelector } from "@/components/customers/BirthdateSelector";
-import { ManagerSelector } from "@/components/customers/ManagerSelector";
 import { StatusSelector } from "@/components/customers/StatusSelector";
-import { SourceSelector } from "@/components/customers/SourceSelector";
 import { BulkTransferModal } from "@/components/customers/BulkTransferModal";
 import { CustomerCard } from "@/components/customers/CustomerCard";
 import type {
@@ -521,35 +519,54 @@ export function CustomersPage() {
         </div>
       )}
 
-      {/* Selection Action Bar */}
-      {canTransfer && selectedIds.length > 0 && (
-        <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
-          <span className="text-sm font-medium text-primary">
-            {selectedIds.length}명 선택됨
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setSelectedIds([])}
-            >
-              선택 해제
-            </Button>
-            <Button size="sm" onClick={() => setIsBulkTransferOpen(true)}>
-              <Users className="mr-2 h-4 w-4" />
-              담당자 변경
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Customer List */}
       <Card className="border-border bg-card rounded-xl shadow-lg">
         <CardHeader className="border-b border-border">
-          <CardTitle className="text-foreground">고객 목록</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            총 {response?.total || 0}명
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-foreground">고객 목록</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                총 {response?.total || 0}명
+                {selectedIds.length > 0 && (
+                  <span className="ml-2 text-primary font-medium">
+                    ({selectedIds.length}명 선택)
+                  </span>
+                )}
+              </CardDescription>
+            </div>
+            {isEditor && (
+              <div className="flex items-center gap-2">
+                {selectedIds.length > 0 && canTransfer && (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => setSelectedIds([])}>
+                      선택 해제
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setIsBulkTransferOpen(true)}>
+                      <Users className="mr-1 h-4 w-4" />
+                      담당자 변경
+                    </Button>
+                  </>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (selectedIds.length === 0) return
+                    if (window.confirm(`선택한 ${selectedIds.length}명의 고객을 삭제하시겠습니까?`)) {
+                      selectedIds.forEach((id) => deleteCustomer.mutate(id))
+                      setSelectedIds([])
+                    }
+                  }}
+                  disabled={selectedIds.length === 0}
+                  className="text-red-500 hover:text-red-600"
+                >
+                  <Trash2 className="mr-1 h-4 w-4" />
+                  삭제
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {response?.data.length === 0 ? (
@@ -559,8 +576,8 @@ export function CustomersPage() {
             </div>
           ) : (
             <>
-              {/* 모바일: 카드 레이아웃 */}
-              <div className="block md:hidden space-y-3">
+              {/* 모바일: 카드 레이아웃 (640px 미만) */}
+              <div className="block sm:hidden space-y-3">
                 {sortedData.map((customer) => (
                   <CustomerCard
                     key={customer.id}
@@ -575,8 +592,8 @@ export function CustomersPage() {
                 ))}
               </div>
 
-              {/* 데스크톱: 테이블 레이아웃 */}
-              <div className="hidden md:block overflow-x-auto">
+              {/* 테이블 레이아웃 (640px 이상) */}
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border bg-secondary/30">
@@ -623,25 +640,12 @@ export function CustomersPage() {
                       </th>
                       <th
                         className="text-left py-4 px-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground"
-                        onClick={() => handleSort("managerName")}
-                      >
-                        담당자{" "}
-                        {sortConfig.key === "managerName" &&
-                          (sortConfig.direction === "asc" ? "↑" : "↓")}
-                      </th>
-                      <th
-                        className="text-left py-4 px-4 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground"
                         onClick={() => handleSort("createdAt")}
                       >
                         등록일{" "}
                         {sortConfig.key === "createdAt" &&
                           (sortConfig.direction === "asc" ? "↑" : "↓")}
                       </th>
-                      {isEditor && (
-                      <th className="text-right py-4 px-4 text-sm font-medium text-muted-foreground">
-                        작업
-                      </th>
-                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -686,23 +690,13 @@ export function CustomersPage() {
                           <td className="py-4 px-4 text-sm text-muted-foreground">
                             {customer.phone || "-"}
                           </td>
-                          <td className="py-4 px-4 text-sm">
-                            <SourceSelector
-                              customerId={customer.id}
-                              currentSource={customer.source}
-                            />
+                          <td className="py-4 px-4 text-sm text-muted-foreground">
+                            {customer.source || "-"}
                           </td>
                           <td className="py-3 px-4">
                             <StatusSelector
                               customerId={customer.id}
                               currentStatus={customer.status}
-                            />
-                          </td>
-                          <td className="py-4 px-4 text-sm">
-                            <ManagerSelector
-                              customerId={customer.id}
-                              currentManagerId={customer.managerId}
-                              currentManagerName={customer.managerName}
                             />
                           </td>
                           <td className="py-4 px-4 text-sm text-muted-foreground">
@@ -712,20 +706,6 @@ export function CustomersPage() {
                                 )
                               : "-"}
                           </td>
-                          {isEditor && (
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDelete(customer.id)}
-                                className="h-8 w-8 text-red-500 hover:text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </td>
-                          )}
                         </tr>
                       );
                     })}
