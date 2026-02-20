@@ -15,7 +15,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 function verifyWebhookSecret(c: any): boolean {
   const secret = Deno.env.get("WEBHOOK_SECRET");
-  if (!secret) return true; // 시크릿 미설정 시 통과 (마이그레이션 기간)
+  if (!secret) return false; // 시크릿 미설정 시 차단 (보안 기본값)
   const auth = c.req.header("Authorization") || "";
   return auth === `Bearer ${secret}`;
 }

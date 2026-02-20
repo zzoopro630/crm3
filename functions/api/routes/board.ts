@@ -5,6 +5,26 @@ import type { Env } from "../middleware/auth";
 import { getAuthEmployee, requireSecurityLevel, requireBoardEditor } from "../middleware/auth";
 import { safeError, parsePagination, sanitizeSearch } from "../middleware/helpers";
 
+/** 서버 사이드 HTML sanitize — 위험 태그/속성 제거 (CF Workers 환경, DOMPurify 미사용) */
+function sanitizeHtml(html: string): string {
+  if (!html) return html;
+
+  // JSON 카드뉴스 content는 sanitize 불필요
+  try {
+    const parsed = JSON.parse(html);
+    if (parsed?.images && Array.isArray(parsed.images)) return html;
+  } catch { /* not JSON, proceed */ }
+
+  let result = html;
+  // script, iframe, object, embed, form, style 태그 제거
+  result = result.replace(/<\s*\/?\s*(script|iframe|object|embed|form|style)\b[^>]*>/gi, "");
+  // on* 이벤트 핸들러 속성 제거
+  result = result.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+  // javascript: / vbscript: / data: 프로토콜 href/src 제거
+  result = result.replace(/(href|src)\s*=\s*(?:"[^"]*(?:javascript|vbscript|data)\s*:[^"]*"|'[^']*(?:javascript|vbscript|data)\s*:[^']*')/gi, "");
+  return result;
+}
+
 // 게시판 카테고리
 export const boardCategoryRoutes = new Hono<{ Bindings: Env }>();
 
@@ -316,7 +336,7 @@ postRoutes.post("/", async (c) => {
       .from("posts")
       .insert({
         title,
-        content,
+        content: sanitizeHtml(content),
         category,
         is_pinned: isPinned || false,
         author_id: emp.id,
@@ -363,7 +383,7 @@ postRoutes.put("/:id", async (c) => {
   try {
     const updateData: any = { updated_at: new Date().toISOString() };
     if (title !== undefined) updateData.title = title;
-    if (content !== undefined) updateData.content = content;
+    if (content !== undefined) updateData.content = sanitizeHtml(content);
     if (isPinned !== undefined) updateData.is_pinned = isPinned;
 
     const { data: post, error } = await supabase

@@ -91,7 +91,11 @@ export default function RichTextEditor({
     extensions: [
       StarterKit.configure({ link: false } as never),
       Image.configure({ inline: false, allowBase64: false }),
-      Link.configure({ openOnClick: false, autolink: true }),
+      Link.configure({
+        openOnClick: false,
+        autolink: true,
+        validate: (href) => /^https?:\/\//i.test(href),
+      }),
       Placeholder.configure({ placeholder }),
     ],
     content,
@@ -134,6 +138,11 @@ export default function RichTextEditor({
     if (!ed) return;
     const url = window.prompt("링크 URL을 입력하세요:");
     if (!url) return;
+    // javascript: 프로토콜 차단 — XSS 방지
+    if (!/^https?:\/\//i.test(url)) {
+      alert("http:// 또는 https://로 시작하는 URL만 입력 가능합니다.");
+      return;
+    }
     ed.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
   }, []);
 
