@@ -409,8 +409,8 @@ export default function AdsReportPage() {
                 <SortHeader label="랜딩율" sortKey="gaLandingRate" className="bg-blue-500/5" />
                 <SortHeader label="전환율" sortKey="conversionRate" className="bg-blue-500/5" />
                 <SortHeader label="랜딩비용" sortKey="landingCost" className="bg-blue-500/5" />
-                <SortHeader label="DB인입" sortKey="inquiryCount" className="bg-gray-800 text-white dark:bg-gray-200 dark:text-black" />
-                <SortHeader label="전환단가" sortKey="cpa" className="bg-gray-800 text-white dark:bg-gray-200 dark:text-black" />
+                <SortHeader label="DB인입" sortKey="inquiryCount" className="bg-amber-100/70 dark:bg-amber-900/30" />
+                <SortHeader label="전환단가" sortKey="cpa" className="bg-amber-100/70 dark:bg-amber-900/30" />
               </tr>
             </thead>
             <tbody>
@@ -448,10 +448,10 @@ export default function AdsReportPage() {
                     <td className="py-1.5 px-2 text-right tabular-nums bg-blue-500/5">{row.gaLandingRate !== null ? formatPercent(row.gaLandingRate) : "-"}</td>
                     <td className="py-1.5 px-2 text-right tabular-nums bg-blue-500/5">{row.conversionRate !== null ? formatPercent(row.conversionRate) : "-"}</td>
                     <td className="py-1.5 px-2 text-right tabular-nums bg-blue-500/5">{row.landingCost !== null ? formatNumber(row.landingCost) : "-"}</td>
-                    <td className="py-1.5 px-2 text-right tabular-nums bg-gray-800 text-white dark:bg-gray-200 dark:text-black font-semibold">
+                    <td className="py-1.5 px-2 text-right tabular-nums bg-amber-100/70 dark:bg-amber-900/30 font-semibold">
                       {row.inquiryCount > 0 ? formatNumber(row.inquiryCount) : "-"}
                     </td>
-                    <td className="py-1.5 px-2 text-right tabular-nums bg-gray-800 text-white dark:bg-gray-200 dark:text-black">{row.cpa !== null ? formatNumber(row.cpa) : "-"}</td>
+                    <td className="py-1.5 px-2 text-right tabular-nums bg-amber-100/70 dark:bg-amber-900/30">{row.cpa !== null ? formatNumber(row.cpa) : "-"}</td>
                   </tr>
                 );
               })}
@@ -476,8 +476,8 @@ export default function AdsReportPage() {
                 <td className="py-2 px-2 text-right tabular-nums bg-blue-500/5">
                   {totals.gaSessions > 0 ? formatNumber(totals.totalCost / totals.gaSessions) : "-"}
                 </td>
-                <td className="py-2 px-2 text-right tabular-nums bg-gray-800 text-white dark:bg-gray-200 dark:text-black">{formatNumber(totals.totalInquiries)}</td>
-                <td className="py-2 px-2 text-right tabular-nums bg-gray-800 text-white dark:bg-gray-200 dark:text-black">
+                <td className="py-2 px-2 text-right tabular-nums bg-amber-100/70 dark:bg-amber-900/30">{formatNumber(totals.totalInquiries)}</td>
+                <td className="py-2 px-2 text-right tabular-nums bg-amber-100/70 dark:bg-amber-900/30">
                   {totals.totalInquiries > 0 ? formatNumber(totals.totalCost / totals.totalInquiries) : "-"}
                 </td>
               </tr>
@@ -488,7 +488,7 @@ export default function AdsReportPage() {
             <p>※ 선택하신 기간 ({startDate} ~ {endDate}) 동안의 데이터를 키워드별로 합산한 보고서입니다.</p>
             <p>※ '중복' 표시는 동일한 키워드 카테고리가 여러 광고그룹에 나누어 집행되고 있음을 의미합니다.</p>
             <p className="text-blue-500/80">※ 파란색 배경 컬럼은 Google Analytics 데이터입니다.</p>
-            <p className="text-muted-foreground font-medium">※ 강조 배경 컬럼은 DB인입 데이터입니다. 전환단가 = 광고비 ÷ DB인입</p>
+            <p className="text-amber-600 dark:text-amber-400">※ 강조 배경 컬럼은 DB인입 데이터입니다. 전환단가 = 광고비 ÷ DB인입</p>
           </div>
         </CardContent>
       </Card>
